@@ -247,14 +247,14 @@ export function FeedScreen({
     <div className="space-y-2">
       {/* Header: brand + match count */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#112317] text-[#b8ff5a]">
             <MapPin className="h-3.5 w-3.5 stroke-[2.2]" />
           </div>
           <span className="font-display text-[15px] font-bold tracking-[-0.03em] text-[#112317]">
             FOOTLINK
           </span>
-        </div>
+        </Link>
         <span className="text-[12px] font-semibold text-[#88948c]">
           {feedItems.length}경기
         </span>

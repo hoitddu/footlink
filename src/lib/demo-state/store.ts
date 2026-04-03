@@ -229,7 +229,7 @@ export function submitParticipation(state: DemoAppState, input: SubmitParticipat
     entry_channel: match.contact_type,
     requested_count: requestedCount,
     message: input.message.trim(),
-    status: match.contact_type === "openchat" ? "chat_entered" : "pending",
+    status: "pending",
     created_at: new Date().toISOString(),
   };
 

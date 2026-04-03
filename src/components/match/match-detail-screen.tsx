@@ -88,11 +88,11 @@ export function MatchDetailScreen({
   const defaultRequestedCount = getDefaultRequestedCount(resolvedMatch, backContext);
 
   const participationMethodLabel =
-    resolvedMatch.contact_type === "openchat" ? "오픈채팅 연결" : "호스트 승인";
+    "참가 요청";
   const participationFlowLabel = activeRequest
     ? getParticipationStatusLabel(activeRequest.status)
     : resolvedMatch.contact_type === "openchat"
-      ? "입장 후 승인"
+      ? "수락 후 오픈채팅"
       : "요청 후 승인";
 
   const remainingLabel =
@@ -105,7 +105,7 @@ export function MatchDetailScreen({
   function getPrimaryLabel() {
     if (isHostView) return "내 모집 보기";
     if (!activeRequest) {
-      return resolvedMatch.contact_type === "openchat" ? "오픈채팅 입장" : "참가 요청 보내기";
+      return "참가 요청 보내기";
     }
     return getParticipationStatusLabel(activeRequest.status);
   }
@@ -123,15 +123,7 @@ export function MatchDetailScreen({
       message: input.message,
     });
 
-    if (resolvedMatch.contact_type === "openchat" && resolvedMatch.contact_value) {
-      window.open(resolvedMatch.contact_value, "_blank", "noopener,noreferrer");
-    }
-
-    router.push(
-      `/activity?tab=requests&highlight=${createdRequest.id}&flash=${
-        resolvedMatch.contact_type === "openchat" ? "chat_entered" : "requested"
-      }`,
-    );
+    router.push(`/activity?tab=requests&highlight=${createdRequest.id}&flash=requested`);
   }
 
   const primaryHref = getPrimaryHref();

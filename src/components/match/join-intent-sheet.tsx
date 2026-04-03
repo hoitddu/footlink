@@ -68,7 +68,6 @@ export function JoinIntentSheet({
     }
   }
 
-  const isOpenchat = match.contact_type === "openchat";
   const countEditable = bounds.max > 1;
 
   return (
@@ -77,12 +76,10 @@ export function JoinIntentSheet({
         <div className="space-y-5">
           <div>
             <SheetTitle className="text-[1.4rem] font-bold tracking-[-0.04em] text-[#112317]">
-              {isOpenchat ? "오픈채팅 입장" : "참가 요청 보내기"}
+              참가 요청 보내기
             </SheetTitle>
             <SheetDescription className="mt-2 text-sm leading-6 text-muted">
-              {isOpenchat
-                ? "채팅방에는 바로 들어가지만, 앱에서는 호스트가 수락해야 참가가 확정됩니다."
-                : "요청을 보내면 호스트가 확인 후 수락 또는 거절합니다."}
+              요청을 보내면 호스트가 확인 후 수락 또는 거절합니다. 수락되면 오픈채팅 입장이 열립니다.
             </SheetDescription>
           </div>
 
@@ -94,9 +91,7 @@ export function JoinIntentSheet({
           </div>
 
           <div className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-              요청 인원
-            </span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">요청 인원</span>
             {countEditable ? (
               <div className="flex items-center gap-3">
                 <Button
@@ -128,17 +123,11 @@ export function JoinIntentSheet({
           </div>
 
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-              전달 메모
-            </span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">전달 메모</span>
             <Textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              placeholder={
-                isOpenchat
-                  ? "채팅방에 들어간 뒤 전달할 한 줄 메모를 남겨주세요."
-                  : "도착 가능 시간이나 간단한 소개를 남겨주세요."
-              }
+              placeholder="도착 가능 시간이나 간단한 소개를 남겨주세요."
             />
           </label>
 
@@ -149,7 +138,7 @@ export function JoinIntentSheet({
               취소
             </Button>
             <Button className="flex-1" size="lg" type="button" onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "처리 중..." : isOpenchat ? "기록하고 채팅 열기" : "참가 요청 보내기"}
+              {isSubmitting ? "처리 중..." : "참가 요청 보내기"}
             </Button>
           </div>
         </div>
