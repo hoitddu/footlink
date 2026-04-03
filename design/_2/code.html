@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-high": "#d9ebf5",
+              "secondary-fixed-dim": "#bbc8d0",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-fixed": "#ffdbcb",
+              "surface-bright": "#f4faff",
+              "on-tertiary": "#ffffff",
+              "secondary-container": "#d7e4ec",
+              "on-primary-container": "#7ebdac",
+              "surface-container-low": "#e7f6ff",
+              "on-secondary": "#ffffff",
+              "background": "#f4faff",
+              "on-error": "#ffffff",
+              "on-secondary-container": "#5a666d",
+              "tertiary": "#511e00",
+              "on-primary": "#ffffff",
+              "primary": "#00342b",
+              "surface-container": "#dff1fb",
+              "inverse-primary": "#94d3c1",
+              "primary-fixed": "#afefdd",
+              "primary-container": "#004d40",
+              "surface-tint": "#29695b",
+              "outline-variant": "#bfc9c4",
+              "error-container": "#ffdad6",
+              "on-secondary-fixed-variant": "#3c494f",
+              "on-primary-fixed-variant": "#065043",
+              "on-surface-variant": "#3f4945",
+              "surface-variant": "#d4e5ef",
+              "on-secondary-fixed": "#111d23",
+              "on-tertiary-fixed": "#341100",
+              "tertiary-container": "#742e00",
+              "on-surface": "#0d1e25",
+              "on-tertiary-container": "#ff955e",
+              "outline": "#707975",
+              "inverse-on-surface": "#e2f3fd",
+              "primary-fixed-dim": "#94d3c1",
+              "surface-dim": "#cbdde7",
+              "on-error-container": "#93000a",
+              "secondary": "#546067",
+              "surface": "#f4faff",
+              "on-primary-fixed": "#00201a",
+              "error": "#ba1a1a",
+              "secondary-fixed": "#d7e4ec",
+              "on-tertiary-fixed-variant": "#7a3000",
+              "on-background": "#0d1e25",
+              "surface-container-highest": "#d4e5ef",
+              "tertiary-fixed-dim": "#ffb692",
+              "inverse-surface": "#23333a"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
+        .glass-nav {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-[#f4faff] dark:bg-[#0d1e25] sticky docked full-width top-0 z-50 no-border bg-[#e7f6ff] dark:bg-[#23333a] flat no shadows">
+<div class="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#00342b] dark:text-[#afefdd]" data-icon="location_on">location_on</span>
+<div class="flex flex-col">
+<span class="text-xl font-extrabold text-[#00342b] dark:text-[#afefdd] tracking-tighter">FootLink</span>
+</div>
+</div>
+<!-- Contextual Selectors -->
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-semibold text-sm hover:bg-[#d4e5ef] transition-colors">
+                    성수동
+                    <span class="material-symbols-outlined text-sm" data-icon="expand_more">expand_more</span>
+</button>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant font-semibold text-sm hover:bg-[#d4e5ef] transition-colors">
+                    1명
+                    <span class="material-symbols-outlined text-sm" data-icon="expand_more">expand_more</span>
+</button>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary-fixed">
+<img class="w-full h-full object-cover" data-alt="professional headshot of a young male athlete with a friendly smile, clean lighting, blurred outdoor park background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpKpNuCpTeWN3bLJjR94OGYa9JoIZdkydUaD5hAs7MjFe7Y6_J1iaYUaUbVtTRDgzxLwtvPBrcFllOGbD3RAROfYrdEO2LCQ9DtGBY7XVE3xYLcrKgC9xUVARpH72BGDaWbKDRxkA8NuSvpnmu-fuk9q1_TJidzFiR1dJbBrOLbBrbu0hSFZFxyOC9CVQjikEx8Ry2P2XgO4b_R8MTRomvBMW-uihiSA_avAlxXZ3Z8qxWMTPpGEgrBLamlySKv6eeRSOspQo"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-7xl mx-auto px-6 pt-8 space-y-12">
+<!-- Section: 지금 바로 (Urgent) -->
+<section class="space-y-6">
+<div class="flex items-center justify-between">
+<h2 class="text-2xl font-extrabold tracking-tight text-on-surface">지금 바로</h2>
+<span class="text-sm font-semibold text-primary px-3 py-1 bg-primary-fixed rounded-full">실시간 매칭</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Urgent Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_24px_rgba(13,30,37,0.04)] relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<span class="px-3 py-1 rounded-lg bg-error-container text-error text-xs font-bold uppercase tracking-wider">지금 2명 부족</span>
+<div class="text-right">
+<p class="font-headline font-bold text-xl text-on-surface">20:30 시작</p>
+<p class="text-on-surface-variant text-sm font-medium">8,000원</p>
+</div>
+</div>
+<div class="mb-6">
+<h3 class="font-headline font-bold text-lg text-primary mb-1">성수 풋살 파크 A코트</h3>
+<div class="flex items-center text-on-surface-variant text-sm gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="near_me">near_me</span>
+                            성수동 · 도보 9분
+                        </div>
+</div>
+<div class="flex gap-3 mt-auto">
+<button class="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold py-3 px-4 rounded-lg transition-transform active:scale-95 duration-150">참가 요청</button>
+<button class="px-4 py-3 rounded-lg bg-secondary-container text-on-secondary-container font-bold transition-colors hover:bg-surface-variant">상세</button>
+</div>
+</div>
+<!-- Urgent Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_4px_24px_rgba(13,30,37,0.04)] relative overflow-hidden group">
+<div class="flex justify-between items-start mb-4">
+<span class="px-3 py-1 rounded-lg bg-error-container text-error text-xs font-bold uppercase tracking-wider">지금 1명 부족</span>
+<div class="text-right">
+<p class="font-headline font-bold text-xl text-on-surface">20:45 시작</p>
+<p class="text-on-surface-variant text-sm font-medium">10,000원</p>
+</div>
+</div>
+<div class="mb-6">
+<h3 class="font-headline font-bold text-lg text-primary mb-1">건대 챔피언스 필드</h3>
+<div class="flex items-center text-on-surface-variant text-sm gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="near_me">near_me</span>
+                            화양동 · 도보 15분
+                        </div>
+</div>
+<div class="flex gap-3 mt-auto">
+<button class="flex-1 bg-gradient-to-br from-primary to-primary-container text-on-primary font-bold py-3 px-4 rounded-lg transition-transform active:scale-95 duration-150">참가 요청</button>
+<button class="px-4 py-3 rounded-lg bg-secondary-container text-on-secondary-container font-bold transition-colors hover:bg-surface-variant">상세</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: 곧 시작 (Upcoming) -->
+<section class="space-y-6">
+<h2 class="text-2xl font-extrabold tracking-tight text-on-surface">곧 시작</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Upcoming Card 1 -->
+<div class="bg-surface-container-low rounded-xl p-6 shadow-sm border border-outline-variant/10 group">
+<div class="flex justify-between items-start mb-4">
+<span class="px-3 py-1 rounded-lg bg-tertiary-container text-on-tertiary-container text-xs font-bold uppercase tracking-wider">45분 뒤 시작</span>
+<div class="text-right">
+<p class="font-headline font-bold text-xl text-on-surface">21:15 시작</p>
+<p class="text-on-surface-variant text-sm font-medium">9,000원</p>
+</div>
+</div>
+<div class="mb-6">
+<h3 class="font-headline font-bold text-lg text-on-surface mb-1">뚝섬 한강 유원지 B</h3>
+<div class="flex items-center text-on-surface-variant text-sm gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="near_me">near_me</span>
+                            자양동 · 버스 12분
+                        </div>
+</div>
+<div class="flex gap-3 mt-auto">
+<button class="flex-1 bg-primary text-on-primary font-bold py-3 px-4 rounded-lg transition-transform active:scale-95 duration-150">참가 요청</button>
+<button class="px-4 py-3 rounded-lg bg-surface-container-highest text-on-surface-variant font-bold transition-colors hover:bg-surface-variant">상세</button>
+</div>
+</div>
+<!-- Empty State (Demonstrated as a card placeholder) -->
+<div class="bg-surface-container-low rounded-xl p-8 flex flex-col items-center justify-center text-center border-2 border-dashed border-outline-variant/30 group">
+<div class="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-3xl text-outline" data-icon="sports_soccer">sports_soccer</span>
+</div>
+<p class="text-on-surface-variant font-medium mb-4">근처에 바로 들어갈 수 있는<br/>경기가 없어요.</p>
+<button class="flex items-center gap-2 text-primary font-bold hover:underline transition-all">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                        지금 한겜 만들기
+                    </button>
+</div>
+</div>
+</section>
+<!-- Aesthetic Bento Grid for Promotions -->
+<section class="grid grid-cols-1 md:grid-cols-4 gap-6 pb-12">
+<div class="md:col-span-2 bg-inverse-surface rounded-xl p-8 flex flex-col justify-between overflow-hidden relative min-h-[200px]">
+<div class="z-10">
+<h3 class="text-white font-headline font-extrabold text-2xl leading-tight mb-2">오늘의 MVP는<br/>누구일까요?</h3>
+<p class="text-primary-fixed text-sm font-medium">평점 4.8 이상 유저 전용 매치</p>
+</div>
+<div class="absolute -right-4 -bottom-4 opacity-20 transform rotate-12">
+<span class="material-symbols-outlined text-[120px] text-white" data-icon="workspace_premium" data-weight="fill" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
+</div>
+</div>
+<div class="md:col-span-2 bg-primary-container rounded-xl p-8 flex flex-col justify-between min-h-[200px]">
+<h3 class="text-white font-headline font-extrabold text-2xl">새 코트 발견</h3>
+<div class="flex items-center gap-4">
+<div class="flex-1 h-2 bg-white/20 rounded-full overflow-hidden">
+<div class="h-full bg-primary-fixed w-[70%]"></div>
+</div>
+<span class="text-primary-fixed font-bold text-sm">70% 모집됨</span>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB: Integrated into layout but technically floating for mobile -->
+<button class="fixed right-6 bottom-28 md:bottom-12 z-40 bg-gradient-to-br from-[#00342b] to-[#004d40] text-white px-6 py-4 rounded-full shadow-xl flex items-center gap-2 font-bold transform active:scale-95 transition-all md:hidden">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+        지금 한겜 만들기
+    </button>
+<!-- BottomNavBar (The Anchor) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center py-3 bg-transparent z-50 px-4 pb-safe glass-nav bg-[#d4e5ef]/70 dark:bg-[#23333a]/70 rounded-t-[2rem] shadow-[0_-4px_24px_rgba(13,30,37,0.06)]">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#00342b] to-[#004d40] text-white rounded-2xl px-6 py-2 scale-110 shadow-lg transition-all duration-200 ease-out active:translate-y-[-2px]" href="#">
+<span class="material-symbols-outlined" data-icon="home" data-weight="fill" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">Home</span>
+</a>
+<!-- Create -->
+<a class="flex flex-col items-center justify-center text-[#3f4945] dark:text-[#bfc9c4] px-4 py-2 hover:text-[#00342b] dark:hover:text-[#afefdd] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">Create</span>
+</a>
+<!-- Activity -->
+<a class="flex flex-col items-center justify-center text-[#3f4945] dark:text-[#bfc9c4] px-4 py-2 hover:text-[#00342b] dark:hover:text-[#afefdd] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">Activity</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-[#3f4945] dark:text-[#bfc9c4] px-4 py-2 hover:text-[#00342b] dark:hover:text-[#afefdd] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-semibold uppercase tracking-wider mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

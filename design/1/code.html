@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FootLink - Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed-dim": "#ffb692",
+              "background": "#f4faff",
+              "on-surface-variant": "#3f4945",
+              "on-primary": "#ffffff",
+              "outline": "#707975",
+              "primary": "#00342b",
+              "surface-variant": "#d4e5ef",
+              "inverse-on-surface": "#e2f3fd",
+              "on-tertiary-fixed-variant": "#7a3000",
+              "on-tertiary": "#ffffff",
+              "tertiary": "#511e00",
+              "on-tertiary-fixed": "#341100",
+              "on-error-container": "#93000a",
+              "surface-tint": "#29695b",
+              "on-primary-fixed-variant": "#065043",
+              "error": "#ba1a1a",
+              "inverse-surface": "#23333a",
+              "on-error": "#ffffff",
+              "primary-fixed": "#afefdd",
+              "on-surface": "#0d1e25",
+              "surface-container": "#dff1fb",
+              "surface-container-high": "#d9ebf5",
+              "on-secondary-container": "#5a666d",
+              "on-secondary-fixed": "#111d23",
+              "surface": "#f4faff",
+              "on-secondary": "#ffffff",
+              "on-primary-container": "#7ebdac",
+              "on-primary-fixed": "#00201a",
+              "error-container": "#ffdad6",
+              "tertiary-container": "#742e00",
+              "primary-fixed-dim": "#94d3c1",
+              "on-background": "#0d1e25",
+              "surface-dim": "#cbdde7",
+              "on-secondary-fixed-variant": "#3c494f",
+              "surface-container-highest": "#d4e5ef",
+              "secondary-fixed": "#d7e4ec",
+              "secondary": "#546067",
+              "secondary-fixed-dim": "#bbc8d0",
+              "surface-container-low": "#e7f6ff",
+              "primary-container": "#004d40",
+              "inverse-primary": "#94d3c1",
+              "outline-variant": "#bfc9c4",
+              "tertiary-fixed": "#ffdbcb",
+              "secondary-container": "#d7e4ec",
+              "surface-bright": "#f4faff",
+              "on-tertiary-container": "#ff955e",
+              "surface-container-lowest": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(212, 229, 239, 0.7);
+        backdrop-filter: blur(20px);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen flex flex-col">
+<header class="docked full-width top-0 z-50 bg-[#f4faff] flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#00342b] cursor-pointer" data-icon="arrow_back">arrow_back</span>
+</div>
+<h1 class="font-['Manrope'] font-bold tracking-tight text-[#0d1e25] text-xl">FootLink</h1>
+<div class="w-10"></div>
+</header>
+<main class="flex-grow flex flex-col px-6 pt-8 pb-24 max-w-2xl mx-auto w-full">
+<div class="mb-10">
+<div class="flex items-center gap-2 mb-2">
+<span class="h-1 w-12 bg-primary rounded-full"></span>
+<span class="h-1 w-12 bg-surface-container-highest rounded-full"></span>
+<span class="h-1 w-12 bg-surface-container-highest rounded-full"></span>
+</div>
+<h2 class="font-headline text-3xl font-extrabold tracking-tight text-on-background leading-tight">몇 명이서 뛸까요?</h2>
+<p class="text-on-surface-variant mt-2 font-medium">참가 유형을 선택하면 딱 맞는 매치를 찾아드릴게요.</p>
+</div>
+<div class="grid grid-cols-1 gap-4">
+<button class="group relative overflow-hidden bg-surface-container-lowest p-6 rounded-xl text-left transition-all duration-300 hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex-1">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl" data-icon="person">person</span>
+<h3 class="font-headline text-xl font-bold text-on-background mb-1">나 혼자 (용병/개인참가)</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">팀에서 1명이 부족할 때 용병으로 참여합니다.</p>
+</div>
+<div class="h-6 w-6 rounded-full border-2 border-outline-variant group-focus:border-primary group-focus:bg-primary flex items-center justify-center transition-colors">
+<div class="h-2 w-2 rounded-full bg-white opacity-0 group-focus:opacity-100"></div>
+</div>
+</div>
+</button>
+<div class="relative">
+<button class="w-full group relative overflow-hidden bg-primary-container p-6 rounded-xl text-left transition-all duration-300 ring-2 ring-primary focus:outline-none shadow-md">
+<div class="flex items-start justify-between">
+<div class="flex-1">
+<span class="material-symbols-outlined text-primary-fixed mb-4 text-3xl" data-icon="group">group</span>
+<h3 class="font-headline text-xl font-bold text-white mb-1">친구랑 같이 (2~4명)</h3>
+<p class="text-primary-fixed/80 text-sm leading-relaxed">Join with Friends. We'll find a match for your group.</p>
+</div>
+<div class="h-6 w-6 rounded-full border-2 border-primary-fixed bg-primary-fixed flex items-center justify-center">
+<div class="h-2 w-2 rounded-full bg-primary"></div>
+</div>
+</div>
+<div class="mt-8 flex items-center justify-between bg-white/10 rounded-xl p-4 backdrop-blur-md">
+<span class="text-white font-bold text-sm tracking-wide uppercase">상세 인원 선택</span>
+<div class="flex items-center gap-6">
+</div></div></button><button class="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+<span class="material-symbols-outlined text-white text-sm" data-icon="remove">remove</span>
+</button>
+<span class="text-2xl font-headline font-extrabold text-white w-4 text-center">3</span>
+<button class="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+<span class="material-symbols-outlined text-white text-sm" data-icon="add">add</span>
+</button>
+</div>
+</div>
+<div class="absolute -right-2 -top-2 bg-tertiary text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-tighter transform rotate-3 shadow-lg">
+                    Popular
+                </div>
+<button class="group relative overflow-hidden bg-surface-container-lowest p-6 rounded-xl text-left transition-all duration-300 hover:ring-2 hover:ring-primary focus:outline-none focus:ring-2 focus:ring-primary shadow-sm">
+<div class="flex items-start justify-between">
+<div class="flex-1">
+<span class="material-symbols-outlined text-primary mb-4 text-3xl" data-icon="sports_soccer">sports_soccer</span>
+<h3 class="font-headline text-xl font-bold text-on-background mb-1">우리 팀 전체 (팀 매치)</h3>
+<p class="text-on-surface-variant text-sm leading-relaxed">상대 팀을 찾아서 전체 경기를 진행합니다.</p>
+</div>
+<div class="h-6 w-6 rounded-full border-2 border-outline-variant group-focus:border-primary group-focus:bg-primary flex items-center justify-center transition-colors">
+<div class="h-2 w-2 rounded-full bg-white opacity-0 group-focus:opacity-100"></div>
+</div>
+</div>
+</button>
+<div class="mt-12 rounded-2xl overflow-hidden relative h-48 group">
+<img alt="Futsal Action" class="w-full h-full object-cover grayscale opacity-40 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700" data-alt="dramatic wide shot of a high-end indoor futsal court with professional lighting and motion blur of players in action" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlNuichiRu10xeEQIrajeCUdrXnRg72xfSXteF72G7u_p1L7cJuOJiyN5Ompx5VPQLgZatWD37LSFpKwq4bQJI1srnGuIgZ8UH0eDendJccPoLsmOKvYqqT__eyB-6KVhL2Okjm25su4WLCugYeVibk4xkFRZ2efZqJ6Ehq8hAtXe6jEz377E8A7Kg9mvDqAYHyCl99JmzO-UkC04vA5HK7cfsICkpsYt5Rc6Yf69aK_yNbXnB8oAXwoSZ4-6wuZg3UmtJUQw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex items-end p-6">
+<p class="text-white text-sm font-semibold italic">"코트가 기다리고 있습니다. 지금 바로 시작하세요."</p>
+</div>
+</div>
+</main>
+<div class="fixed bottom-0 left-0 w-full p-6 z-50">
+<div class="max-w-2xl mx-auto flex gap-4">
+<button class="flex-1 bg-secondary-container text-primary font-bold py-4 rounded-xl transition-all active:scale-95">건너뛰기</button>
+<button class="flex-[2] bg-primary text-white font-bold py-4 rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all active:scale-95">다음으로 <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span></button>
+</div>
+</div>
+</body></html>

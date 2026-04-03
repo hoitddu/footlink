@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FootLink - Location Permission</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed-dim": "#ffb692",
+              "background": "#f4faff",
+              "on-surface-variant": "#3f4945",
+              "on-primary": "#ffffff",
+              "outline": "#707975",
+              "primary": "#00342b",
+              "surface-variant": "#d4e5ef",
+              "inverse-on-surface": "#e2f3fd",
+              "on-tertiary-fixed-variant": "#7a3000",
+              "on-tertiary": "#ffffff",
+              "tertiary": "#511e00",
+              "on-tertiary-fixed": "#341100",
+              "on-error-container": "#93000a",
+              "surface-tint": "#29695b",
+              "on-primary-fixed-variant": "#065043",
+              "error": "#ba1a1a",
+              "inverse-surface": "#23333a",
+              "on-error": "#ffffff",
+              "primary-fixed": "#afefdd",
+              "on-surface": "#0d1e25",
+              "surface-container": "#dff1fb",
+              "surface-container-high": "#d9ebf5",
+              "on-secondary-container": "#5a666d",
+              "on-secondary-fixed": "#111d23",
+              "surface": "#f4faff",
+              "on-secondary": "#ffffff",
+              "on-primary-container": "#7ebdac",
+              "on-primary-fixed": "#00201a",
+              "error-container": "#ffdad6",
+              "tertiary-container": "#742e00",
+              "primary-fixed-dim": "#94d3c1",
+              "on-background": "#0d1e25",
+              "surface-dim": "#cbdde7",
+              "on-secondary-fixed-variant": "#3c494f",
+              "surface-container-highest": "#d4e5ef",
+              "secondary-fixed": "#d7e4ec",
+              "secondary": "#546067",
+              "secondary-fixed-dim": "#bbc8d0",
+              "surface-container-low": "#e7f6ff",
+              "primary-container": "#004d40",
+              "inverse-primary": "#94d3c1",
+              "outline-variant": "#bfc9c4",
+              "tertiary-fixed": "#ffdbcb",
+              "secondary-container": "#d7e4ec",
+              "surface-bright": "#f4faff",
+              "on-tertiary-container": "#ff955e",
+              "surface-container-lowest": "#ffffff"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-effect {
+        background: rgba(212, 229, 239, 0.7);
+        backdrop-filter: blur(20px);
+      }
+      .bg-primary-gradient {
+        background: linear-gradient(135deg, #00342b 0%, #004d40 100%);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col">
+<!-- Top Navigation Suppression: Not rendered for Transactional/Onboarding Flow -->
+<header class="flex items-center justify-between px-6 h-16 w-full bg-surface dark:bg-on-background sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<button class="p-2 -ml-2 hover:bg-surface-container-low rounded-full transition-colors active:scale-95">
+<span class="material-symbols-outlined text-on-surface" data-icon="arrow_back">arrow_back</span>
+</button>
+</div>
+<div class="font-headline font-extrabold text-primary tracking-tighter text-xl">FootLink</div>
+<div class="w-10"></div> <!-- Spacer for balance -->
+</header>
+<main class="flex-grow flex flex-col items-center justify-center px-6 max-w-md mx-auto w-full pb-24">
+<!-- Illustration / Icon Section -->
+<div class="relative w-full aspect-square max-w-[280px] mb-12 flex items-center justify-center">
+<!-- Asymmetric Background Elements for Kinetic Look -->
+<div class="absolute inset-0 bg-surface-container-high rounded-[3rem] rotate-6 scale-90 opacity-50"></div>
+<div class="absolute inset-0 bg-primary-fixed rounded-[2.5rem] -rotate-3 opacity-30"></div>
+<div class="relative z-10 bg-surface-container-lowest shadow-sm rounded-xl p-8 flex flex-col items-center justify-center">
+<div class="w-20 h-20 bg-primary-container rounded-full flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-primary-fixed text-5xl" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<!-- Mini Map Representation -->
+<div class="w-full h-24 rounded-lg overflow-hidden relative">
+<img alt="Simplified map view of Seoul city grid with clean modern aesthetics" class="w-full h-full object-cover grayscale opacity-40" data-alt="abstract stylized top-down map of a city with clean teal and white streets and a soft glowing location pin" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqeD_2b1QjkimhXqI1wzxZtKGSKAq2JLLVVx2N0eGGTTpTgxGBuw5UqSsFKLKTk8MNawXnOWXopb9qjTYa4_AoP-jL-OQLMcz9aeY8-_neOBV0sFs9w4c9LT-jSOBKjUHmU841BD1QBtncf9TpNFn-YAF094Vj7YexgfWzejYuQs1T7XpD_WbJIartPOtZYlziiCXu1oTmgjWwYkcHWzoQ94-3KEXogxj0BKoffn5iFScMRzTMKdCeN2Gi_DVLUcFl8ffCfEI"/>
+<div class="absolute inset-0 bg-primary/10"></div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+<div class="w-4 h-4 bg-error rounded-full animate-pulse ring-4 ring-error/20"></div>
+</div>
+</div>
+</div>
+<!-- Overlapping Kinetic Detail -->
+<div class="absolute -bottom-4 -right-2 bg-inverse-surface text-inverse-on-surface px-4 py-2 rounded-lg font-label text-xs font-semibold shadow-lg">서울시 성북구</div>
+</div>
+<!-- Content Section -->
+<div class="text-center mb-12 space-y-4">
+<h1 class="font-headline text-3xl font-bold text-on-background tracking-tight leading-tight">근처의 매치를 찾아볼까요?</h1>
+<p class="text-on-surface-variant font-body leading-relaxed max-w-[280px] mx-auto">위치 권한을 허용하면 서울/경기 지역의 가장 가까운 매치를 바로 보여드려요.</p>
+</div>
+<!-- Progress Indicator -->
+<div class="flex gap-2 mb-8">
+<div class="h-1 w-6 bg-surface-container-highest rounded-full"></div>
+<div class="h-1 w-6 bg-surface-container-highest rounded-full"></div>
+<div class="h-1 w-12 bg-primary rounded-full"></div>
+<div class="h-1 w-6 bg-surface-container-highest rounded-full"></div>
+</div>
+</main>
+<!-- Bottom Action Area (Glassmorphism) -->
+<footer class="fixed bottom-0 left-0 w-full glass-effect px-6 pt-6 pb-10 flex flex-col gap-3 rounded-t-[2.5rem] z-50">
+<button class="w-full bg-primary-gradient text-on-primary py-4 px-6 rounded-lg font-headline font-bold text-lg shadow-xl shadow-primary/10 active:scale-[0.98] transition-all">현재 위치 허용하기</button>
+<button class="w-full bg-secondary-container text-on-secondary-container py-4 px-6 rounded-lg font-label font-bold text-base active:scale-[0.98] transition-all">지역 직접 선택하기</button>
+<p class="text-center text-[10px] text-on-surface-variant/60 font-medium px-8 mt-2">현재 위치 정보는 주변 코트 및 매치 추천을 위해서만 사용되며, 설정에서 언제든 변경할 수 있습니다.</p>
+</footer>
+<!-- Bottom Navigation Bar: Suppressed as per UX Goal for focused onboarding journey -->
+</body></html>

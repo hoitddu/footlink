@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+
+<html lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&amp;family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container": "#eceeed",
+              "tertiary-fixed": "#94f990",
+              "on-secondary-fixed-variant": "#3a4a49",
+              "on-tertiary-fixed-variant": "#005313",
+              "surface-container-highest": "#e1e3e2",
+              "outline-variant": "#c3c8c1",
+              "secondary-container": "#d4e6e5",
+              "surface-container-lowest": "#ffffff",
+              "on-tertiary-container": "#43a649",
+              "primary-fixed": "#d0e9d4",
+              "error": "#ba1a1a",
+              "on-primary-fixed-variant": "#364c3c",
+              "surface-bright": "#f8faf9",
+              "surface-container-low": "#f2f4f3",
+              "primary": "#061b0e",
+              "primary-fixed-dim": "#b4cdb8",
+              "on-tertiary-fixed": "#002204",
+              "on-primary-fixed": "#0b2013",
+              "on-background": "#191c1c",
+              "on-primary": "#ffffff",
+              "primary-container": "#1b3022",
+              "surface-dim": "#d8dada",
+              "on-secondary-container": "#576867",
+              "on-tertiary": "#ffffff",
+              "on-secondary": "#ffffff",
+              "tertiary-fixed-dim": "#78dc77",
+              "surface-variant": "#e1e3e2",
+              "on-primary-container": "#819986",
+              "on-surface-variant": "#434843",
+              "secondary-fixed-dim": "#b8cac9",
+              "on-error": "#ffffff",
+              "on-secondary-fixed": "#0e1e1e",
+              "tertiary-container": "#003408",
+              "outline": "#737973",
+              "inverse-primary": "#b4cdb8",
+              "surface-tint": "#4d6453",
+              "error-container": "#ffdad6",
+              "on-error-container": "#93000a",
+              "secondary-fixed": "#d4e6e5",
+              "surface": "#f8faf9",
+              "tertiary": "#001d03",
+              "on-surface": "#191c1c",
+              "secondary": "#516161",
+              "surface-container-high": "#e6e9e8",
+              "background": "#f8faf9",
+              "inverse-on-surface": "#eff1f0",
+              "inverse-surface": "#2e3131"
+            },
+            fontFamily: {
+              "headline": ["Space Grotesk"],
+              "body": ["Manrope"],
+              "label": ["Manrope"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+        }
+        .kinetic-gradient {
+            background: linear-gradient(135deg, #061b0e 0%, #1b3022 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body text-on-surface antialiased overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation (Shell Implementation) -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 bg-transparent backdrop-blur-xl">
+<button class="flex items-center justify-center p-2 rounded-full hover:bg-emerald-100/20 transition-all duration-300 active:scale-95 text-emerald-950">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="font-headline font-bold tracking-tight text-emerald-950">
+            PITCH VELOCITY
+        </div>
+<div class="w-10"></div> <!-- Spacing balance -->
+</header>
+<!-- Main Content Canvas -->
+<main class="relative flex-grow flex flex-col items-center justify-center px-8 pt-24 pb-40">
+<!-- Abstract Soccer Field Background -->
+<div class="absolute inset-0 -z-10">
+<img alt="abstract soccer field" class="w-full h-full object-cover opacity-10 grayscale" data-alt="dramatic wide angle shot of a professional green futsal court with sharp white boundary lines under bright stadium lights and subtle mist" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgFz2lxE4Lz7yck86RYpm_mLKCPPRhTLIWJxH5vCfymKo6MAmnNPNHgfjvNhYt8VqjV-fW6KnFKqf2fBQZpY95UotOKS1EW0nOn0H095wM368y-VfevKAUYBrMkjQqQ3cgVi0BF9jONwaYzKtCEYyxsc1DC1kGzFDBjryOUtJO5CN1kVmJmtd8wtZn7vd-wUV8aTwLy_sxXSy6Zb-70nU8yr2z4p7E09GlmTfxfXuJDzoqjAqg6D4EaUGjnCIPSWECUIAm3v_58-U"/>
+<div class="absolute inset-0 bg-gradient-to-b from-surface via-transparent to-surface-container"></div>
+</div>
+<!-- Headline Area -->
+<div class="text-center mb-16">
+<h1 class="font-headline text-4xl font-black text-primary tracking-tighter mb-4">
+                몇 명이 참여하나요?
+            </h1>
+</div>
+<!-- Central Counter Selection -->
+<div class="relative flex items-center justify-center w-full max-w-sm mb-16 px-4">
+<!-- Background Circle for alignment -->
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-2 border-primary/5 rounded-full -z-10"></div>
+<div class="flex items-center justify-between w-full">
+<button class="w-16 h-16 rounded-full border border-outline-variant/30 flex items-center justify-center text-primary hover:bg-surface-container-high transition-all duration-200 active:scale-90">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'wght' 600;">remove</span>
+</button>
+<div class="flex flex-col items-center">
+<span class="font-headline text-9xl font-black text-primary leading-none tracking-tighter">1</span>
+<span class="font-headline text-xl font-bold text-tertiary-fixed-variant mt-2">PLAYER</span>
+</div>
+<button class="w-16 h-16 rounded-full kinetic-gradient flex items-center justify-center text-on-primary shadow-xl shadow-primary/10 hover:scale-105 transition-all duration-200 active:scale-90">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+</div>
+</div>
+<!-- Quick Selection Pills -->
+<div class="w-full max-w-md">
+<div class="grid grid-cols-5 gap-3">
+<button class="rounded-full py-3 text-sm font-bold bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors">2명</button>
+<button class="rounded-full py-3 text-sm font-bold bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors">3명</button>
+<button class="rounded-full py-3 text-sm font-bold bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors">4명</button>
+<button class="rounded-full py-3 text-sm font-bold bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors">5명</button>
+<button class="rounded-full py-3 text-sm font-bold bg-surface-container-high text-on-surface-variant hover:bg-secondary-container transition-colors">6명</button>
+</div>
+</div>
+</main>
+<!-- Footer Action Area -->
+<footer class="fixed bottom-0 left-0 w-full z-50 glass-panel px-8 pb-10 pt-6 rounded-t-[2.5rem] shadow-[0_-8px_40px_rgba(0,0,0,0.05)]">
+<div class="max-w-md mx-auto flex flex-col items-center">
+<!-- Secondary Action -->
+<a class="mb-6 text-sm font-bold text-on-tertiary-fixed-variant border-b-2 border-tertiary-fixed/30 pb-0.5 hover:text-primary transition-colors" href="#">
+                직접 매치 만들기
+            </a>
+<!-- Primary Action Button -->
+<button class="w-full kinetic-gradient text-on-primary py-5 rounded-xl font-headline font-bold text-lg tracking-tight shadow-xl shadow-primary/20 flex items-center justify-center gap-2 group hover:scale-[1.02] transition-transform duration-300 active:scale-95">NEXT <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span></button>
+</div>
+</footer>
+<!-- Visual Accents (Kinetic Arena Elements) -->
+<div class="fixed top-1/4 -right-12 w-64 h-64 bg-tertiary-fixed/10 blur-[100px] rounded-full -z-20"></div>
+<div class="fixed bottom-1/4 -left-12 w-48 h-48 bg-primary/5 blur-[80px] rounded-full -z-20"></div>
+<!-- Navigation Shell Support (BottomNavBar Hidden as per Focus Journey Rule) -->
+<!-- Suppressing BottomNavBar to prioritize focus on current selection task -->
+</body></html>

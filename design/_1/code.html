@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html class="light" lang="ko"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FootLink - Match Details</title>
+<!-- Google Fonts: Manrope & Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Plus_Jakarta_Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-container-high": "#d9ebf5",
+              "secondary-fixed-dim": "#bbc8d0",
+              "surface-container-lowest": "#ffffff",
+              "tertiary-fixed": "#ffdbcb",
+              "surface-bright": "#f4faff",
+              "on-tertiary": "#ffffff",
+              "secondary-container": "#d7e4ec",
+              "on-primary-container": "#7ebdac",
+              "surface-container-low": "#e7f6ff",
+              "on-secondary": "#ffffff",
+              "background": "#f4faff",
+              "on-error": "#ffffff",
+              "on-secondary-container": "#5a666d",
+              "tertiary": "#511e00",
+              "on-primary": "#ffffff",
+              "primary": "#00342b",
+              "surface-container": "#dff1fb",
+              "inverse-primary": "#94d3c1",
+              "primary-fixed": "#afefdd",
+              "primary-container": "#004d40",
+              "surface-tint": "#29695b",
+              "outline-variant": "#bfc9c4",
+              "error-container": "#ffdad6",
+              "on-secondary-fixed-variant": "#3c494f",
+              "on-primary-fixed-variant": "#065043",
+              "on-surface-variant": "#3f4945",
+              "surface-variant": "#d4e5ef",
+              "on-secondary-fixed": "#111d23",
+              "on-tertiary-fixed": "#341100",
+              "tertiary-container": "#742e00",
+              "on-surface": "#0d1e25",
+              "on-tertiary-container": "#ff955e",
+              "outline": "#707975",
+              "inverse-on-surface": "#e2f3fd",
+              "primary-fixed-dim": "#94d3c1",
+              "surface-dim": "#cbdde7",
+              "on-error-container": "#93000a",
+              "secondary": "#546067",
+              "surface": "#f4faff",
+              "on-primary-fixed": "#00201a",
+              "error": "#ba1a1a",
+              "secondary-fixed": "#d7e4ec",
+              "on-tertiary-fixed-variant": "#7a3000",
+              "on-background": "#0d1e25",
+              "surface-container-highest": "#d4e5ef",
+              "tertiary-fixed-dim": "#ffb692",
+              "inverse-surface": "#23333a"
+            },
+            fontFamily: {
+              "headline": ["Manrope"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased">
+<!-- TopAppBar (Shared Component) -->
+<!-- Suppression Logic: Rendered because this is a primary detail view, but specifically styled for the Back action -->
+<nav class="bg-[#f4faff] dark:bg-[#0d1e25] docked full-width top-0 z-50 sticky no-border bg-[#e7f6ff] dark:bg-[#23333a] flat no shadows">
+<div class="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
+<div class="flex items-center gap-4">
+<button class="p-2 -ml-2 hover:bg-[#d4e5ef] dark:hover:bg-[#3f4945] transition-colors rounded-full active:scale-95 duration-150">
+<span class="material-symbols-outlined text-[#00342b] dark:text-[#afefdd]">arrow_back</span>
+</button>
+<h1 class="font-['Manrope'] font-bold tracking-tight text-[#0d1e25] dark:text-[#f4faff] text-lg">경기 상세</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-[#d4e5ef] dark:hover:bg-[#3f4945] transition-colors rounded-full active:scale-95 duration-150">
+<span class="material-symbols-outlined text-[#3f4945] dark:text-[#bfc9c4]">share</span>
+</button>
+<img alt="User Profile" class="w-8 h-8 rounded-full border-2 border-surface-container-high" data-alt="close up professional portrait of a athletic man in sportswear smiling against a blurred outdoor background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAyY-l-HWvy5UTM8ORhMI3Ha62Dc-XhIECoM35G5zwD0W8Rq252HDTSnSMHwmK_bJgq4cDlAn7n0mcjb84e0l36m1w-Qk4mS4wqg2NyDC0sfQyd00QX4mhH3sLDu86Vd9vav4oCGmA_0CCwgv-loTZqDHROV_b_utEUZTI0snn7CQHDkD1kESS92q9oBTn0HtX85WaVbQv4hn_mtwM1Qq2eEEtm2AyeRi3Tjxktp7xPIrJ12hZ1WTjFfDF3KG0RU9gRb5hzAc"/>
+</div>
+</div>
+</nav>
+<main class="max-w-3xl mx-auto px-4 pt-4 pb-32">
+<!-- Hero Section: Kinetic Design -->
+<section class="relative rounded-3xl overflow-hidden mb-8 shadow-sm">
+<div class="aspect-[16/9] w-full relative">
+<img alt="Futsal Court" class="w-full h-full object-cover" data-alt="dramatic wide angle shot of a professional indoor futsal court with bright overhead lighting and sharp architectural lines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAenEpjex5IHq6cjzg-W--lWMqCJi_m2NvWQjtJx-uzXtlHnWI-NMEM8yJYIcww3CCKGi2NmdFjyTMhrKpPNMuVogbizcbusc0ZG5wiJnwtiiQVE13jw3zZpVnfiHx6-SaF2YF8JiIcgknubFwP3A1A8Ip4tu2mUTI_KtBDn1NEOCKZ6EJ8Kyc8mNG0vbBiBEBC3y7dTOEkO6Dwz3myYel7e_AmTXYoW150oB_4RPebhnpUfGVhJKm0TxfICwHGXTBJHUpwI5Y"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<span class="inline-flex items-center px-3 py-1 bg-error text-white text-xs font-bold rounded-full mb-3 tracking-wide">
+                        지금 2명 부족
+                    </span>
+<h2 class="font-headline text-3xl font-extrabold text-white tracking-tight leading-tight">
+                        성수 XYZ 풋살장
+                    </h2>
+</div>
+</div>
+</section>
+<!-- Bento Grid Info Section -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+<!-- Time -->
+<div class="col-span-2 bg-surface-container-lowest p-5 rounded-2xl flex flex-col justify-between hover:bg-surface-container-low transition-all border border-outline-variant/15">
+<div class="flex items-center gap-2 text-primary font-bold mb-2">
+<span class="material-symbols-outlined text-xl">schedule</span>
+<span class="font-label text-sm uppercase tracking-wider">Time</span>
+</div>
+<div>
+<p class="font-headline text-xl font-bold text-on-surface">오늘 20:30</p>
+<p class="font-body text-on-surface-variant text-sm">22:00 종료 (90분)</p>
+</div>
+</div>
+<!-- Location -->
+<div class="col-span-2 bg-surface-container-lowest p-5 rounded-2xl flex flex-col justify-between border border-outline-variant/15">
+<div class="flex items-center gap-2 text-primary font-bold mb-2">
+<span class="material-symbols-outlined text-xl">location_on</span>
+<span class="font-label text-sm uppercase tracking-wider">Location</span>
+</div>
+<div>
+<p class="font-headline text-lg font-bold text-on-surface truncate">성수역 3번 출구</p>
+<p class="font-body text-on-surface-variant text-sm">도보 9분 거리</p>
+</div>
+</div>
+<!-- Fee -->
+<div class="bg-surface-container-low p-5 rounded-2xl border border-outline-variant/15">
+<span class="material-symbols-outlined text-primary-container mb-2">payments</span>
+<p class="font-label text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Fee</p>
+<p class="font-headline text-lg font-bold text-primary">8,000원</p>
+</div>
+<!-- Level -->
+<div class="bg-surface-container-low p-5 rounded-2xl border border-outline-variant/15">
+<span class="material-symbols-outlined text-primary-container mb-2">military_tech</span>
+<p class="font-label text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Level</p>
+<p class="font-headline text-lg font-bold text-primary">중급</p>
+</div>
+<!-- Mode -->
+<div class="bg-surface-container-low p-5 rounded-2xl border border-outline-variant/15">
+<span class="material-symbols-outlined text-primary-container mb-2">person_pin</span>
+<p class="font-label text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Mode</p>
+<p class="font-headline text-lg font-bold text-primary">Mercenary</p>
+</div>
+<!-- Format -->
+<div class="bg-surface-container-low p-5 rounded-2xl border border-outline-variant/15">
+<span class="material-symbols-outlined text-primary-container mb-2">groups</span>
+<p class="font-label text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Format</p>
+<p class="font-headline text-lg font-bold text-primary">6 vs 6</p>
+</div>
+</section>
+<!-- Memo Section (Tonal Layering) -->
+<section class="bg-inverse-surface text-white p-8 rounded-3xl mb-10 relative overflow-hidden">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary-fixed">sticky_note_2</span>
+<h3 class="font-headline text-xl font-bold">메모</h3>
+</div>
+<p class="font-body text-surface-variant/90 leading-relaxed text-lg">
+                    "편하게 차실 분 구해요. 실력보다는 매너 좋으신 분들 위주로 모집하고 있습니다. 풋살화 필수이며, 물은 제공해드립니다. 즐겁게 운동해요!"
+                </p>
+</div>
+<!-- Decorative background element -->
+<div class="absolute -right-10 -bottom-10 w-40 h-40 bg-primary/20 rounded-full blur-3xl"></div>
+</section>
+<!-- Creator Section -->
+<section class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant/15 mb-10">
+<h3 class="font-label text-xs font-bold text-on-surface-variant uppercase tracking-[0.2em] mb-6">작성자 정보</h3>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Creator Avatar" class="w-16 h-16 rounded-2xl object-cover" data-alt="close up minimalist headshot of a friendly person in a green polo shirt with clean white background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABcTPIWFKrgG5q4XYPln2q4LWzraUvHgcesymjjIicKvC8dx0amK1k4NfKJSEA1MdZGERsGfwM9qrvdPL0UstQNl_pfpSQn3x83tlQv2s31xH7cR7UbshrRi46K58fAmBGYBvxDozJLh7R73F8Yxp0-M2UhEyDmbaHGoRV7VURXRuqB-QBoNVP6XA5L_FNqrmK1qmLbX2j0HO-bOR5gIbXHhRJ29PdTFkCZrN0nKwQbqRFQUdXXhabbeN33ObiwuCNE_JdI-k"/>
+<div class="absolute -bottom-1 -right-1 w-5 h-5 bg-primary-fixed border-2 border-surface-container-lowest rounded-full"></div>
+</div>
+<div>
+<h4 class="font-headline text-xl font-bold text-on-surface">김태풍</h4>
+<p class="font-body text-on-surface-variant text-sm">서울시 성동구 • Lv.4</p>
+</div>
+</div>
+<div class="text-right">
+<p class="font-label text-[10px] text-on-surface-variant font-bold mb-1">응답 속도</p>
+<span class="inline-flex items-center px-3 py-1 bg-surface-container-high text-primary font-bold text-sm rounded-lg">
+                        매우 빠름
+                    </span>
+</div>
+</div>
+</section>
+<!-- Map Snippet (Signature Component) -->
+<section class="mb-10">
+<div class="rounded-3xl overflow-hidden h-48 relative border border-outline-variant/15 shadow-sm">
+<img alt="Location Map" class="w-full h-full object-cover grayscale opacity-80" data-alt="clean minimal city map showing streets and greenery in a modern aesthetic with light blue and grey tones" data-location="Seongsu-dong, Seoul" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7Yi_xWJjdFWxGmQ_KpjHz-fetg0Aqenvj2TEkLqpVAr_xYltXKOcof8oY-CN3H6f-XEC3sgvr7vpM2Wo8kbJ3pruDbLXgQbHtwpozY7JMERwizJyyTE26nPn14kmNjtM_GDoBQRpy8OUJgsD_kyeDcQRzRGNYb7gTMKoaUTRcoUaXk2B1_dUZMe5X_YUrsu6ubgAwu04YIR6v1HbUwzYOTrdRjiEuaF2xOi0XC183Zejp4cJ-J3Ug8ZHsOQoDP-Hsit-eJ1k"/>
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-2xl ring-8 ring-primary/20">
+<span class="material-symbols-outlined text-white">sports_soccer</span>
+</div>
+</div>
+<div class="absolute bottom-4 left-4 right-4 bg-white/80 backdrop-blur-md p-3 rounded-xl flex items-center justify-between">
+<p class="text-sm font-bold text-on-surface truncate">성수 XYZ 풋살장 (3번 코트)</p>
+<button class="text-primary font-bold text-xs flex items-center gap-1">
+                        지도보기 <span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Sticky Bottom CTA (Enhanced with Glassmorphism) -->
+<div class="fixed bottom-0 left-0 right-0 z-[60] p-6 pb-8 bg-surface/70 backdrop-blur-2xl border-t border-outline-variant/10">
+<div class="max-w-3xl mx-auto flex gap-3">
+<button class="flex-[1] flex items-center justify-center gap-2 bg-secondary-container text-on-secondary-container py-4 rounded-2xl font-bold font-headline transition-all hover:bg-surface-variant active:scale-95 duration-200">
+<span class="material-symbols-outlined text-xl">chat</span>
+                오픈채팅
+            </button>
+<button class="flex-[2] bg-gradient-to-br from-primary to-primary-container text-white py-4 rounded-2xl font-bold font-headline text-lg shadow-xl shadow-primary/20 transition-all hover:shadow-2xl active:translate-y-[-2px] duration-200 flex items-center justify-center gap-2">
+                참가 요청
+                <span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+</body></html>

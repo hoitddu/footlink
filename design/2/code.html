@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FootLink - Date Selection</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary-fixed-dim": "#ffb692",
+                        "background": "#f4faff",
+                        "on-surface-variant": "#3f4945",
+                        "on-primary": "#ffffff",
+                        "outline": "#707975",
+                        "primary": "#00342b",
+                        "surface-variant": "#d4e5ef",
+                        "inverse-on-surface": "#e2f3fd",
+                        "on-tertiary-fixed-variant": "#7a3000",
+                        "on-tertiary": "#ffffff",
+                        "tertiary": "#511e00",
+                        "on-tertiary-fixed": "#341100",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#29695b",
+                        "on-primary-fixed-variant": "#065043",
+                        "error": "#ba1a1a",
+                        "inverse-surface": "#23333a",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#afefdd",
+                        "on-surface": "#0d1e25",
+                        "surface-container": "#dff1fb",
+                        "surface-container-high": "#d9ebf5",
+                        "on-secondary-container": "#5a666d",
+                        "on-secondary-fixed": "#111d23",
+                        "surface": "#f4faff",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#7ebdac",
+                        "on-primary-fixed": "#00201a",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#742e00",
+                        "primary-fixed-dim": "#94d3c1",
+                        "on-background": "#0d1e25",
+                        "surface-dim": "#cbdde7",
+                        "on-secondary-fixed-variant": "#3c494f",
+                        "surface-container-highest": "#d4e5ef",
+                        "secondary-fixed": "#d7e4ec",
+                        "secondary": "#546067",
+                        "secondary-fixed-dim": "#bbc8d0",
+                        "surface-container-low": "#e7f6ff",
+                        "primary-container": "#004d40",
+                        "inverse-primary": "#94d3c1",
+                        "outline-variant": "#bfc9c4",
+                        "tertiary-fixed": "#ffdbcb",
+                        "secondary-container": "#d7e4ec",
+                        "surface-bright": "#f4faff",
+                        "on-tertiary-container": "#ff955e",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(212, 229, 239, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .active-range {
+            background: linear-gradient(135deg, #00342b 0%, #004d40 100%);
+        }
+        .step-indicator {
+            height: 4px;
+            border-radius: 2px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface font-body text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar - Linear flow hides global nav -->
+<header class="bg-[#f4faff] flex items-center justify-between px-6 h-16 w-full fixed top-0 z-50">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#e7f6ff] transition-colors active:scale-95">
+<span class="material-symbols-outlined text-[#00342b]">arrow_back</span>
+</button>
+<span class="font-headline font-extrabold text-[#00342b] text-xl tracking-tighter">FootLink</span>
+<div class="w-10"></div> <!-- Spacer for centering -->
+</header>
+<main class="flex-1 pt-24 pb-32 px-6 max-w-2xl mx-auto w-full">
+<!-- Progress Indicator -->
+<div class="flex gap-2 mb-10">
+<div class="flex-1 step-indicator bg-primary"></div>
+<div class="flex-1 step-indicator bg-primary"></div>
+<div class="flex-1 step-indicator bg-surface-container-highest"></div>
+<div class="flex-1 step-indicator bg-surface-container-highest"></div>
+</div>
+<!-- Hero Heading Section -->
+<section class="mb-12">
+<h1 class="font-headline font-bold text-4xl text-on-background tracking-tight leading-tight mb-4">
+                언제 뛰고 싶으세요?
+            </h1>
+<p class="text-on-surface-variant text-lg leading-relaxed">
+                날짜 범위를 선택하면 더 많은 매치를 볼 수 있어요.
+            </p>
+</section>
+<!-- Kinetic Calendar View -->
+<div class="bg-surface-container-lowest p-8 rounded-xl shadow-[0_24px_48px_rgba(13,30,37,0.04)] relative overflow-hidden">
+<!-- Decorative Court Line -->
+<div class="absolute top-0 right-0 w-32 h-32 border-r-4 border-t-4 border-primary-fixed opacity-20 rounded-tr-3xl -mr-8 -mt-8"></div>
+<div class="flex items-center justify-between mb-8">
+<h2 class="font-headline font-bold text-xl">2024년 10월</h2>
+<div class="flex gap-2">
+<button class="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-7 gap-y-4 text-center">
+<!-- Days Header -->
+<div class="text-on-surface-variant font-semibold text-xs uppercase tracking-widest pb-4">월</div>
+<div class="text-on-surface-variant font-semibold text-xs uppercase tracking-widest pb-4">화</div>
+<div class="text-on-surface-variant font-semibold text-xs uppercase tracking-widest pb-4">수</div>
+<div class="text-on-surface-variant font-semibold text-xs uppercase tracking-widest pb-4">목</div>
+<div class="text-on-surface-variant font-semibold text-xs uppercase tracking-widest pb-4">금</div>
+<div class="text-on-surface-variant font-semibold text-xs uppercase tracking-widest pb-4">토</div>
+<div class="text-on-surface-variant font-semibold text-xs uppercase tracking-widest pb-4">일</div>
+<!-- Calendar Grid (Placeholders) -->
+<div class="py-3 text-outline-variant opacity-40">28</div>
+<div class="py-3 text-outline-variant opacity-40">29</div>
+<div class="py-3 text-outline-variant opacity-40">30</div>
+<div class="py-3 font-medium">1</div>
+<div class="py-3 font-medium">2</div>
+<div class="py-3 font-medium">3</div>
+<div class="py-3 font-medium">4</div>
+<div class="py-3 font-medium">5</div>
+<div class="py-3 font-medium">6</div>
+<div class="py-3 font-medium">7</div>
+<div class="py-3 font-medium">8</div>
+<div class="py-3 font-medium">9</div>
+<div class="py-3 font-medium">10</div>
+<div class="py-3 font-medium">11</div>
+<!-- Range Selection Highlight -->
+<div class="py-3 font-medium">12</div>
+<div class="py-3 font-bold active-range text-white rounded-l-xl">13</div>
+<div class="py-3 font-bold bg-primary-fixed text-primary">14</div>
+<div class="py-3 font-bold bg-primary-fixed text-primary">15</div>
+<div class="py-3 font-bold active-range text-white rounded-r-xl">16</div>
+<div class="py-3 font-medium">17</div>
+<div class="py-3 font-medium">18</div>
+<div class="py-3 font-medium">19</div>
+<div class="py-3 font-medium">20</div>
+<div class="py-3 font-medium">21</div>
+<div class="py-3 font-medium">22</div>
+<div class="py-3 font-medium">23</div>
+<div class="py-3 font-medium">24</div>
+<div class="py-3 font-medium">25</div>
+<div class="py-3 font-medium">26</div>
+<div class="py-3 font-medium">27</div>
+<div class="py-3 font-medium">28</div>
+<div class="py-3 font-medium">29</div>
+<div class="py-3 font-medium">30</div>
+<div class="py-3 font-medium">31</div>
+<div class="py-3 text-outline-variant opacity-40">1</div>
+</div>
+</div>
+<!-- Range Insight Card -->
+<div class="mt-8 bg-surface-container-low p-6 rounded-xl flex items-center gap-4 border border-outline-variant border-opacity-15">
+<div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">event_repeat</span>
+</div>
+<div>
+<p class="font-headline font-bold text-on-surface">10월 13일 – 10월 16일</p>
+<p class="text-sm text-on-surface-variant">총 4일의 매칭 가능 날짜 선택됨</p>
+</div>
+</div>
+</main>
+<!-- Bottom Action Area -->
+<div class="fixed bottom-0 left-0 w-full p-6 glass-panel">
+<div class="max-w-2xl mx-auto">
+<button class="w-full h-14 bg-primary text-on-primary font-headline font-bold text-lg rounded-xl shadow-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                다음으로
+                <span class="material-symbols-outlined text-xl">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Background Decoration Image (Soft Overlay) -->
+<div class="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none opacity-[0.03]">
+<img alt="" class="w-full h-full object-cover" data-alt="abstract architectural lines of a modern sports stadium roof with high contrast light and shadows and geometric patterns" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCiLiDZ_3eDNb3QTxEpqkNGD6ZOc1F9o3vcdDuKcGef4QRnH19nczRtAbzElzBvXlBWdainsJLmagfhPFtFjj0sit0WxnWKmf-4dcEfyUduhG1G9aJimLAIQvGHfvbwe49vblsn436F18b2dLjPvo9voiGtS-bXvqu0F1ZAWax_otPJX60QoXmdIQLcHp9neAeSMxxo41rd_Yaw6xRfBJviDnwnJsdEVRuVP1Yj-j5fl7V8uSV7nwehAHcFnCGIw8JjSAUJZc"/>
+</div>
+</body></html>
