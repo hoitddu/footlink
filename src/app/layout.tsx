@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     description: "풋살 매칭을 가장 빠르게 연결하는 FootLink",
     images: [
       {
-        url: "/og-footlink.png",
+        url: "/og-share.png",
         width: 1200,
         height: 630,
         alt: "FootLink 풋살 매칭 서비스 공유 이미지",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "FootLink",
     description: "풋살 매칭을 가장 빠르게 연결하는 FootLink",
-    images: ["/og-footlink.png"],
+    images: ["/og-share.png"],
   },
   icons: {
     icon: [
