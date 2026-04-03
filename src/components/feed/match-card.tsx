@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CarFront, Clock, MapPin } from "lucide-react";
+import { BusFront, CarFront, Clock, Footprints, MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { FeedContext, MatchWithMeta } from "@/lib/types";
@@ -61,8 +61,21 @@ function getMatchFormatLabel(match: MatchWithMeta) {
   return "5v5";
 }
 
-function estimateCarMinutes(distanceKm: number) {
-  return Math.max(1, Math.round(distanceKm * 2.4 + 1));
+function formatDistanceShort(km: number) {
+  if (km < 1) return `${Math.round(km * 1000)}m`;
+  return `${km.toFixed(1)}km`;
+}
+
+function estimateWalkMinutes(km: number) {
+  return Math.max(1, Math.round(km * 12));
+}
+
+function estimateTransitMinutes(km: number) {
+  return Math.max(8, Math.round(km * 4.5 + 6));
+}
+
+function estimateCarMinutes(km: number) {
+  return Math.max(1, Math.round(km * 2.4 + 1));
 }
 
 export function MatchCard({
@@ -76,7 +89,19 @@ export function MatchCard({
   selectedGroupSize: FeedContext["groupSize"];
   preview?: boolean;
 }) {
+  const walkMin = estimateWalkMinutes(match.distanceKm);
+  const transitMin = estimateTransitMinutes(match.distanceKm);
   const carMin = estimateCarMinutes(match.distanceKm);
+
+  const travelModes: Array<{ icon: typeof CarFront; min: number; show: boolean }> = [
+    { icon: Footprints, min: walkMin, show: walkMin <= 30 },
+    { icon: BusFront, min: transitMin, show: true },
+    { icon: CarFront, min: carMin, show: true },
+  ];
+  const visibleTravel = travelModes
+    .filter((t) => t.show)
+    .sort((a, b) => a.min - b.min);
+
   const statusLabel = getCardStatusLabel(match);
   const statusTone = getCardStatusTone(match, selectedGroupSize);
   const isClosed = match.status === "matched" || match.needed_count <= 0;
@@ -94,42 +119,32 @@ export function MatchCard({
         <Badge variant={statusTone} className="px-2 py-0.5 text-[11px]">{statusLabel}</Badge>
       </div>
 
-      {/* Row 2: Venue name */}
-      <h3 className="mt-1.5 truncate text-[15px] font-bold tracking-[-0.02em] text-[#112317]">
-        {match.title}
-      </h3>
-
-      {/* Row 3: Meta chips */}
-      <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-[#5f6c64]">
-        <span className="flex items-center gap-1">
-          <CarFront className="h-3 w-3" />
-          {carMin}분
-        </span>
-        <span className="text-[#c8cec9]">·</span>
-        <span className="flex items-center gap-1">
+      {/* Row 2: Venue name + distance */}
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <h3 className="truncate text-[15px] font-bold tracking-[-0.02em] text-[#112317]">
+          {match.title}
+        </h3>
+        <span className="flex shrink-0 items-center gap-1 text-[12px] font-semibold text-[#5f6c64]">
           <MapPin className="h-3 w-3" />
-          {match.distanceKm < 1 ? `${Math.round(match.distanceKm * 1000)}m` : `${match.distanceKm.toFixed(1)}km`}
+          {formatDistanceShort(match.distanceKm)}
         </span>
+      </div>
+
+      {/* Row 3: Travel estimates + meta */}
+      <div className="mt-2 flex items-center gap-1.5 text-[12px] font-semibold text-[#5f6c64]">
+        {visibleTravel.map((t, i) => (
+          <span key={t.min} className="flex items-center gap-0.5">
+            {i > 0 && <span className="mr-1.5 text-[#c8cec9]">·</span>}
+            <t.icon className="h-3 w-3" />
+            {t.min}분
+          </span>
+        ))}
         <span className="text-[#c8cec9]">·</span>
         <span>{match.skill_level}</span>
         <span className="text-[#c8cec9]">·</span>
         <span>{getMatchFormatLabel(match)}</span>
         <span className="text-[#c8cec9]">·</span>
         <span>{formatFee(match.fee)}</span>
-      </div>
-
-      {/* Row 4: Slot bar (mini) */}
-      <div className="mt-2.5 flex gap-0.5">
-        {Array.from({ length: match.mode === "team" ? 1 : 6 }).map((_, i) => {
-          const total = match.mode === "team" ? 1 : 6;
-          const filled = total === 1 ? i === 0 : i < Math.min(match.needed_count, total);
-          return (
-            <span
-              key={i}
-              className={`h-1 flex-1 rounded-full ${filled ? "bg-[#112317]" : "bg-[#dce3dc]"}`}
-            />
-          );
-        })}
       </div>
     </article>
   );
