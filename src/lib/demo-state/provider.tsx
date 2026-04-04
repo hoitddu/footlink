@@ -5,6 +5,9 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { DEMO_STORAGE_KEY, createDemoSeed, normalizeDemoState } from "@/lib/demo-state/seed";
 import {
   acceptParticipation as acceptParticipationState,
+  cancelMatch as cancelMatchState,
+  cancelParticipationConfirmation as cancelParticipationConfirmationState,
+  confirmParticipation as confirmParticipationState,
   createMatch as createMatchState,
   createResetState,
   rejectParticipation as rejectParticipationState,
@@ -87,6 +90,21 @@ export function DemoAppProvider({
 
         return created;
       },
+      cancelMatch(matchId) {
+        let updated: Match | undefined;
+
+        setState((current) => {
+          const result = cancelMatchState(current, matchId);
+          updated = result.match;
+          return result.state;
+        });
+
+        if (!updated) {
+          throw new Error("모집을 삭제하지 못했습니다.");
+        }
+
+        return updated;
+      },
       submitParticipation(input) {
         let created: ParticipationRequest | undefined;
 
@@ -113,6 +131,36 @@ export function DemoAppProvider({
 
         if (!updated) {
           throw new Error("요청을 수락하지 못했습니다.");
+        }
+
+        return updated;
+      },
+      confirmParticipation(requestId, hostNote) {
+        let updated: ParticipationRequest | undefined;
+
+        setState((current) => {
+          const result = confirmParticipationState(current, requestId, hostNote);
+          updated = result.request;
+          return result.state;
+        });
+
+        if (!updated) {
+          throw new Error("?붿껌???뺤젙?섏? 紐삵뻽?듬땲??");
+        }
+
+        return updated;
+      },
+      cancelParticipationConfirmation(requestId, hostNote) {
+        let updated: ParticipationRequest | undefined;
+
+        setState((current) => {
+          const result = cancelParticipationConfirmationState(current, requestId, hostNote);
+          updated = result.request;
+          return result.state;
+        });
+
+        if (!updated) {
+          throw new Error("?뺤젙??痍⑥냼?섏? 紐삵뻽?듬땲??");
         }
 
         return updated;

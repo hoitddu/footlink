@@ -2,10 +2,17 @@ export type EntryMode = "solo" | "small_group" | "team";
 export type ListingType = "mercenary" | "partial_join" | "team_match";
 export type ContactType = "openchat" | "request_only";
 export type MatchStatus = "open" | "matched" | "closed" | "cancelled";
-export type ParticipationStatus = "pending" | "accepted" | "rejected" | "withdrawn" | "expired";
+export type ParticipationStatus =
+  | "pending"
+  | "accepted"
+  | "confirmed"
+  | "rejected"
+  | "withdrawn"
+  | "expired";
 export type DemoNotificationKind =
   | "host_request_received"
   | "request_accepted"
+  | "request_confirmed"
   | "request_rejected";
 export type SkillLevel = "beginner" | "low" | "mid" | "high";
 export type FeedPreset = "recommended" | "time" | "distance" | "urgent" | "price";
@@ -151,8 +158,11 @@ export interface DemoAppActions {
   switchProfile: (profileId: string) => void;
   updateCurrentProfile: (updates: Partial<UpdateProfileInput>) => void;
   createMatch: (input: CreateMatchInput) => Match;
+  cancelMatch: (matchId: string) => Match;
   submitParticipation: (input: SubmitParticipationInput) => ParticipationRequest;
   acceptParticipation: (requestId: string, hostNote?: string) => ParticipationRequest;
+  confirmParticipation: (requestId: string, hostNote?: string) => ParticipationRequest;
+  cancelParticipationConfirmation: (requestId: string, hostNote?: string) => ParticipationRequest;
   rejectParticipation: (requestId: string, hostNote?: string) => ParticipationRequest;
   withdrawParticipation: (requestId: string) => ParticipationRequest;
   markNotificationsRead: (notificationIds?: string[]) => void;

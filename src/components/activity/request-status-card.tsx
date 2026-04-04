@@ -60,14 +60,14 @@ export function RequestStatusCard({
       </div>
 
       {request.message ? (
-        <p className="mt-3 rounded-[1rem] bg-[#f7f9f7] px-4 py-3 text-sm leading-6 text-[#415047]">
+        <p className="mt-3 whitespace-pre-line rounded-[1rem] bg-[#f7f9f7] px-4 py-3 text-sm leading-6 text-[#415047]">
           {request.message}
         </p>
       ) : null}
 
       <div className="mt-3 space-y-1 text-sm text-muted">
         <p>호스트: {host?.nickname ?? "FootLink 호스트"}</p>
-        <p>참여 방식: {request.entry_channel === "openchat" ? "오픈채팅" : "참가 요청"}</p>
+        <p>참여 흐름: 요청 → 수락 → 오픈채팅 조율 → 최종 확정</p>
         <p>지역: {getRegionLabel(match.region_slug)}</p>
         {request.host_note ? <p>호스트 메모: {request.host_note}</p> : null}
       </div>

@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 
 import { submitParticipationAction } from "@/app/actions/requests";
 import { JoinIntentSheet } from "@/components/match/join-intent-sheet";
+import { ProfileCompletionSheet } from "@/components/profile/profile-completion-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buildContextQuery, parseFeedContext } from "@/lib/context";
@@ -31,9 +32,10 @@ import {
   getMatchMetaForState,
   getParticipationStatusLabel,
 } from "@/lib/demo-state/selectors";
+import { isProfileComplete } from "@/lib/profiles";
 import { ensureAnonymousSession } from "@/lib/supabase/client";
 import { formatAgeBand, formatFee, formatSkillLevel, formatStartAt, getTravelEstimates } from "@/lib/utils";
-import type { DemoAppState, ListingType } from "@/lib/types";
+import type { DemoAppState, ListingType, Profile } from "@/lib/types";
 
 const listingTypeLabels: Record<ListingType, string> = {
   mercenary: "용병 구함",
@@ -45,6 +47,7 @@ function getMatchFormatLabel(match: { mode: string; min_group_size: number; max_
   if (match.mode === "team") {
     return `${match.min_group_size}v${match.max_group_size}`;
   }
+
   return "5v5";
 }
 
@@ -54,29 +57,37 @@ function MatchDetailBody({
   referenceNow,
   state,
   onSubmitParticipation,
+  profileCompletionEnabled = false,
 }: {
   matchId: string;
   searchParams: Record<string, string | undefined>;
   referenceNow: number;
   state: DemoAppState;
   onSubmitParticipation: (input: { requestedCount: number; message: string }) => Promise<string>;
+  profileCompletionEnabled?: boolean;
 }) {
   const router = useRouter();
   const match = useMemo(() => getMatchMetaForState(state, matchId, referenceNow), [matchId, referenceNow, state]);
   const backContext = parseFeedContext(searchParams);
   const backHref = `/home?${buildContextQuery(backContext)}`;
-  const currentProfile = getCurrentProfile(state);
+  const initialProfile = getCurrentProfile(state) ?? null;
+  const [resolvedProfile, setResolvedProfile] = useState<Profile | null>(initialProfile);
+
   const activeRequest = match
-    ? getActiveParticipationForMatch(state, match.id, currentProfile?.id ?? "")
+    ? getActiveParticipationForMatch(state, match.id, resolvedProfile?.id ?? "")
     : undefined;
-  const canStartJoinFlow = match
-    ? match.status === "open" &&
-      currentProfile?.id !== match.creator_profile_id &&
-      !activeRequest &&
-      (match.contact_type !== "openchat" || Boolean(match.contact_link))
-    : false;
+  const isHostView = match ? resolvedProfile?.id === match.creator_profile_id : false;
+  const canStartJoinFlow = Boolean(match && match.status === "open" && !isHostView && !activeRequest);
   const shouldOpenJoinFlow = searchParams.intent === "join";
-  const [sheetOpen, setSheetOpen] = useState(() => shouldOpenJoinFlow && canStartJoinFlow);
+  const shouldOpenProfileFirst =
+    shouldOpenJoinFlow && profileCompletionEnabled && !isProfileComplete(initialProfile);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(shouldOpenProfileFirst);
+  const [joinSheetOpen, setJoinSheetOpen] = useState(
+    shouldOpenJoinFlow && (!profileCompletionEnabled || isProfileComplete(initialProfile)) && canStartJoinFlow,
+  );
+  const [pendingJoinAfterProfile, setPendingJoinAfterProfile] = useState(shouldOpenProfileFirst);
+  const travelEstimates = match ? getTravelEstimates(match.distanceKm).sort((a, b) => a.minutes - b.minutes) : [];
+  const defaultRequestedCount = match ? getDefaultRequestedCount(match, backContext) : 1;
 
   if (!match) {
     return (
@@ -89,44 +100,33 @@ function MatchDetailBody({
     );
   }
 
-  const resolvedMatch = match;
-  const isHostView = currentProfile?.id === resolvedMatch.creator_profile_id;
-  const travelEstimates = getTravelEstimates(resolvedMatch.distanceKm).sort((a, b) => a.minutes - b.minutes);
-  const defaultRequestedCount = getDefaultRequestedCount(resolvedMatch, backContext);
-
-  const participationMethodLabel = "참가 요청";
+  const participationMethodLabel = "참가 요청 후 호스트 승인";
   const participationFlowLabel = activeRequest
     ? getParticipationStatusLabel(activeRequest.status)
-    : "수락 후 오픈채팅";
-
+    : "수락되면 오픈채팅 입장";
   const remainingLabel =
-    resolvedMatch.mode === "team"
-      ? "팀 모집"
-      : resolvedMatch.remaining_slots <= 0
-        ? "마감"
-        : `남은 ${resolvedMatch.remaining_slots}자리`;
+    match.mode === "team"
+      ? "상대 팀 모집"
+      : match.remaining_slots <= 0
+        ? "모집 완료"
+        : `남은 ${match.remaining_slots}자리`;
+  const primaryHref = isHostView
+    ? `/activity?tab=listings&highlight=${match.id}`
+    : activeRequest
+      ? `/activity?tab=requests&highlight=${activeRequest.id}`
+      : null;
+  const travelIcons = { walk: Footprints, transit: BusFront, car: CarFront } as const;
 
   function getPrimaryLabel() {
     if (isHostView) return "내 모집 보기";
-    if (!activeRequest) {
-      return "참가 요청 보내기";
-    }
+    if (!activeRequest) return "참가 요청 보내기";
     return getParticipationStatusLabel(activeRequest.status);
-  }
-
-  function getPrimaryHref() {
-    if (isHostView) return `/activity?tab=listings&highlight=${resolvedMatch.id}`;
-    if (!activeRequest) return null;
-    return `/activity?tab=requests&highlight=${activeRequest.id}`;
   }
 
   async function handleJoinSubmit(input: { requestedCount: number; message: string }) {
     const requestId = await onSubmitParticipation(input);
     router.push(`/activity?tab=requests&highlight=${requestId}&flash=requested`);
   }
-
-  const primaryHref = getPrimaryHref();
-  const travelIcons = { walk: Footprints, transit: BusFront, car: CarFront } as const;
 
   return (
     <div className="space-y-3 pb-24">
@@ -136,26 +136,23 @@ function MatchDetailBody({
             <ChevronLeft className="h-5 w-5" />
           </Link>
         </Button>
-        <Badge variant={resolvedMatch.statusTone}>{resolvedMatch.statusLabel}</Badge>
+        <Badge variant={match.statusTone}>{match.statusLabel}</Badge>
       </header>
 
       <div>
-        <h1 className="text-[1.3rem] font-bold tracking-[-0.03em] text-[#112317]">
-          {resolvedMatch.title}
-        </h1>
+        <h1 className="text-[1.3rem] font-bold tracking-[-0.03em] text-[#112317]">{match.title}</h1>
         <p className="mt-1 text-[13px] font-semibold text-[#5f6c64]">
-          {resolvedMatch.region_label} · {formatSkillLevel(resolvedMatch.skill_level)} ·{" "}
-          {getMatchFormatLabel(resolvedMatch)} · {remainingLabel}
+          {match.region_label} 쨌 {formatSkillLevel(match.skill_level)} 쨌 {getMatchFormatLabel(match)} 쨌 {remainingLabel}
         </p>
       </div>
 
       <section className="surface-card rounded-[1.25rem] px-4 py-3">
         <div className="space-y-3">
-          <InfoRow icon={CalendarDays} label="시간" value={formatStartAt(resolvedMatch.start_at)} />
-          <InfoRow icon={Tag} label="비용" value={formatFee(resolvedMatch.fee)} />
-          <InfoRow icon={Clock} label="유형" value={listingTypeLabels[resolvedMatch.listing_type]} />
-          <InfoRow icon={Wallet} label="참여 방식" value={participationMethodLabel} />
-          <InfoRow icon={ShieldCheck} label="확정 흐름" value={participationFlowLabel} />
+          <InfoRow icon={CalendarDays} label="시간" value={formatStartAt(match.start_at)} />
+          <InfoRow icon={Tag} label="비용" value={formatFee(match.fee)} />
+          <InfoRow icon={Clock} label="유형" value={listingTypeLabels[match.listing_type]} />
+          <InfoRow icon={Wallet} label="진행 방식" value={participationMethodLabel} />
+          <InfoRow icon={ShieldCheck} label="연결 방식" value={participationFlowLabel} />
         </div>
       </section>
 
@@ -163,8 +160,8 @@ function MatchDetailBody({
         <div className="flex items-start gap-2.5">
           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#112317]" />
           <div>
-            <p className="text-[13px] font-bold text-[#112317]">{resolvedMatch.address}</p>
-            <p className="mt-0.5 text-[12px] text-[#5f6c64]">{resolvedMatch.region_label}</p>
+            <p className="text-[13px] font-bold text-[#112317]">{match.address}</p>
+            <p className="mt-0.5 text-[12px] text-[#5f6c64]">{match.region_label}</p>
           </div>
         </div>
         <div className="mt-2.5 flex items-center gap-1.5 text-[12px] font-semibold text-[#5f6c64]">
@@ -172,7 +169,7 @@ function MatchDetailBody({
             const Icon = travelIcons[est.mode];
             return (
               <span key={est.mode} className="flex items-center gap-0.5">
-                {index > 0 && <span className="mr-1.5 text-[#c8cec9]">·</span>}
+                {index > 0 ? <span className="mr-1.5 text-[#c8cec9]">쨌</span> : null}
                 <Icon className="h-3 w-3" />
                 {est.minutes}분
               </span>
@@ -181,11 +178,11 @@ function MatchDetailBody({
         </div>
       </section>
 
-      {resolvedMatch.note ? (
+      {match.note ? (
         <section className="surface-card rounded-[1.25rem] px-4 py-3">
           <div className="flex items-start gap-2.5">
             <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-[#112317]" />
-            <p className="text-[13px] leading-5 text-[#3a4a3f]">{resolvedMatch.note}</p>
+            <p className="text-[13px] leading-5 text-[#3a4a3f]">{match.note}</p>
           </div>
         </section>
       ) : null}
@@ -196,12 +193,10 @@ function MatchDetailBody({
             <User className="h-3.5 w-3.5" />
           </div>
           <div>
-            <p className="text-[13px] font-bold text-[#112317]">
-              {resolvedMatch.organizer?.nickname ?? "FootLink 호스트"}
-            </p>
+            <p className="text-[13px] font-bold text-[#112317]">{match.organizer?.nickname ?? "FootLink 호스트"}</p>
             <p className="text-[12px] text-[#5f6c64]">
-              {resolvedMatch.organizer?.preferred_regions.join(" · ") ?? resolvedMatch.region_label}
-              {resolvedMatch.organizer ? ` · ${formatAgeBand(resolvedMatch.organizer.age)}` : ""}
+              {match.organizer?.preferred_regions.join(" 쨌 ") ?? match.region_label}
+              {match.organizer ? ` 쨌 ${formatAgeBand(match.organizer.age)}` : ""}
             </p>
           </div>
         </div>
@@ -217,12 +212,16 @@ function MatchDetailBody({
             className="w-full"
             size="lg"
             type="button"
-            disabled={
-              resolvedMatch.status !== "open" ||
-              isHostView ||
-              (resolvedMatch.contact_type === "openchat" && !resolvedMatch.contact_link)
-            }
-            onClick={() => setSheetOpen(true)}
+            disabled={match.status !== "open" || isHostView}
+            onClick={() => {
+              if (profileCompletionEnabled && !isProfileComplete(resolvedProfile)) {
+                setPendingJoinAfterProfile(true);
+                setProfileSheetOpen(true);
+                return;
+              }
+
+              setJoinSheetOpen(true);
+            }}
           >
             {getPrimaryLabel()}
           </Button>
@@ -230,11 +229,27 @@ function MatchDetailBody({
       </div>
 
       <JoinIntentSheet
-        match={resolvedMatch}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
+        match={match}
+        open={joinSheetOpen}
+        onOpenChange={setJoinSheetOpen}
         defaultRequestedCount={defaultRequestedCount}
         onSubmit={handleJoinSubmit}
+      />
+      <ProfileCompletionSheet
+        open={profileSheetOpen}
+        onOpenChange={setProfileSheetOpen}
+        profile={resolvedProfile}
+        preferredMode={match.mode}
+        regionLabel={match.region_label}
+        confirmLabel="저장하고 참가 요청하기"
+        onCompleted={(profile) => {
+          setResolvedProfile(profile);
+
+          if (pendingJoinAfterProfile && match.status === "open" && profile.id !== match.creator_profile_id) {
+            setPendingJoinAfterProfile(false);
+            setJoinSheetOpen(true);
+          }
+        }}
       />
     </div>
   );
@@ -275,8 +290,6 @@ export function MatchDetailScreen({
   referenceNow: number;
   stateSnapshot?: DemoAppState | null;
 }) {
-  const router = useRouter();
-
   if (stateSnapshot) {
     return (
       <MatchDetailBody
@@ -284,18 +297,9 @@ export function MatchDetailScreen({
         searchParams={searchParams}
         referenceNow={referenceNow}
         state={stateSnapshot}
+        profileCompletionEnabled
         onSubmitParticipation={async (input) => {
           await ensureAnonymousSession();
-          const currentProfile = getCurrentProfile(stateSnapshot);
-
-          if (!currentProfile) {
-            const params = new URLSearchParams(
-              Object.entries({ ...searchParams, intent: "join" }).filter(([, value]) => value),
-            );
-            router.push(`/profile?returnTo=${encodeURIComponent(`/match/${matchId}?${params.toString()}`)}`);
-            throw new Error("프로필을 먼저 입력해 주세요.");
-          }
-
           const request = await submitParticipationAction({
             matchId,
             requestedCount: input.requestedCount,

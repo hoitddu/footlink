@@ -100,6 +100,44 @@ export async function acceptParticipationAction(requestId: string, hostNote?: st
   return request;
 }
 
+export async function confirmParticipationAction(requestId: string, hostNote?: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("confirm_match_request", {
+    p_request_id: requestId,
+    p_host_note: hostNote?.trim() || null,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const request = await getRequestRow(requestId);
+
+  revalidatePath("/activity");
+  revalidatePath(`/match/${request.match_id}`);
+
+  return request;
+}
+
+export async function cancelParticipationConfirmationAction(requestId: string, hostNote?: string) {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("cancel_match_request_confirmation", {
+    p_request_id: requestId,
+    p_host_note: hostNote?.trim() || null,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const request = await getRequestRow(requestId);
+
+  revalidatePath("/activity");
+  revalidatePath(`/match/${request.match_id}`);
+
+  return request;
+}
+
 export async function rejectParticipationAction(requestId: string, hostNote?: string) {
   const supabase = await createServerSupabaseClient();
   const { error } = await supabase.rpc("reject_match_request", {

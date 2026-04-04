@@ -10,7 +10,7 @@ import type {
   SubmitParticipationInput,
 } from "@/lib/types";
 
-const activeStatuses: ParticipationStatus[] = ["pending", "accepted"];
+const duplicateBlockingStatuses: ParticipationStatus[] = ["pending", "accepted", "confirmed"];
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -106,18 +106,18 @@ function findActiveParticipation(state: DemoAppState, matchId: string, requester
     (request) =>
       request.match_id === matchId &&
       request.requester_profile_id === requesterProfileId &&
-      activeStatuses.includes(request.status),
+      duplicateBlockingStatuses.includes(request.status),
   );
 }
 
-function closeRemainingRequests(state: DemoAppState, matchId: string, acceptedRequestId: string) {
+function closePendingRequests(state: DemoAppState, matchId: string, acceptedRequestId: string) {
   const now = new Date().toISOString();
 
   state.participationRequests = state.participationRequests.map((request) => {
     if (
       request.match_id !== matchId ||
       request.id === acceptedRequestId ||
-      !activeStatuses.includes(request.status)
+      request.status !== "pending"
     ) {
       return request;
     }
@@ -194,6 +194,48 @@ export function createMatch(state: DemoAppState, input: CreateMatchInput) {
   next.matches = [createdMatch, ...next.matches];
 
   return { state: next, match: createdMatch };
+}
+
+export function cancelMatch(state: DemoAppState, matchId: string) {
+  const next = cloneState(state);
+  const currentProfile = getCurrentProfile(next);
+  const match = getMatch(next, matchId);
+
+  if (match.creator_profile_id !== currentProfile.id) {
+    throw new Error("내가 만든 모집만 삭제할 수 있습니다.");
+  }
+
+  if (match.status === "cancelled") {
+    throw new Error("이미 삭제된 모집입니다.");
+  }
+
+  const hasAcceptedRequest = next.participationRequests.some(
+    (request) => request.match_id === match.id && ["accepted", "confirmed"].includes(request.status),
+  );
+
+  if (hasAcceptedRequest) {
+    throw new Error("이미 수락된 참가자가 있는 모집은 삭제할 수 없습니다.");
+  }
+
+  const now = new Date().toISOString();
+  match.status = "cancelled";
+  match.updated_at = now;
+
+  next.participationRequests = next.participationRequests.map((request) => {
+    if (request.match_id !== match.id || request.status !== "pending") {
+      return request;
+    }
+
+    return {
+      ...request,
+      status: "rejected",
+      host_note: request.host_note ?? "호스트가 모집을 삭제했습니다.",
+      decided_at: now,
+      updated_at: now,
+    };
+  });
+
+  return { state: next, match };
 }
 
 export function submitParticipation(state: DemoAppState, input: SubmitParticipationInput) {
@@ -298,7 +340,7 @@ export function acceptParticipation(state: DemoAppState, requestId: string, host
   request.accepted_contact_link = match.contact_link || null;
 
   if (match.status === "matched") {
-    closeRemainingRequests(next, match.id, request.id);
+    closePendingRequests(next, match.id, request.id);
   }
 
   pushNotification(next, {
@@ -310,6 +352,67 @@ export function acceptParticipation(state: DemoAppState, requestId: string, host
     related_match_id: match.id,
     related_request_id: request.id,
   });
+
+  return { state: next, request };
+}
+
+export function confirmParticipation(state: DemoAppState, requestId: string, hostNote?: string) {
+  const next = cloneState(state);
+  const currentProfile = getCurrentProfile(next);
+  const request = getRequest(next, requestId);
+
+  if (request.host_profile_id !== currentProfile.id) {
+    throw new Error("?몄뒪?몃쭔 理쒖쥌 ?뺤젙?????덉뒿?덈떎.");
+  }
+
+  if (request.status !== "accepted") {
+    throw new Error("理쒖쥌 ?뺤젙?????녿뒗 ?붿껌 ?곹깭?낅땲??");
+  }
+
+  const requester = getProfile(next, request.requester_profile_id);
+  const match = getMatch(next, request.match_id);
+  const now = new Date().toISOString();
+
+  request.status = "confirmed";
+  request.decided_at = now;
+  request.updated_at = now;
+  request.host_note = hostNote?.trim() || request.host_note;
+
+  pushNotification(next, {
+    profile_id: requester.id,
+    kind: "request_confirmed",
+    title: "李멸?媛 理쒖쥌 ?뺤젙?섏뿀?듬땲??",
+    body: `${currentProfile.nickname}?섏씠 ${match.title} 李멸?瑜?理쒖쥌 ?뺤젙?덉뼱??`,
+    href: `/activity?tab=requests&highlight=${request.id}&flash=confirmed`,
+    related_match_id: match.id,
+    related_request_id: request.id,
+  });
+
+  return { state: next, request };
+}
+
+export function cancelParticipationConfirmation(
+  state: DemoAppState,
+  requestId: string,
+  hostNote?: string,
+) {
+  const next = cloneState(state);
+  const currentProfile = getCurrentProfile(next);
+  const request = getRequest(next, requestId);
+
+  if (request.host_profile_id !== currentProfile.id) {
+    throw new Error("?몄뒪?몃쭔 ?뺤젙??痍⑥냼?????덉뒿?덈떎.");
+  }
+
+  if (request.status !== "confirmed") {
+    throw new Error("?뺤젙??痍⑥냼?????녿뒗 ?붿껌 ?곹깭?낅땲??");
+  }
+
+  const now = new Date().toISOString();
+  request.status = "accepted";
+  request.decided_at = now;
+  request.updated_at = now;
+  request.host_note = hostNote?.trim() || request.host_note;
 
   return { state: next, request };
 }

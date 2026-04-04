@@ -94,7 +94,7 @@ function ProfileEditor({
         ) : null}
       </section>
 
-      <DemoIdentitySwitcher />
+      {onReset ? <DemoIdentitySwitcher /> : null}
 
       <section className="surface-card rounded-[1.75rem] p-5">
         <div className="grid gap-4">

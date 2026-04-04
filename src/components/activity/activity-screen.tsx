@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 
 import {
   acceptParticipationAction,
+  confirmParticipationAction,
   rejectParticipationAction,
   withdrawParticipationAction,
 } from "@/app/actions/requests";
+import { cancelMatchAction } from "@/app/actions/matches";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
 import { FlashBanner } from "@/components/app/flash-banner";
 import { SectionHeading } from "@/components/app/section-heading";
@@ -29,6 +31,14 @@ import {
 import type { DemoAppState } from "@/lib/types";
 
 type ActivityTab = "requests" | "listings";
+type ActivityFlash =
+  | "created"
+  | "requested"
+  | "accepted"
+  | "confirmed"
+  | "rejected"
+  | "withdrawn"
+  | "deleted";
 
 function ActivityScreenBody({
   flash,
@@ -37,17 +47,23 @@ function ActivityScreenBody({
   state,
   onWithdraw,
   onAccept,
+  onConfirm,
   onReject,
+  onDelete,
+  showDemoIdentitySwitcher,
   notificationsReadEnabled,
   onMarkAllNotificationsRead,
 }: {
-  flash?: "created" | "requested" | "accepted" | "rejected" | "withdrawn";
+  flash?: ActivityFlash;
   initialTab?: ActivityTab;
   highlight?: string;
   state: DemoAppState;
   onWithdraw: (requestId: string) => Promise<void>;
   onAccept: (requestId: string) => Promise<void>;
+  onConfirm: (requestId: string) => Promise<void>;
   onReject: (requestId: string) => Promise<void>;
+  onDelete: (matchId: string) => Promise<void>;
+  showDemoIdentitySwitcher: boolean;
   notificationsReadEnabled: boolean;
   onMarkAllNotificationsRead?: () => void;
 }) {
@@ -141,6 +157,42 @@ function ActivityScreenBody({
     }
   }
 
+  async function handleConfirm(requestId: string, matchId: string) {
+    setError("");
+
+    try {
+      await onConfirm(requestId);
+      replaceActivityQuery({
+        tab: "listings",
+        highlight: matchId,
+        flash: "confirmed",
+      });
+      router.refresh();
+    } catch (confirmError) {
+      setError(confirmError instanceof Error ? confirmError.message : "최종 확정을 처리하지 못했습니다.");
+    }
+  }
+
+  async function handleDelete(matchId: string) {
+    if (!window.confirm("이 모집을 삭제할까요? 대기 중인 참가 요청은 자동으로 거절됩니다.")) {
+      return;
+    }
+
+    setError("");
+
+    try {
+      await onDelete(matchId);
+      replaceActivityQuery({
+        tab: "listings",
+        highlight: undefined,
+        flash: "deleted",
+      });
+      router.refresh();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "모집을 삭제하지 못했습니다.");
+    }
+  }
+
   return (
     <div className="space-y-5">
       <section className="surface-card rounded-[1.75rem] p-5">
@@ -159,7 +211,7 @@ function ActivityScreenBody({
         </div>
       </section>
 
-      <DemoIdentitySwitcher />
+      {showDemoIdentitySwitcher ? <DemoIdentitySwitcher /> : null}
 
       <NotificationCenter
         notifications={notifications}
@@ -219,6 +271,8 @@ function ActivityScreenBody({
                 highlighted={highlight === match.id}
                 match={match}
                 onAccept={(requestId) => handleAccept(requestId, match.id)}
+                onConfirm={(requestId) => handleConfirm(requestId, match.id)}
+                onDelete={() => handleDelete(match.id)}
                 onReject={(requestId) => handleReject(requestId, match.id)}
                 requests={getInboundRequestsForMatch(state, match.id)}
                 state={state}
@@ -232,7 +286,7 @@ function ActivityScreenBody({
 }
 
 function DemoActivityScreen(props: {
-  flash?: "created" | "requested" | "accepted" | "rejected" | "withdrawn";
+  flash?: ActivityFlash;
   initialTab?: ActivityTab;
   highlight?: string;
 }) {
@@ -248,9 +302,16 @@ function DemoActivityScreen(props: {
       onAccept={async (requestId) => {
         actions.acceptParticipation(requestId);
       }}
+      onConfirm={async (requestId) => {
+        actions.confirmParticipation(requestId);
+      }}
       onReject={async (requestId) => {
         actions.rejectParticipation(requestId);
       }}
+      onDelete={async (matchId) => {
+        actions.cancelMatch(matchId);
+      }}
+      showDemoIdentitySwitcher
       notificationsReadEnabled
       onMarkAllNotificationsRead={() => {
         const ids = getUnreadNotificationIds(state);
@@ -268,7 +329,7 @@ export function ActivityScreen({
   highlight,
   stateSnapshot,
 }: {
-  flash?: "created" | "requested" | "accepted" | "rejected" | "withdrawn";
+  flash?: ActivityFlash;
   initialTab?: ActivityTab;
   highlight?: string;
   stateSnapshot?: DemoAppState;
@@ -286,9 +347,16 @@ export function ActivityScreen({
         onAccept={async (requestId) => {
           await acceptParticipationAction(requestId);
         }}
+        onConfirm={async (requestId) => {
+          await confirmParticipationAction(requestId);
+        }}
         onReject={async (requestId) => {
           await rejectParticipationAction(requestId);
         }}
+        onDelete={async (matchId) => {
+          await cancelMatchAction(matchId);
+        }}
+        showDemoIdentitySwitcher={false}
         notificationsReadEnabled={false}
       />
     );

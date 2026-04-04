@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import type { MatchWithMeta } from "@/lib/types";
 
 function getRequestBounds(match: MatchWithMeta) {
@@ -34,7 +33,8 @@ export function JoinIntentSheet({
 }) {
   const bounds = useMemo(() => getRequestBounds(match), [match]);
   const [requestedCount, setRequestedCount] = useState(defaultRequestedCount);
-  const [message, setMessage] = useState("");
+  const [arrivalTime, setArrivalTime] = useState("");
+  const [intro, setIntro] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,20 +44,32 @@ export function JoinIntentSheet({
     }
 
     setRequestedCount(Math.min(Math.max(defaultRequestedCount, bounds.min), bounds.max));
-    setMessage("");
+    setArrivalTime("");
+    setIntro("");
     setError("");
     setIsSubmitting(false);
   }, [bounds.max, bounds.min, defaultRequestedCount, open]);
 
   async function handleSubmit() {
     setError("");
+
+    if (!arrivalTime) {
+      setError("도착 가능 시간을 입력해 주세요.");
+      return;
+    }
+
+    if (!intro.trim()) {
+      setError("한줄 소개를 입력해 주세요.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       await Promise.resolve(
         onSubmit({
           requestedCount,
-          message: message.trim(),
+          message: `도착 가능 시간: ${arrivalTime}\n한줄 소개: ${intro.trim()}`,
         }),
       );
       onOpenChange(false);
@@ -123,11 +135,20 @@ export function JoinIntentSheet({
           </div>
 
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">전달 메모</span>
-            <Textarea
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="도착 가능 시간이나 간단한 소개를 남겨주세요."
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">도착 가능 시간</span>
+            <Input
+              type="time"
+              value={arrivalTime}
+              onChange={(event) => setArrivalTime(event.target.value)}
+            />
+          </label>
+
+          <label className="space-y-2">
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">한줄 소개</span>
+            <Input
+              value={intro}
+              onChange={(event) => setIntro(event.target.value)}
+              placeholder="예: 템포 맞춰 성실하게 뛰겠습니다."
             />
           </label>
 

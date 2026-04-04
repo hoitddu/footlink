@@ -81,6 +81,21 @@ export function deriveNotificationsFromRequests(
       });
     }
 
+    if (request.status === "confirmed") {
+      const host = profileMap.get(request.host_profile_id);
+      notifications.push({
+        id: `confirmed-${request.id}`,
+        profile_id: currentProfileId,
+        kind: "request_confirmed",
+        title: "李멸?媛 理쒖쥌 ?뺤젙?먯뼱??",
+        body: `${host?.nickname ?? getRegionLabel(match.region_slug)}?섏씠 ${match.title} 李멸?瑜?理쒖쥌 ?뺤젙?덉뼱??`,
+        href: `/activity?tab=requests&highlight=${request.id}&flash=confirmed`,
+        created_at: request.decided_at ?? request.created_at,
+        related_match_id: match.id,
+        related_request_id: request.id,
+      });
+    }
+
     if (request.status === "rejected") {
       const host = profileMap.get(request.host_profile_id);
       notifications.push({

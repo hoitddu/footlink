@@ -47,6 +47,7 @@ export async function getActivitySnapshot() {
     .from("matches")
     .select("*")
     .eq("creator_profile_id", currentProfile.id)
+    .neq("status", "cancelled")
     .order("start_at", { ascending: true })
     .returns<MatchRow[]>();
 

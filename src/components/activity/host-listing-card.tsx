@@ -27,6 +27,8 @@ export function HostListingCard({
   requests,
   highlighted = false,
   onAccept,
+  onConfirm,
+  onDelete,
   onReject,
 }: {
   state: DemoAppState;
@@ -34,8 +36,14 @@ export function HostListingCard({
   requests: ParticipationRequest[];
   highlighted?: boolean;
   onAccept: (requestId: string) => void;
+  onConfirm: (requestId: string) => void;
+  onDelete: () => void;
   onReject: (requestId: string) => void;
 }) {
+  const hasLockedRequest = requests.some((request) =>
+    ["accepted", "confirmed"].includes(request.status),
+  );
+
   return (
     <article
       className={`surface-card rounded-[1.5rem] p-5 transition ${
@@ -54,15 +62,26 @@ export function HostListingCard({
         </Badge>
       </div>
 
+      <div className="mt-3 flex items-center justify-end">
+        <Button size="sm" type="button" variant="secondary" onClick={onDelete} disabled={hasLockedRequest}>
+          삭제
+        </Button>
+      </div>
+
+      {hasLockedRequest ? (
+        <p className="mt-2 text-sm text-muted">조율 중이거나 최종 확정된 참가자가 있으면 모집을 삭제할 수 없습니다.</p>
+      ) : null}
+
       <div className="mt-4 space-y-3">
         {requests.length === 0 ? (
           <div className="rounded-[1rem] bg-[#f7f9f7] px-4 py-4 text-sm text-muted">
-            아직 들어온 요청이 없습니다.
+            아직 들어온 참가 요청이 없습니다.
           </div>
         ) : (
           requests.map((request) => {
             const requester = getProfileById(state, request.requester_profile_id);
-            const actionable = request.status === "pending";
+            const canAccept = request.status === "pending";
+            const canConfirm = request.status === "accepted";
 
             return (
               <div key={request.id} className="rounded-[1.2rem] bg-[#f7f9f7] p-4">
@@ -84,14 +103,14 @@ export function HostListingCard({
                 </div>
 
                 {request.message ? (
-                  <p className="mt-3 text-sm leading-6 text-[#415047]">{request.message}</p>
+                  <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#415047]">{request.message}</p>
                 ) : null}
 
                 {request.host_note ? (
                   <p className="mt-2 text-sm font-medium text-[#536157]">메모: {request.host_note}</p>
                 ) : null}
 
-                {actionable ? (
+                {canAccept ? (
                   <div className="mt-4 flex gap-2">
                     <Button
                       className="flex-1"
@@ -112,6 +131,19 @@ export function HostListingCard({
                       거절
                     </Button>
                   </div>
+                ) : null}
+
+                {canConfirm ? (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm text-muted">오픈채팅에서 이야기한 뒤 최종 참가가 맞으면 확정하세요.</p>
+                    <Button className="w-full" size="sm" type="button" onClick={() => onConfirm(request.id)}>
+                      최종 확정
+                    </Button>
+                  </div>
+                ) : null}
+
+                {request.status === "confirmed" ? (
+                  <p className="mt-4 text-sm font-medium text-[#1f7a38]">최종 확정된 참가자입니다.</p>
                 ) : null}
               </div>
             );

@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 
 import { createMatchAction } from "@/app/actions/matches";
 import { MatchCard } from "@/components/feed/match-card";
+import { ProfileCompletionSheet } from "@/components/profile/profile-completion-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
+import { isProfileComplete } from "@/lib/profiles";
 import { ensureAnonymousSession } from "@/lib/supabase/client";
 import { formatFee, haversineDistance } from "@/lib/utils";
 import type { CreateMatchInput, ListingType, Match, MatchWithMeta, Profile } from "@/lib/types";
@@ -163,9 +165,11 @@ function isProfileSetupError(message: string) {
 function CreateListingFormBody({
   currentProfile,
   onCreateListing,
+  profileCompletionEnabled = false,
 }: {
   currentProfile?: Profile | null;
   onCreateListing: (input: CreateMatchInput) => Promise<Match>;
+  profileCompletionEnabled?: boolean;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -203,6 +207,9 @@ function CreateListingFormBody({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previewReferenceNow, setPreviewReferenceNow] = useState<number | null>(null);
   const [submitError, setSubmitError] = useState("");
+  const [resolvedProfile, setResolvedProfile] = useState(currentProfile ?? null);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const pendingSubmitAfterProfileRef = useRef(false);
 
   const listingType: ListingType = matchType === "team_match" ? "team_match" : "mercenary";
   const preview = getPreviewStatus(matchType, neededCount);
@@ -400,10 +407,9 @@ function CreateListingFormBody({
     event.preventDefault();
     setSubmitError("");
 
-    if (currentProfile === null) {
-      startTransition(() => {
-        router.push("/profile?returnTo=%2Fcreate");
-      });
+    if (profileCompletionEnabled && !isProfileComplete(resolvedProfile)) {
+      pendingSubmitAfterProfileRef.current = true;
+      setProfileSheetOpen(true);
       return;
     }
 
@@ -446,9 +452,7 @@ function CreateListingFormBody({
 
       if (isProfileSetupError(message)) {
         setSubmitError("프로필을 먼저 저장한 뒤 다시 매치를 올려주세요.");
-        startTransition(() => {
-          router.push("/profile?returnTo=%2Fcreate");
-        });
+        setProfileSheetOpen(true);
         return;
       }
 
@@ -485,7 +489,7 @@ function CreateListingFormBody({
     () =>
       ({
         id: "preview-match",
-        creator_profile_id: currentProfile?.id ?? "preview-user",
+        creator_profile_id: resolvedProfile?.id ?? "preview-user",
         mode: (matchType === "team_match" ? "team" : "solo") as MatchWithMeta["mode"],
         listing_type: listingType,
         title: venueName || "풋살장명",
@@ -514,7 +518,7 @@ function CreateListingFormBody({
     [
       address,
       contactValue,
-      currentProfile?.id,
+      resolvedProfile?.id,
       fee,
       level,
       listingType,
@@ -963,6 +967,24 @@ function CreateListingFormBody({
         </div>
       </div>
 
+      <ProfileCompletionSheet
+        open={profileSheetOpen}
+        onOpenChange={setProfileSheetOpen}
+        profile={resolvedProfile}
+        preferredMode={matchType === "team_match" ? "team" : "solo"}
+        regionLabel={SUWON_LABEL}
+        confirmLabel="저장하고 매치 올리기"
+        onCompleted={(profile) => {
+          setResolvedProfile(profile);
+          setSubmitError("");
+
+          if (pendingSubmitAfterProfileRef.current) {
+            pendingSubmitAfterProfileRef.current = false;
+            window.requestAnimationFrame(() => formRef.current?.requestSubmit());
+          }
+        }}
+      />
+
       {isPlacePickerOpen ? (
         <div className="fixed inset-0 z-[80]">
           <button
@@ -1079,12 +1101,9 @@ export function CreateListingForm({
     return (
       <CreateListingFormBody
         currentProfile={currentProfile}
+        profileCompletionEnabled
         onCreateListing={async (input) => {
           await ensureAnonymousSession();
-
-          if (!currentProfile) {
-            throw new Error("프로필을 먼저 입력해 주세요.");
-          }
 
           return createMatchAction(input);
         }}

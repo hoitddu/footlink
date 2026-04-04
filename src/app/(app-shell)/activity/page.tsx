@@ -16,7 +16,17 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
 
   return (
     <ActivityScreen
-      flash={flash as "created" | "requested" | "accepted" | "rejected" | "withdrawn" | undefined}
+      flash={
+        flash as
+          | "created"
+          | "requested"
+          | "accepted"
+          | "confirmed"
+          | "rejected"
+          | "withdrawn"
+          | "deleted"
+          | undefined
+      }
       highlight={highlight}
       initialTab={tab === "listings" ? "listings" : "requests"}
       stateSnapshot={stateSnapshot}

@@ -38,7 +38,9 @@ export function getInboundRequestsForMatch(state: DemoAppState, matchId: string)
 }
 
 export function getHostedMatches(state: DemoAppState) {
-  return state.matches.filter((match) => match.creator_profile_id === state.currentProfileId);
+  return state.matches.filter(
+    (match) => match.creator_profile_id === state.currentProfileId && match.status !== "cancelled",
+  );
 }
 
 export function getNotificationsForCurrentProfile(state: DemoAppState) {
@@ -58,7 +60,7 @@ export function getUnreadNotificationIds(state: DemoAppState) {
 }
 
 export function getNotificationTone(notification: AppNotification) {
-  if (notification.kind === "request_accepted") {
+  if (notification.kind === "request_accepted" || notification.kind === "request_confirmed") {
     return "bg-[#e4f6e8] text-[#1f7a38]" as const;
   }
 
@@ -88,7 +90,7 @@ export function getActiveParticipationForMatch(
     (request) =>
       request.match_id === matchId &&
       request.requester_profile_id === requesterId &&
-      ["pending", "accepted"].includes(request.status),
+      ["pending", "accepted", "confirmed"].includes(request.status),
   );
 }
 
@@ -98,7 +100,11 @@ export function getParticipationStatusLabel(status: ParticipationStatus) {
   }
 
   if (status === "accepted") {
-    return "수락됨";
+    return "오픈채팅 조율 중";
+  }
+
+  if (status === "confirmed") {
+    return "최종 확정";
   }
 
   if (status === "rejected") {
@@ -113,8 +119,12 @@ export function getParticipationStatusLabel(status: ParticipationStatus) {
 }
 
 export function getParticipationStatusTone(status: ParticipationStatus) {
-  if (status === "accepted") {
+  if (status === "confirmed") {
     return "success" as const;
+  }
+
+  if (status === "accepted") {
+    return "team" as const;
   }
 
   if (status === "pending") {
@@ -138,7 +148,7 @@ export function getParticipationContactLink(
 ) {
   const match = getMatch(state, request.match_id);
 
-  if (!match || request.status !== "accepted") {
+  if (!match || !["accepted", "confirmed"].includes(request.status)) {
     return null;
   }
 

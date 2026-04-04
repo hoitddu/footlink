@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -9,16 +9,20 @@ import {
   ChevronRight,
   MapPin,
   SlidersHorizontal,
+  Sparkles,
   X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { MatchCard } from "@/components/feed/match-card";
+import { ProfileCompletionSheet } from "@/components/profile/profile-completion-sheet";
 import { Button } from "@/components/ui/button";
 import { buildContextQuery } from "@/lib/context";
 import { REGION_OPTIONS, SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { getFeedMatches } from "@/lib/feed";
-import type { EntryMode, FeedContext, FeedDataSource, FeedPreset, SkillLevel } from "@/lib/types";
+import { isProfileComplete } from "@/lib/profiles";
+import type { EntryMode, FeedContext, FeedDataSource, FeedPreset, Profile, SkillLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const presets: Array<{ value: FeedPreset; label: string }> = [
@@ -137,16 +141,22 @@ function FeedScreenView({
   initialContext,
   initialReferenceNow,
   source,
+  currentProfile,
 }: {
   initialContext: FeedContext;
   initialReferenceNow: number;
   source: FeedDataSource;
+  currentProfile?: Profile | null;
 }) {
+  const router = useRouter();
   const [context, setContext] = useState(initialContext);
   const [referenceNow] = useState(initialReferenceNow);
   const [preset, setPreset] = useState<FeedPreset>("recommended");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [profilePromptDismissed, setProfilePromptDismissed] = useState(false);
+  const [resolvedProfile, setResolvedProfile] = useState(currentProfile ?? null);
   const [viewYear, setViewYear] = useState(() => new Date(initialReferenceNow).getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date(initialReferenceNow).getMonth());
   const [selectedQuickOptionId, setSelectedQuickOptionId] = useState<string | null>(null);
@@ -166,6 +176,20 @@ function FeedScreenView({
   const monthLabel = `${viewYear}년 ${viewMonth + 1}월`;
   const rangeStart = context.selectedDateFrom;
   const rangeEnd = context.selectedDateTo;
+  const shouldShowProfilePrompt =
+    currentProfile !== undefined &&
+    !isProfileComplete(resolvedProfile) &&
+    !profilePromptDismissed;
+
+  useEffect(() => {
+    router.prefetch("/create");
+    router.prefetch("/activity");
+    router.prefetch("/profile");
+
+    feedItems.slice(0, 4).forEach((match) => {
+      router.prefetch(`/match/${match.id}?${contextQuery}`);
+    });
+  }, [contextQuery, feedItems, router]);
 
   const filterSummary = [
     "수원",
@@ -294,6 +318,38 @@ function FeedScreenView({
           ))}
         </div>
       </div>
+
+      {shouldShowProfilePrompt ? (
+        <section className="surface-card rounded-[1.25rem] px-4 py-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#112317] text-[#b8ff5a]">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-[#112317]">
+                프로필 10초만 설정하면 바로 참가 요청할 수 있어요
+              </p>
+              <p className="mt-1 text-[13px] leading-5 text-[#5f6c64]">
+                닉네임, 연령대, 실력만 입력하면 됩니다. 오픈채팅 링크는 매치 생성할 때만 필요해요.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button className="flex-1" size="sm" type="button" onClick={() => setProfileSheetOpen(true)}>
+              지금 설정
+            </Button>
+            <Button
+              className="flex-1"
+              size="sm"
+              type="button"
+              variant="secondary"
+              onClick={() => setProfilePromptDismissed(true)}
+            >
+              나중에
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       {/* Match list */}
       {feedItems.length > 0 ? (
@@ -576,6 +632,19 @@ function FeedScreenView({
           </div>
         </div>
       ) : null}
+
+      <ProfileCompletionSheet
+        open={profileSheetOpen}
+        onOpenChange={setProfileSheetOpen}
+        profile={resolvedProfile}
+        preferredMode={context.mode}
+        regionLabel={context.regionLabel}
+        refreshOnComplete
+        onCompleted={(profile) => {
+          setResolvedProfile(profile);
+          setProfilePromptDismissed(true);
+        }}
+      />
     </div>
   );
 }
@@ -583,6 +652,7 @@ function FeedScreenView({
 function DemoFeedScreen(props: {
   initialContext: FeedContext;
   initialReferenceNow: number;
+  currentProfile?: Profile | null;
 }) {
   const { state } = useDemoApp();
 
@@ -596,6 +666,7 @@ export function FeedScreen({
   initialContext: FeedContext;
   initialReferenceNow: number;
   source?: FeedDataSource;
+  currentProfile?: Profile | null;
 }) {
   if (source) {
     return <FeedScreenView {...props} source={source} />;
