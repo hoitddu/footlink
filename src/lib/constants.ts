@@ -1,0 +1,38 @@
+import type { RegionOption, SkillLevel } from "@/lib/types";
+
+export const AGE_BANDS = [
+  { value: 10, label: "10대" },
+  { value: 20, label: "20대" },
+  { value: 30, label: "30대" },
+  { value: 40, label: "40대" },
+  { value: 50, label: "50대+" },
+] as const;
+
+export const REGION_OPTIONS: RegionOption[] = [
+  { slug: "suwon", label: "수원", area: "gyeonggi", lat: 37.2636, lng: 127.0286 },
+];
+
+export const SKILL_LEVELS: SkillLevel[] = ["beginner", "low", "mid", "high"];
+
+export const SKILL_LEVEL_LABELS: Record<SkillLevel, string> = {
+  beginner: "입문",
+  low: "초급",
+  mid: "중급",
+  high: "상급",
+};
+
+export function getSkillLevelLabel(level: SkillLevel) {
+  return SKILL_LEVEL_LABELS[level];
+}
+
+export function getAgeBandLabel(age: number) {
+  if (age >= 50) return "50대+";
+  if (age >= 40) return "40대";
+  if (age >= 30) return "30대";
+  if (age >= 20) return "20대";
+  return "10대";
+}
+
+export function getRegionLabel(regionSlug: string) {
+  return REGION_OPTIONS.find((region) => region.slug === regionSlug)?.label ?? "수원";
+}

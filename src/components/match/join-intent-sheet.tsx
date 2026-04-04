@@ -15,7 +15,7 @@ function getRequestBounds(match: MatchWithMeta) {
 
   return {
     min: match.min_group_size,
-    max: Math.min(match.max_group_size, Math.max(match.needed_count, 1)),
+    max: Math.min(match.max_group_size, Math.max(match.remaining_slots, 1)),
   };
 }
 
@@ -86,7 +86,7 @@ export function JoinIntentSheet({
           <div className="rounded-[1.25rem] bg-[#f7f9f7] px-4 py-4">
             <p className="text-sm font-semibold text-[#112317]">{match.title}</p>
             <p className="mt-1 text-sm text-muted">
-              남은 자리 {match.mode === "team" ? "1팀" : `${match.needed_count}명`}
+              남은 자리 {match.mode === "team" ? "1팀" : `${match.remaining_slots}명`}
             </p>
           </div>
 

@@ -1,4 +1,6 @@
+import { getAppDataSource } from "@/lib/app-config";
 import { MatchDetailScreen } from "@/components/match/match-detail-screen";
+import { getMatchDetailSnapshot } from "@/lib/repositories/matches";
 
 type MatchPageProps = {
   params: Promise<{ id: string }>;
@@ -19,12 +21,17 @@ export default async function MatchDetailPage({
   );
   // eslint-disable-next-line react-hooks/purity -- capture one request timestamp so SSR and hydration use the same reference time.
   const referenceNow = Date.now();
+  const stateSnapshot =
+    getAppDataSource() === "supabase"
+      ? await getMatchDetailSnapshot(resolvedParams.id)
+      : undefined;
 
   return (
     <MatchDetailScreen
       matchId={resolvedParams.id}
       referenceNow={referenceNow}
       searchParams={normalized}
+      stateSnapshot={stateSnapshot}
     />
   );
 }

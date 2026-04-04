@@ -4,14 +4,16 @@ import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { createMatchAction } from "@/app/actions/matches";
 import { MatchCard } from "@/components/feed/match-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
-import { skillLabels } from "@/lib/mock-data";
+import { ensureAnonymousSession } from "@/lib/supabase/client";
 import { formatFee, haversineDistance } from "@/lib/utils";
-import type { ListingType, MatchWithMeta } from "@/lib/types";
+import type { CreateMatchInput, ListingType, Match, MatchWithMeta, Profile } from "@/lib/types";
 
 type MatchType = "mercenary" | "team_match";
 
@@ -126,7 +128,7 @@ function getPreviewStatus(type: MatchType, count: number) {
   }
 
   if (count <= 2) {
-    return { label: `지금 ${count}명 부족`, variant: "urgent" as const };
+    return { label: `${count}자리 부족`, variant: "urgent" as const };
   }
 
   return { label: `${count}명 모집 중`, variant: "soon" as const };
@@ -148,9 +150,24 @@ function normalizeKakaoPlace(place: KakaoPlace): PlaceSearchResult {
   };
 }
 
-export function CreateListingForm() {
+function isProfileSetupError(message: string) {
+  const normalized = message.toLowerCase();
+
+  return (
+    normalized.includes("auth session missing") ||
+    normalized.includes("auth_required") ||
+    normalized.includes("profile_required")
+  );
+}
+
+function CreateListingFormBody({
+  currentProfile,
+  onCreateListing,
+}: {
+  currentProfile?: Profile | null;
+  onCreateListing: (input: CreateMatchInput) => Promise<Match>;
+}) {
   const router = useRouter();
-  const { actions, currentProfile } = useDemoApp();
   const formRef = useRef<HTMLFormElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMap | null>(null);
@@ -162,7 +179,7 @@ export function CreateListingForm() {
   const [matchType, setMatchType] = useState<MatchType>("mercenary");
   const [neededCount, setNeededCount] = useState(2);
   const [teamFormat, setTeamFormat] = useState<TeamFormat>("5vs5");
-  const [level, setLevel] = useState("중급");
+  const [level, setLevel] = useState<CreateMatchInput["skill_level"]>("mid");
   const [fee, setFee] = useState<number>(feeConfig.mercenary.default);
   const [editingFee, setEditingFee] = useState(false);
   const [feeInput, setFeeInput] = useState("");
@@ -181,7 +198,6 @@ export function CreateListingForm() {
   const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
   const [placeSearchError, setPlaceSearchError] = useState("");
 
-  const [contactType, setContactType] = useState("request_only");
   const [contactValue, setContactValue] = useState("");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -380,37 +396,44 @@ export function CreateListingForm() {
     setStep((current) => Math.max(1, current - 1));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitError("");
 
-    const resolvedContactValue =
-      contactType === "openchat" ? contactValue.trim() || currentProfile?.open_chat_link?.trim() || "" : contactValue.trim();
+    if (currentProfile === null) {
+      startTransition(() => {
+        router.push("/profile?returnTo=%2Fcreate");
+      });
+      return;
+    }
 
-    if (contactType === "openchat" && !resolvedContactValue) {
-      setSubmitError("오픈채팅 링크를 입력해주세요.");
+    const resolvedContactValue = contactValue.trim();
+
+    if (!resolvedContactValue) {
+      setSubmitError("연결용 오픈채팅 링크를 입력해주세요.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const createdMatch = actions.createMatch({
+      const createdMatch = await onCreateListing({
         mode: matchType === "team_match" ? "team" : "solo",
         listing_type: listingType,
         title: venueName.trim(),
-        region: SUWON_LABEL,
+        region_slug: "suwon",
         address: address.trim(),
         lat: placeLat ?? SUWON_CENTER.lat,
         lng: placeLng ?? SUWON_CENTER.lng,
         start_at: `${date}T${time}:00`,
         fee: Number(fee),
-        needed_count: neededCount,
+        total_slots: neededCount,
+        remaining_slots: neededCount,
         min_group_size: matchType === "team_match" ? teamFormatPlayers[teamFormat] : 1,
         max_group_size: matchType === "team_match" ? teamFormatPlayers[teamFormat] : 1,
-        skill_level: level as MatchWithMeta["skill_level"],
-        contact_type: contactType as MatchWithMeta["contact_type"],
-        contact_value: resolvedContactValue,
+        skill_level: level,
+        contact_type: "request_only",
+        contact_link: resolvedContactValue,
         note: note.trim(),
       });
 
@@ -418,7 +441,18 @@ export function CreateListingForm() {
         router.push(`/activity?tab=listings&highlight=${createdMatch.id}&flash=created`);
       });
     } catch (createError) {
-      setSubmitError(createError instanceof Error ? createError.message : "매치를 올리지 못했습니다.");
+      const message =
+        createError instanceof Error ? createError.message : "매치를 올리지 못했습니다.";
+
+      if (isProfileSetupError(message)) {
+        setSubmitError("프로필을 먼저 저장한 뒤 다시 매치를 올려주세요.");
+        startTransition(() => {
+          router.push("/profile?returnTo=%2Fcreate");
+        });
+        return;
+      }
+
+      setSubmitError(message);
       setIsSubmitting(false);
     }
   }
@@ -431,7 +465,7 @@ export function CreateListingForm() {
     },
     3: {
       label: isSubmitting ? "게시 중..." : "매치 올리기",
-      disabled: isSubmitting || (contactType === "openchat" && !contactValue.trim()),
+      disabled: isSubmitting || !contactValue.trim(),
     },
   };
   const cta = ctaConfig[step];
@@ -451,24 +485,26 @@ export function CreateListingForm() {
     () =>
       ({
         id: "preview-match",
-        creator_id: currentProfile?.id ?? "preview-user",
+        creator_profile_id: currentProfile?.id ?? "preview-user",
         mode: (matchType === "team_match" ? "team" : "solo") as MatchWithMeta["mode"],
         listing_type: listingType,
         title: venueName || "풋살장명",
-        region: SUWON_LABEL,
+        region_slug: "suwon",
         address: address || SUWON_LABEL,
         lat: placeLat ?? SUWON_CENTER.lat,
         lng: placeLng ?? SUWON_CENTER.lng,
         start_at: previewStartAt,
         fee,
-        needed_count: neededCount,
+        total_slots: neededCount,
+        remaining_slots: neededCount,
         min_group_size: matchType === "team_match" ? teamFormatPlayers[teamFormat] : 1,
         max_group_size: matchType === "team_match" ? teamFormatPlayers[teamFormat] : 1,
-        skill_level: level as MatchWithMeta["skill_level"],
-        contact_type: contactType as MatchWithMeta["contact_type"],
-        contact_value: contactValue,
+        skill_level: level,
+        contact_type: "request_only",
+        contact_link: contactValue,
         note,
         status: "open",
+        region_label: SUWON_LABEL,
         distanceKm: previewDistanceKm,
         minutesUntilStart: previewMinutesUntilStart,
         statusLabel: preview.label,
@@ -477,7 +513,6 @@ export function CreateListingForm() {
       }) satisfies MatchWithMeta,
     [
       address,
-      contactType,
       contactValue,
       currentProfile?.id,
       fee,
@@ -502,7 +537,7 @@ export function CreateListingForm() {
     <div className="space-y-5 pb-[15.5rem]">
       <section className="surface-card rounded-[1.85rem] p-5">
         <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-          Create Match
+          CREATE MATCH
         </p>
         <h1 className="mt-1 text-[1.6rem] font-bold tracking-[-0.04em] text-[#112317]">
           {steps[step - 1].label}
@@ -541,7 +576,7 @@ export function CreateListingForm() {
               <div className="grid grid-cols-2 gap-1">
                 {[
                   { value: "mercenary" as MatchType, label: "용병 구함" },
-                  { value: "team_match" as MatchType, label: "팀매치" },
+                  { value: "team_match" as MatchType, label: "팀 매치" },
                 ].map((type) => (
                   <button
                     key={type.value}
@@ -636,10 +671,10 @@ export function CreateListingForm() {
 
             <div>
               <p className="font-display mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                Skill Level
+                실력
               </p>
               <div className={`grid grid-cols-4 ${matchType === "team_match" ? "gap-2" : "gap-2.5"}`}>
-                {skillLabels.map((skill) => (
+                {SKILL_LEVELS.map((skill) => (
                   <button
                     key={skill}
                     type="button"
@@ -652,7 +687,7 @@ export function CreateListingForm() {
                         : "bg-[#eef2ee] text-foreground"
                     }`}
                   >
-                    {skill}
+                    {getSkillLevelLabel(skill)}
                   </button>
                 ))}
               </div>
@@ -742,7 +777,7 @@ export function CreateListingForm() {
                     matchType === "team_match" ? "mt-2 text-[12px]" : "mt-3 text-[13px]"
                   }`}
                 >
-                  금액을 탭하면 직접 입력할 수 있어요
+                  금액을 누르면 직접 입력할 수 있어요.
                 </p>
               ) : null}
             </div>
@@ -783,7 +818,7 @@ export function CreateListingForm() {
 
             <label className="space-y-2">
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                풋살장 검색
+                장소 검색
               </span>
               <Button
                 type="button"
@@ -807,12 +842,12 @@ export function CreateListingForm() {
 
             <label className="space-y-2">
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                풋살장명
+                구장명
               </span>
               <Input
                 value={venueName}
                 onChange={(event) => setVenueName(event.target.value)}
-                placeholder="검색 결과에서 자동 입력됩니다"
+                placeholder="검색 결과에서 자동 입력됩니다."
               />
             </label>
 
@@ -822,7 +857,7 @@ export function CreateListingForm() {
               </span>
               <div className="rounded-[1.4rem] bg-[#eef2ee] px-4 py-3">
                 <p className={address ? "text-sm leading-6 text-[#112317]" : "text-sm text-[#88948c]"}>
-                  {address || "풋살장을 검색하면 주소가 자동으로 등록됩니다."}
+                  {address || "장소를 검색하면 주소가 자동으로 등록됩니다."}
                 </p>
               </div>
             </div>
@@ -832,33 +867,21 @@ export function CreateListingForm() {
         {step === 3 ? (
           <>
             <section className="surface-card space-y-4 rounded-[1.85rem] p-5">
-              <fieldset className="space-y-2">
-                <legend className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                  참여 방식
-                </legend>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { value: "request_only", label: "참가 요청" },
-                    { value: "openchat", label: "오픈채팅" },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setContactType(option.value)}
-                      className={`rounded-[1.2rem] px-4 py-3 text-center text-sm font-semibold transition ${
-                        contactType === option.value
-                          ? "bg-[#112317] text-white"
-                          : "bg-[#eef2ee] text-foreground"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+              <div className="space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+                  참여 흐름
+                </p>
+                <div className="rounded-[1.2rem] bg-[#eef2ee] px-4 py-4">
+                  <p className="text-sm font-semibold text-[#112317]">
+                    참가 요청 후 호스트가 수락하면 오픈채팅 입장이 열립니다.
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[#6f7c73]">
+                    생성자는 연결용 오픈채팅 링크만 입력하면 됩니다.
+                  </p>
                 </div>
-              </fieldset>
+              </div>
 
-              {contactType === "openchat" ? (
-                <label className="space-y-2">
+              <label className="space-y-2">
                   <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                     오픈채팅 링크
                   </span>
@@ -866,10 +889,12 @@ export function CreateListingForm() {
                     type="url"
                     value={contactValue}
                     onChange={(event) => setContactValue(event.target.value)}
-                    placeholder={currentProfile?.open_chat_link || "https://open.kakao.com/o/..."}
+                    placeholder="https://open.kakao.com/o/..."
                   />
+                  <p className="text-xs leading-5 text-[#6f7c73]">
+                    카카오톡 오픈채팅방 &gt; 공유 &gt; 링크 복사 후 붙여넣어 주세요.
+                  </p>
                 </label>
-              ) : null}
 
               <label className="space-y-2">
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
@@ -1032,4 +1057,40 @@ export function CreateListingForm() {
       ) : null}
     </div>
   );
+}
+
+function DemoCreateListingForm() {
+  const { actions, currentProfile } = useDemoApp();
+
+  return (
+    <CreateListingFormBody
+      currentProfile={currentProfile}
+      onCreateListing={async (input) => actions.createMatch(input)}
+    />
+  );
+}
+
+export function CreateListingForm({
+  currentProfile,
+}: {
+  currentProfile?: Profile | null;
+}) {
+  if (currentProfile !== undefined) {
+    return (
+      <CreateListingFormBody
+        currentProfile={currentProfile}
+        onCreateListing={async (input) => {
+          await ensureAnonymousSession();
+
+          if (!currentProfile) {
+            throw new Error("프로필을 먼저 입력해 주세요.");
+          }
+
+          return createMatchAction(input);
+        }}
+      />
+    );
+  }
+
+  return <DemoCreateListingForm />;
 }

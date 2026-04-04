@@ -2,11 +2,12 @@ import Link from "next/link";
 import { BusFront, CarFront, Clock, Footprints, MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { formatSkillLevel } from "@/lib/utils";
 import type { FeedContext, MatchWithMeta } from "@/lib/types";
 import { formatFee, formatRelativeStart } from "@/lib/utils";
 
 function getCardStatusLabel(match: MatchWithMeta) {
-  if (match.status === "matched" || match.needed_count <= 0) {
+  if (match.status === "matched" || match.remaining_slots <= 0) {
     return "마감";
   }
 
@@ -14,11 +15,11 @@ function getCardStatusLabel(match: MatchWithMeta) {
     return "팀 모집";
   }
 
-  return `${match.needed_count}자리`;
+  return `${match.remaining_slots}자리`;
 }
 
 function getCardStatusTone(match: MatchWithMeta, selectedGroupSize: FeedContext["groupSize"]) {
-  if (match.status === "matched" || match.needed_count <= 0) {
+  if (match.status === "matched" || match.remaining_slots <= 0) {
     return "calm" as const;
   }
 
@@ -28,7 +29,7 @@ function getCardStatusTone(match: MatchWithMeta, selectedGroupSize: FeedContext[
     }
 
     if (selectedGroupSize === 5) {
-      return match.needed_count <= selectedGroupSize ? "soon" as const : "success" as const;
+      return match.remaining_slots <= selectedGroupSize ? "soon" as const : "success" as const;
     }
 
     return "team" as const;
@@ -39,14 +40,14 @@ function getCardStatusTone(match: MatchWithMeta, selectedGroupSize: FeedContext[
   }
 
   if (selectedGroupSize === 5) {
-    return match.needed_count <= selectedGroupSize ? "soon" as const : "success" as const;
+    return match.remaining_slots <= selectedGroupSize ? "soon" as const : "success" as const;
   }
 
-  if (match.needed_count <= selectedGroupSize) {
+  if (match.remaining_slots <= selectedGroupSize) {
     return "urgent" as const;
   }
 
-  if (match.needed_count === selectedGroupSize + 1) {
+  if (match.remaining_slots === selectedGroupSize + 1) {
     return "soon" as const;
   }
 
@@ -104,7 +105,7 @@ export function MatchCard({
 
   const statusLabel = getCardStatusLabel(match);
   const statusTone = getCardStatusTone(match, selectedGroupSize);
-  const isClosed = match.status === "matched" || match.needed_count <= 0;
+  const isClosed = match.status === "matched" || match.remaining_slots <= 0;
 
   const content = (
     <article className={`surface-card rounded-[1.25rem] px-4 py-3.5 transition active:scale-[0.98] ${isClosed ? "opacity-50" : ""}`}>
@@ -140,7 +141,7 @@ export function MatchCard({
           </span>
         ))}
         <span className="text-[#c8cec9]">·</span>
-        <span>{match.skill_level}</span>
+        <span>{formatSkillLevel(match.skill_level)}</span>
         <span className="text-[#c8cec9]">·</span>
         <span>{getMatchFormatLabel(match)}</span>
         <span className="text-[#c8cec9]">·</span>

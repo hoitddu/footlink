@@ -2,9 +2,10 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getAppDataSource } from "@/lib/app-config";
 import { useDemoApp } from "@/lib/demo-state/provider";
 
-export function DemoIdentitySwitcher() {
+function DemoIdentitySwitcherBody() {
   const { state, actions, currentProfile } = useDemoApp();
 
   return (
@@ -15,11 +16,11 @@ export function DemoIdentitySwitcher() {
             Demo User
           </p>
           <p className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#112317]">
-            {currentProfile?.nickname ?? "데모 유저"}
+            {currentProfile?.nickname ?? "데모 사용자"}
           </p>
         </div>
         <Badge variant={currentProfile?.role === "captain" ? "team" : "success"}>
-          {currentProfile?.role === "captain" ? "호스트" : "신청자"}
+          {currentProfile?.role === "captain" ? "호스트" : "요청자"}
         </Badge>
       </div>
 
@@ -34,11 +35,19 @@ export function DemoIdentitySwitcher() {
           >
             <span className="text-sm font-bold">{profile.nickname}</span>
             <span className="text-xs font-semibold opacity-80">
-              {profile.role === "captain" ? "호스트 운영" : "참가자 시점"}
+              {profile.role === "captain" ? "호스트 관점" : "참가자 시점"}
             </span>
           </Button>
         ))}
       </div>
     </section>
   );
+}
+
+export function DemoIdentitySwitcher() {
+  if (getAppDataSource() !== "demo") {
+    return null;
+  }
+
+  return <DemoIdentitySwitcherBody />;
 }

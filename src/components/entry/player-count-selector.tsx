@@ -3,7 +3,7 @@
 import { Minus, Plus } from "lucide-react";
 import Link from "next/link";
 
-import { skillLabels } from "@/lib/mock-data";
+import { SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import type { SkillLevel } from "@/lib/types";
 
 const QUICK_OPTIONS = [1, 2, 3, 4, 5, 6];
@@ -90,7 +90,7 @@ export function PlayerCountSelector({
           Skill Level
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          {skillLabels.map((skill) => (
+          {SKILL_LEVELS.map((skill) => (
             <button
               key={skill}
               type="button"
@@ -101,7 +101,7 @@ export function PlayerCountSelector({
                   : "bg-[#eef2ee] text-[#55625a]"
               }`}
             >
-              {skill}
+              {getSkillLevelLabel(skill)}
             </button>
           ))}
         </div>

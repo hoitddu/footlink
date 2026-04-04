@@ -2,64 +2,72 @@ export type EntryMode = "solo" | "small_group" | "team";
 export type ListingType = "mercenary" | "partial_join" | "team_match";
 export type ContactType = "openchat" | "request_only";
 export type MatchStatus = "open" | "matched" | "closed" | "cancelled";
-export type ParticipationStatus =
-  | "pending"
-  | "chat_entered"
-  | "accepted"
-  | "rejected"
-  | "withdrawn";
-export type DemoNotificationKind = "host_request_received" | "request_accepted";
-export type SkillLevel = "입문" | "초급" | "중급" | "상급";
+export type ParticipationStatus = "pending" | "accepted" | "rejected" | "withdrawn" | "expired";
+export type DemoNotificationKind =
+  | "host_request_received"
+  | "request_accepted"
+  | "request_rejected";
+export type SkillLevel = "beginner" | "low" | "mid" | "high";
 export type FeedPreset = "recommended" | "time" | "distance" | "urgent" | "price";
+export type RegionSlug = "suwon";
+export type UserRole = "player" | "captain";
 
 export interface Profile {
   id: string;
+  auth_user_id?: string | null;
   nickname: string;
-  role: "player" | "captain";
-  preferred_mode: EntryMode;
+  role: UserRole;
+  preferred_mode?: EntryMode | null;
   preferred_regions: string[];
   skill_level: SkillLevel;
   age: number;
-  open_chat_link?: string;
+  open_chat_link?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Match {
   id: string;
-  creator_id: string;
+  creator_profile_id: string;
   mode: EntryMode;
   listing_type: ListingType;
   title: string;
-  region: string;
+  region_slug: RegionSlug;
   address: string;
   lat: number;
   lng: number;
   start_at: string;
   fee: number;
-  needed_count: number;
+  total_slots: number;
+  remaining_slots: number;
   min_group_size: number;
   max_group_size: number;
   skill_level: SkillLevel;
   contact_type: ContactType;
-  contact_value: string;
+  contact_link: string;
   note: string;
   status: MatchStatus;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ParticipationRequest {
   id: string;
   match_id: string;
-  requester_id: string;
-  host_id: string;
+  requester_profile_id: string;
+  host_profile_id: string;
   entry_channel: ContactType;
   requested_count: number;
   message: string;
   status: ParticipationStatus;
+  accepted_contact_link?: string | null;
   created_at: string;
   decided_at?: string;
+  updated_at?: string;
   host_note?: string;
 }
 
-export interface DemoNotification {
+export interface AppNotification {
   id: string;
   profile_id: string;
   kind: DemoNotificationKind;
@@ -72,10 +80,12 @@ export interface DemoNotification {
   read_at?: string;
 }
 
+export type DemoNotification = AppNotification;
+
 export interface RegionOption {
-  slug: string;
+  slug: RegionSlug;
   label: string;
-  area: "서울" | "경기";
+  area: "seoul" | "gyeonggi";
   lat: number;
   lng: number;
 }
@@ -100,12 +110,15 @@ export interface FeedDataSource {
   regions: RegionOption[];
 }
 
-export interface DemoAppState extends FeedDataSource {
+export interface AppState extends FeedDataSource {
   currentProfileId: string;
-  notifications: DemoNotification[];
+  notifications: AppNotification[];
 }
 
+export type DemoAppState = AppState;
+
 export interface MatchWithMeta extends Match {
+  region_label: string;
   distanceKm: number;
   minutesUntilStart: number;
   statusLabel: string;
@@ -114,7 +127,10 @@ export interface MatchWithMeta extends Match {
   organizer?: Profile;
 }
 
-export type CreateMatchInput = Omit<Match, "id" | "creator_id" | "status">;
+export type CreateMatchInput = Omit<
+  Match,
+  "id" | "creator_profile_id" | "status" | "created_at" | "updated_at"
+>;
 
 export interface SubmitParticipationInput {
   matchId: string;
@@ -122,16 +138,18 @@ export interface SubmitParticipationInput {
   message: string;
 }
 
+export interface UpdateProfileInput {
+  nickname: string;
+  age: number;
+  preferred_mode?: EntryMode | null;
+  preferred_regions: string[];
+  skill_level: SkillLevel;
+  open_chat_link?: string | null;
+}
+
 export interface DemoAppActions {
   switchProfile: (profileId: string) => void;
-  updateCurrentProfile: (
-    updates: Partial<
-      Pick<
-        Profile,
-        "nickname" | "preferred_mode" | "preferred_regions" | "skill_level" | "age" | "open_chat_link"
-      >
-    >,
-  ) => void;
+  updateCurrentProfile: (updates: Partial<UpdateProfileInput>) => void;
   createMatch: (input: CreateMatchInput) => Match;
   submitParticipation: (input: SubmitParticipationInput) => ParticipationRequest;
   acceptParticipation: (requestId: string, hostNote?: string) => ParticipationRequest;
@@ -139,4 +157,9 @@ export interface DemoAppActions {
   withdrawParticipation: (requestId: string) => ParticipationRequest;
   markNotificationsRead: (notificationIds?: string[]) => void;
   resetDemoState: () => void;
+}
+
+export interface ProfileFormState {
+  profile: Profile | null;
+  returnTo?: string;
 }

@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatAgeBand, formatSkillLevel } from "@/lib/utils";
 import {
   getParticipationStatusLabel,
   getParticipationStatusTone,
@@ -45,11 +46,11 @@ export function HostListingCard({
         <div>
           <h3 className="text-lg font-bold tracking-[-0.03em] text-[#112317]">{match.title}</h3>
           <p className="mt-1 text-sm text-muted">
-            {match.mode === "team" ? "상대 팀 1팀 모집" : `남은 자리 ${match.needed_count}명`}
+            {match.mode === "team" ? "상대 팀 1팀 모집" : `남은 자리 ${match.remaining_slots}명`}
           </p>
         </div>
         <Badge variant={match.status === "matched" ? "success" : match.mode === "team" ? "team" : "soon"}>
-          {match.status === "matched" ? "모집 완료" : match.mode === "team" ? "팀 매치" : `${match.needed_count}명 모집`}
+          {match.status === "matched" ? "모집 완료" : match.mode === "team" ? "팀 매치" : `${match.remaining_slots}명 모집`}
         </Badge>
       </div>
 
@@ -60,8 +61,8 @@ export function HostListingCard({
           </div>
         ) : (
           requests.map((request) => {
-            const requester = getProfileById(state, request.requester_id);
-            const actionable = request.status === "pending" || request.status === "chat_entered";
+            const requester = getProfileById(state, request.requester_profile_id);
+            const actionable = request.status === "pending";
 
             return (
               <div key={request.id} className="rounded-[1.2rem] bg-[#f7f9f7] p-4">
@@ -73,7 +74,7 @@ export function HostListingCard({
                     <p className="mt-1 text-sm text-muted">{formatCreatedAt(request.created_at)}</p>
                     {requester ? (
                       <p className="mt-2 text-sm font-medium text-[#536157]">
-                        실력 {requester.skill_level} · {requester.age}세
+                        실력 {formatSkillLevel(requester.skill_level)} · {formatAgeBand(requester.age)}
                       </p>
                     ) : null}
                   </div>
@@ -97,7 +98,7 @@ export function HostListingCard({
                       size="sm"
                       type="button"
                       onClick={() => onAccept(request.id)}
-                      disabled={match.needed_count < request.requested_count || match.status !== "open"}
+                      disabled={match.remaining_slots < request.requested_count || match.status !== "open"}
                     >
                       수락
                     </Button>

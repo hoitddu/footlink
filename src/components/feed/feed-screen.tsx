@@ -15,10 +15,10 @@ import {
 import { MatchCard } from "@/components/feed/match-card";
 import { Button } from "@/components/ui/button";
 import { buildContextQuery } from "@/lib/context";
+import { REGION_OPTIONS, SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { getFeedMatches } from "@/lib/feed";
-import { regions, skillLabels } from "@/lib/mock-data";
-import type { EntryMode, FeedContext, FeedPreset, SkillLevel } from "@/lib/types";
+import type { EntryMode, FeedContext, FeedDataSource, FeedPreset, SkillLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const presets: Array<{ value: FeedPreset; label: string }> = [
@@ -133,14 +133,15 @@ function normalizeRange(dateA: string, dateB?: string) {
   return { from: dateB, to: dateA };
 }
 
-export function FeedScreen({
+function FeedScreenView({
   initialContext,
   initialReferenceNow,
+  source,
 }: {
   initialContext: FeedContext;
   initialReferenceNow: number;
+  source: FeedDataSource;
 }) {
-  const { state } = useDemoApp();
   const [context, setContext] = useState(initialContext);
   const [referenceNow] = useState(initialReferenceNow);
   const [preset, setPreset] = useState<FeedPreset>("recommended");
@@ -151,8 +152,8 @@ export function FeedScreen({
   const [selectedQuickOptionId, setSelectedQuickOptionId] = useState<string | null>(null);
 
   const feedItems = useMemo(
-    () => getFeedMatches(state, context, preset, referenceNow),
-    [context, preset, referenceNow, state],
+    () => getFeedMatches(source, context, preset, referenceNow),
+    [context, preset, referenceNow, source],
   );
   const contextQuery = buildContextQuery(context);
   const quickOptions = useMemo(() => buildQuickOptions(new Date(referenceNow)), [referenceNow]);
@@ -169,7 +170,7 @@ export function FeedScreen({
   const filterSummary = [
     "수원",
     getParticipantLabel(context),
-    context.skillLevel ?? "전체",
+    context.skillLevel ? getSkillLevelLabel(context.skillLevel) : "전체",
     selectedDateLabel || "전체",
   ].join(" · ");
 
@@ -350,7 +351,7 @@ export function FeedScreen({
                       value="suwon"
                       disabled
                     >
-                      {regions.map((region) => (
+                      {REGION_OPTIONS.map((region) => (
                         <option key={region.slug} value={region.slug}>
                           {region.label}
                         </option>
@@ -393,9 +394,9 @@ export function FeedScreen({
                       onChange={(event) => handleSkillChange(event.target.value)}
                     >
                       <option value="all">전체</option>
-                      {skillLabels.map((skill) => (
+                      {SKILL_LEVELS.map((skill) => (
                         <option key={skill} value={skill}>
-                          {skill}
+                          {getSkillLevelLabel(skill)}
                         </option>
                       ))}
                     </select>
@@ -577,4 +578,28 @@ export function FeedScreen({
       ) : null}
     </div>
   );
+}
+
+function DemoFeedScreen(props: {
+  initialContext: FeedContext;
+  initialReferenceNow: number;
+}) {
+  const { state } = useDemoApp();
+
+  return <FeedScreenView {...props} source={state} />;
+}
+
+export function FeedScreen({
+  source,
+  ...props
+}: {
+  initialContext: FeedContext;
+  initialReferenceNow: number;
+  source?: FeedDataSource;
+}) {
+  if (source) {
+    return <FeedScreenView {...props} source={source} />;
+  }
+
+  return <DemoFeedScreen {...props} />;
 }

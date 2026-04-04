@@ -1,7 +1,7 @@
 import { createDemoSeed } from "@/lib/demo-state/seed";
 import type {
+  AppNotification,
   CreateMatchInput,
-  DemoNotification,
   DemoAppState,
   Match,
   ParticipationRequest,
@@ -10,7 +10,7 @@ import type {
   SubmitParticipationInput,
 } from "@/lib/types";
 
-const activeStatuses: ParticipationStatus[] = ["pending", "chat_entered", "accepted"];
+const activeStatuses: ParticipationStatus[] = ["pending", "accepted"];
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -22,7 +22,10 @@ function cloneState(state: DemoAppState): DemoAppState {
     matches: state.matches.map((match) => ({ ...match })),
     participationRequests: state.participationRequests.map((request) => ({ ...request })),
     notifications: state.notifications.map((notification) => ({ ...notification })),
-    profiles: state.profiles.map((profile) => ({ ...profile, preferred_regions: [...profile.preferred_regions] })),
+    profiles: state.profiles.map((profile) => ({
+      ...profile,
+      preferred_regions: [...profile.preferred_regions],
+    })),
     regions: state.regions.map((region) => ({ ...region })),
   };
 }
@@ -31,7 +34,7 @@ function getCurrentProfile(state: DemoAppState) {
   const profile = state.profiles.find((item) => item.id === state.currentProfileId);
 
   if (!profile) {
-    throw new Error("현재 데모 유저를 찾을 수 없습니다.");
+    throw new Error("현재 데모 사용자를 찾을 수 없습니다.");
   }
 
   return profile;
@@ -51,7 +54,7 @@ function getRequest(state: DemoAppState, requestId: string) {
   const request = state.participationRequests.find((item) => item.id === requestId);
 
   if (!request) {
-    throw new Error("참가 기록을 찾을 수 없습니다.");
+    throw new Error("참가 요청을 찾을 수 없습니다.");
   }
 
   return request;
@@ -59,7 +62,7 @@ function getRequest(state: DemoAppState, requestId: string) {
 
 function assertProfileExists(state: DemoAppState, profileId: string) {
   if (!state.profiles.some((profile) => profile.id === profileId)) {
-    throw new Error("데모 유저를 찾을 수 없습니다.");
+    throw new Error("데모 사용자를 찾을 수 없습니다.");
   }
 }
 
@@ -73,7 +76,10 @@ function getProfile(state: DemoAppState, profileId: string) {
   return profile;
 }
 
-function pushNotification(state: DemoAppState, notification: Omit<DemoNotification, "id" | "created_at">) {
+function pushNotification(
+  state: DemoAppState,
+  notification: Omit<AppNotification, "id" | "created_at">,
+) {
   state.notifications = [
     {
       id: createId("notification"),
@@ -91,19 +97,15 @@ function getAllowedRequestCount(match: Match) {
 
   return {
     min: match.min_group_size,
-    max: Math.min(match.max_group_size, Math.max(match.needed_count, 1)),
+    max: Math.min(match.max_group_size, Math.max(match.remaining_slots, 1)),
   };
 }
 
-function findActiveParticipation(
-  state: DemoAppState,
-  matchId: string,
-  requesterId: string,
-) {
+function findActiveParticipation(state: DemoAppState, matchId: string, requesterProfileId: string) {
   return state.participationRequests.find(
     (request) =>
       request.match_id === matchId &&
-      request.requester_id === requesterId &&
+      request.requester_profile_id === requesterProfileId &&
       activeStatuses.includes(request.status),
   );
 }
@@ -122,9 +124,10 @@ function closeRemainingRequests(state: DemoAppState, matchId: string, acceptedRe
 
     return {
       ...request,
-      status: "rejected",
+      status: "expired",
       decided_at: now,
-      host_note: request.host_note ?? "정원이 모두 마감되었습니다.",
+      updated_at: now,
+      host_note: request.host_note ?? "정원이 모두 마감됐습니다.",
     };
   });
 }
@@ -172,17 +175,20 @@ export function updateCurrentProfile(
 }
 
 export function createMatch(state: DemoAppState, input: CreateMatchInput) {
-  if (input.contact_type === "openchat" && !input.contact_value.trim()) {
-    throw new Error("오픈채팅 링크를 입력해주세요.");
+  if (!input.contact_link.trim()) {
+    throw new Error("연결용 오픈채팅 링크를 입력해주세요.");
   }
 
   const next = cloneState(state);
   const currentProfile = getCurrentProfile(next);
+  const createdAt = new Date().toISOString();
   const createdMatch: Match = {
     ...input,
     id: createId("match"),
-    creator_id: currentProfile.id,
+    creator_profile_id: currentProfile.id,
     status: "open",
+    created_at: createdAt,
+    updated_at: createdAt,
   };
 
   next.matches = [createdMatch, ...next.matches];
@@ -194,9 +200,9 @@ export function submitParticipation(state: DemoAppState, input: SubmitParticipat
   const next = cloneState(state);
   const currentProfile = getCurrentProfile(next);
   const match = getMatch(next, input.matchId);
-  const host = getProfile(next, match.creator_id);
+  const host = getProfile(next, match.creator_profile_id);
 
-  if (match.creator_id === currentProfile.id) {
+  if (match.creator_profile_id === currentProfile.id) {
     throw new Error("내가 만든 매치에는 참가 요청을 보낼 수 없습니다.");
   }
 
@@ -207,7 +213,7 @@ export function submitParticipation(state: DemoAppState, input: SubmitParticipat
   const existing = findActiveParticipation(next, match.id, currentProfile.id);
 
   if (existing) {
-    throw new Error("이미 진행 중인 참가 기록이 있습니다.");
+    throw new Error("이미 진행 중인 참가 요청이 있습니다.");
   }
 
   const requestedCount = Math.trunc(input.requestedCount);
@@ -217,20 +223,22 @@ export function submitParticipation(state: DemoAppState, input: SubmitParticipat
     throw new Error("요청 가능한 인원 수가 아닙니다.");
   }
 
-  if (requestedCount > match.needed_count) {
+  if (requestedCount > match.remaining_slots) {
     throw new Error("남은 자리보다 많은 인원을 요청할 수 없습니다.");
   }
 
+  const now = new Date().toISOString();
   const createdRequest: ParticipationRequest = {
     id: createId("request"),
     match_id: match.id,
-    requester_id: currentProfile.id,
-    host_id: match.creator_id,
+    requester_profile_id: currentProfile.id,
+    host_profile_id: match.creator_profile_id,
     entry_channel: match.contact_type,
     requested_count: requestedCount,
     message: input.message.trim(),
     status: "pending",
-    created_at: new Date().toISOString(),
+    created_at: now,
+    updated_at: now,
   };
 
   next.participationRequests = [createdRequest, ...next.participationRequests];
@@ -252,38 +260,42 @@ export function acceptParticipation(state: DemoAppState, requestId: string, host
   const currentProfile = getCurrentProfile(next);
   const request = getRequest(next, requestId);
 
-  if (request.host_id !== currentProfile.id) {
+  if (request.host_profile_id !== currentProfile.id) {
     throw new Error("호스트만 요청을 수락할 수 있습니다.");
   }
 
-  if (!["pending", "chat_entered"].includes(request.status)) {
-    throw new Error("수락할 수 없는 상태입니다.");
+  if (request.status !== "pending") {
+    throw new Error("수락할 수 없는 요청 상태입니다.");
   }
 
   const match = getMatch(next, request.match_id);
-  const requester = getProfile(next, request.requester_id);
+  const requester = getProfile(next, request.requester_profile_id);
 
-  if (request.entry_channel === "request_only" && !currentProfile.open_chat_link?.trim()) {
-    throw new Error("요청을 수락하기 전에 프로필에 오픈채팅 링크를 먼저 설정해주세요.");
+  if (!match.contact_link?.trim()) {
+    throw new Error("CONTACT_LINK_REQUIRED");
   }
 
   if (match.status !== "open") {
     throw new Error("이미 마감된 매치입니다.");
   }
 
-  if (match.needed_count < request.requested_count) {
+  if (match.remaining_slots < request.requested_count) {
     throw new Error("남은 자리가 부족합니다.");
   }
 
-  match.needed_count -= request.requested_count;
-  if (match.needed_count <= 0) {
-    match.needed_count = 0;
+  match.remaining_slots -= request.requested_count;
+  match.updated_at = new Date().toISOString();
+
+  if (match.remaining_slots <= 0) {
+    match.remaining_slots = 0;
     match.status = "matched";
   }
 
   request.status = "accepted";
   request.decided_at = new Date().toISOString();
+  request.updated_at = request.decided_at;
   request.host_note = hostNote?.trim() || request.host_note;
+  request.accepted_contact_link = match.contact_link || null;
 
   if (match.status === "matched") {
     closeRemainingRequests(next, match.id, request.id);
@@ -307,17 +319,32 @@ export function rejectParticipation(state: DemoAppState, requestId: string, host
   const currentProfile = getCurrentProfile(next);
   const request = getRequest(next, requestId);
 
-  if (request.host_id !== currentProfile.id) {
+  if (request.host_profile_id !== currentProfile.id) {
     throw new Error("호스트만 요청을 거절할 수 있습니다.");
   }
 
-  if (!["pending", "chat_entered"].includes(request.status)) {
-    throw new Error("거절할 수 없는 상태입니다.");
+  if (request.status !== "pending") {
+    throw new Error("거절할 수 없는 요청 상태입니다.");
   }
 
+  const requester = getProfile(next, request.requester_profile_id);
+  const match = getMatch(next, request.match_id);
+  const now = new Date().toISOString();
+
   request.status = "rejected";
-  request.decided_at = new Date().toISOString();
+  request.decided_at = now;
+  request.updated_at = now;
   request.host_note = hostNote?.trim() || request.host_note;
+
+  pushNotification(next, {
+    profile_id: requester.id,
+    kind: "request_rejected",
+    title: "참가 요청이 거절됐어요",
+    body: `${currentProfile.nickname}님이 ${match.title} 요청을 거절했어요.`,
+    href: `/activity?tab=requests&highlight=${request.id}&flash=rejected`,
+    related_match_id: match.id,
+    related_request_id: request.id,
+  });
 
   return { state: next, request };
 }
@@ -327,16 +354,18 @@ export function withdrawParticipation(state: DemoAppState, requestId: string) {
   const currentProfile = getCurrentProfile(next);
   const request = getRequest(next, requestId);
 
-  if (request.requester_id !== currentProfile.id) {
-    throw new Error("신청자만 요청을 취소할 수 있습니다.");
+  if (request.requester_profile_id !== currentProfile.id) {
+    throw new Error("요청자만 참가 요청을 취소할 수 있습니다.");
   }
 
-  if (!["pending", "chat_entered"].includes(request.status)) {
-    throw new Error("취소할 수 없는 상태입니다.");
+  if (request.status !== "pending") {
+    throw new Error("취소할 수 없는 요청 상태입니다.");
   }
 
+  const now = new Date().toISOString();
   request.status = "withdrawn";
-  request.decided_at = new Date().toISOString();
+  request.decided_at = now;
+  request.updated_at = now;
 
   return { state: next, request };
 }

@@ -1,4 +1,4 @@
-import { regions } from "@/lib/mock-data";
+import { REGION_OPTIONS } from "@/lib/constants";
 import type { EntryMode, FeedContext, SkillLevel } from "@/lib/types";
 
 function parseNumber(value?: string) {
@@ -40,7 +40,8 @@ export function parseFeedContext(searchParams: Record<string, string | undefined
   const skillLevel = searchParams.skill as SkillLevel | undefined;
   const lat = parseNumber(searchParams.lat);
   const lng = parseNumber(searchParams.lng);
-  const fallbackRegion = regions.find((region) => region.slug === regionSlug) ?? regions[0];
+  const fallbackRegion =
+    REGION_OPTIONS.find((region) => region.slug === regionSlug) ?? REGION_OPTIONS[0];
 
   const context: FeedContext = {
     mode,

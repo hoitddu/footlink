@@ -4,6 +4,11 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  acceptParticipationAction,
+  rejectParticipationAction,
+  withdrawParticipationAction,
+} from "@/app/actions/requests";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
 import { FlashBanner } from "@/components/app/flash-banner";
 import { SectionHeading } from "@/components/app/section-heading";
@@ -21,20 +26,32 @@ import {
   getNotificationsForCurrentProfile,
   getUnreadNotificationIds,
 } from "@/lib/demo-state/selectors";
+import type { DemoAppState } from "@/lib/types";
 
 type ActivityTab = "requests" | "listings";
 
-export function ActivityScreen({
+function ActivityScreenBody({
   flash,
   initialTab = "requests",
   highlight,
+  state,
+  onWithdraw,
+  onAccept,
+  onReject,
+  notificationsReadEnabled,
+  onMarkAllNotificationsRead,
 }: {
-  flash?: "created" | "requested" | "chat_entered" | "accepted" | "rejected" | "withdrawn";
+  flash?: "created" | "requested" | "accepted" | "rejected" | "withdrawn";
   initialTab?: ActivityTab;
   highlight?: string;
+  state: DemoAppState;
+  onWithdraw: (requestId: string) => Promise<void>;
+  onAccept: (requestId: string) => Promise<void>;
+  onReject: (requestId: string) => Promise<void>;
+  notificationsReadEnabled: boolean;
+  onMarkAllNotificationsRead?: () => void;
 }) {
   const router = useRouter();
-  const { state, actions } = useDemoApp();
   const [error, setError] = useState("");
   const currentTab = initialTab;
 
@@ -76,57 +93,52 @@ export function ActivityScreen({
     });
   }
 
-  function handleWithdraw(requestId: string) {
+  async function handleWithdraw(requestId: string) {
     setError("");
 
     try {
-      const updated = actions.withdrawParticipation(requestId);
+      await onWithdraw(requestId);
       replaceActivityQuery({
         tab: "requests",
-        highlight: updated.id,
+        highlight: requestId,
         flash: "withdrawn",
       });
+      router.refresh();
     } catch (withdrawError) {
       setError(withdrawError instanceof Error ? withdrawError.message : "요청을 취소하지 못했습니다.");
     }
   }
 
-  function handleAccept(requestId: string) {
+  async function handleAccept(requestId: string, matchId: string) {
     setError("");
 
     try {
-      const updated = actions.acceptParticipation(requestId);
+      await onAccept(requestId);
       replaceActivityQuery({
         tab: "listings",
-        highlight: updated.match_id,
+        highlight: matchId,
         flash: "accepted",
       });
+      router.refresh();
     } catch (acceptError) {
       setError(acceptError instanceof Error ? acceptError.message : "요청을 수락하지 못했습니다.");
     }
   }
 
-  function handleReject(requestId: string) {
+  async function handleReject(requestId: string, matchId: string) {
     setError("");
 
     try {
-      const updated = actions.rejectParticipation(requestId);
+      await onReject(requestId);
       replaceActivityQuery({
         tab: "listings",
-        highlight: updated.match_id,
+        highlight: matchId,
         flash: "rejected",
       });
+      router.refresh();
     } catch (rejectError) {
       setError(rejectError instanceof Error ? rejectError.message : "요청을 거절하지 못했습니다.");
     }
-  }
-
-  function handleMarkAllNotificationsRead() {
-    if (unreadNotificationIds.length === 0) {
-      return;
-    }
-
-    actions.markNotificationsRead(unreadNotificationIds);
   }
 
   return (
@@ -135,7 +147,7 @@ export function ActivityScreen({
         <SectionHeading
           eyebrow="Activity"
           title="참가 요청과 모집 상태"
-          description="내가 보낸 요청과 내가 올린 모집을 한 곳에서 관리할 수 있어요."
+          description="보낸 요청과 내가 올린 모집글을 한 곳에서 관리해요."
         />
         <div className="mt-4 space-y-3">
           <FlashBanner flash={flash} />
@@ -151,8 +163,8 @@ export function ActivityScreen({
 
       <NotificationCenter
         notifications={notifications}
-        unreadCount={unreadNotificationIds.length}
-        onMarkAllRead={handleMarkAllNotificationsRead}
+        unreadCount={notificationsReadEnabled ? unreadNotificationIds.length : notifications.length}
+        onMarkAllRead={notificationsReadEnabled ? onMarkAllNotificationsRead : undefined}
       />
 
       <Tabs value={currentTab} onValueChange={handleTabChange}>
@@ -181,7 +193,7 @@ export function ActivityScreen({
                 <RequestStatusCard
                   key={request.id}
                   highlighted={highlight === request.id}
-                  host={getProfileById(state, request.host_id)}
+                  host={getProfileById(state, request.host_profile_id)}
                   match={match}
                   onWithdraw={() => handleWithdraw(request.id)}
                   request={request}
@@ -206,8 +218,8 @@ export function ActivityScreen({
                 key={match.id}
                 highlighted={highlight === match.id}
                 match={match}
-                onAccept={handleAccept}
-                onReject={handleReject}
+                onAccept={(requestId) => handleAccept(requestId, match.id)}
+                onReject={(requestId) => handleReject(requestId, match.id)}
                 requests={getInboundRequestsForMatch(state, match.id)}
                 state={state}
               />
@@ -217,4 +229,70 @@ export function ActivityScreen({
       </Tabs>
     </div>
   );
+}
+
+function DemoActivityScreen(props: {
+  flash?: "created" | "requested" | "accepted" | "rejected" | "withdrawn";
+  initialTab?: ActivityTab;
+  highlight?: string;
+}) {
+  const { state, actions } = useDemoApp();
+
+  return (
+    <ActivityScreenBody
+      {...props}
+      state={state}
+      onWithdraw={async (requestId) => {
+        actions.withdrawParticipation(requestId);
+      }}
+      onAccept={async (requestId) => {
+        actions.acceptParticipation(requestId);
+      }}
+      onReject={async (requestId) => {
+        actions.rejectParticipation(requestId);
+      }}
+      notificationsReadEnabled
+      onMarkAllNotificationsRead={() => {
+        const ids = getUnreadNotificationIds(state);
+        if (ids.length > 0) {
+          actions.markNotificationsRead(ids);
+        }
+      }}
+    />
+  );
+}
+
+export function ActivityScreen({
+  flash,
+  initialTab = "requests",
+  highlight,
+  stateSnapshot,
+}: {
+  flash?: "created" | "requested" | "accepted" | "rejected" | "withdrawn";
+  initialTab?: ActivityTab;
+  highlight?: string;
+  stateSnapshot?: DemoAppState;
+}) {
+  if (stateSnapshot) {
+    return (
+      <ActivityScreenBody
+        flash={flash}
+        initialTab={initialTab}
+        highlight={highlight}
+        state={stateSnapshot}
+        onWithdraw={async (requestId) => {
+          await withdrawParticipationAction(requestId);
+        }}
+        onAccept={async (requestId) => {
+          await acceptParticipationAction(requestId);
+        }}
+        onReject={async (requestId) => {
+          await rejectParticipationAction(requestId);
+        }}
+        notificationsReadEnabled={false}
+      />
+    );
+  }
+
+  return <DemoActivityScreen flash={flash} highlight={highlight} initialTab={initialTab} />;
 }

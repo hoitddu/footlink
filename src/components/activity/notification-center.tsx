@@ -24,7 +24,7 @@ export function NotificationCenter({
 }: {
   notifications: DemoNotification[];
   unreadCount: number;
-  onMarkAllRead: () => void;
+  onMarkAllRead?: () => void;
 }) {
   return (
     <section className="surface-card rounded-[1.75rem] p-5">
@@ -33,7 +33,7 @@ export function NotificationCenter({
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">Notifications</p>
           <h2 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#112317]">앱 내부 알림</h2>
         </div>
-        {unreadCount > 0 ? (
+        {unreadCount > 0 && onMarkAllRead ? (
           <Button size="sm" type="button" variant="secondary" onClick={onMarkAllRead}>
             <CheckCheck className="mr-1 h-4 w-4" />
             모두 확인

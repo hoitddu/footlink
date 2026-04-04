@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList, House, Plus, UserRound } from "lucide-react";
 
+import { getAppDataSource } from "@/lib/app-config";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { getUnreadNotificationCount } from "@/lib/demo-state/selectors";
 import { cn } from "@/lib/utils";
@@ -15,11 +16,9 @@ const items = [
   { href: "/profile", label: "프로필", icon: UserRound },
 ];
 
-export function BottomNav() {
+function BottomNavFrame({ unreadCount }: { unreadCount: number }) {
   const pathname = usePathname();
-  const { state } = useDemoApp();
   const hideOnMatchDetail = pathname.startsWith("/match/");
-  const unreadCount = getUnreadNotificationCount(state);
 
   if (hideOnMatchDetail) {
     return null;
@@ -57,4 +56,17 @@ export function BottomNav() {
       </nav>
     </div>
   );
+}
+
+function DemoBottomNav() {
+  const { state } = useDemoApp();
+  return <BottomNavFrame unreadCount={getUnreadNotificationCount(state)} />;
+}
+
+export function BottomNav() {
+  if (getAppDataSource() === "demo") {
+    return <DemoBottomNav />;
+  }
+
+  return <BottomNavFrame unreadCount={0} />;
 }

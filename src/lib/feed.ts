@@ -1,3 +1,4 @@
+import { getRegionLabel } from "@/lib/constants";
 import type {
   EntryMode,
   FeedContext,
@@ -59,7 +60,7 @@ function isCompatible(match: Match, mode: EntryMode, groupSize: number) {
 }
 
 function getStatusMeta(match: Match, minutesUntilStart: number) {
-  if (match.status === "matched" || match.needed_count <= 0) {
+  if (match.status === "matched" || match.remaining_slots <= 0) {
     return { label: "모집 완료", tone: "calm" as const };
   }
 
@@ -67,16 +68,16 @@ function getStatusMeta(match: Match, minutesUntilStart: number) {
     return { label: "상대 팀 모집 중", tone: "team" as const };
   }
 
-  if (minutesUntilStart <= 60 && match.needed_count > 0) {
+  if (minutesUntilStart <= 60 && match.remaining_slots > 0) {
     return {
-      label: `지금 ${match.needed_count}자리 부족`,
+      label: `지금 ${match.remaining_slots}자리 부족`,
       tone: "urgent" as const,
     };
   }
 
   if (minutesUntilStart <= 120) {
     return {
-      label: `${minutesUntilStart}분 뒤 시작`,
+      label: `${minutesUntilStart}분 후 시작`,
       tone: "soon" as const,
     };
   }
@@ -115,7 +116,7 @@ function scoreMatch(
     score += 25;
   }
 
-  if (match.needed_count <= 2) {
+  if (match.remaining_slots <= 2) {
     score += 20;
   }
 
@@ -143,8 +144,8 @@ function applyPreset(matchesWithMeta: MatchWithMeta[], preset: FeedPreset) {
 
   if (preset === "urgent") {
     return [...matchesWithMeta].sort((left, right) => {
-      if (left.needed_count !== right.needed_count) {
-        return left.needed_count - right.needed_count;
+      if (left.remaining_slots !== right.remaining_slots) {
+        return left.remaining_slots - right.remaining_slots;
       }
 
       if (left.minutesUntilStart !== right.minutesUntilStart) {
@@ -215,12 +216,13 @@ export function getFeedMatches(
 
       return {
         ...match,
+        region_label: getRegionLabel(match.region_slug),
         distanceKm,
         minutesUntilStart,
         statusLabel: status.label,
         statusTone: status.tone,
         compatibilityScore: scoreMatch(match, context, distanceKm, minutesUntilStart),
-        organizer: source.profiles.find((profile) => profile.id === match.creator_id),
+        organizer: source.profiles.find((profile) => profile.id === match.creator_profile_id),
       } satisfies MatchWithMeta;
     });
 
@@ -241,8 +243,8 @@ export function getMatchById(source: FeedDataSource, id: string, referenceNow = 
     return null;
   }
 
-  const organizer = source.profiles.find((profile) => profile.id === match.creator_id);
-  const region = source.regions.find((item) => item.label === match.region);
+  const organizer = source.profiles.find((profile) => profile.id === match.creator_profile_id);
+  const region = source.regions.find((item) => item.slug === match.region_slug);
   const distanceKm = region ? haversineDistance(region.lat, region.lng, match.lat, match.lng) : 0.8;
   const minutesUntilStart = Math.max(
     1,
@@ -252,6 +254,7 @@ export function getMatchById(source: FeedDataSource, id: string, referenceNow = 
 
   return {
     ...match,
+    region_label: getRegionLabel(match.region_slug),
     distanceKm,
     minutesUntilStart,
     statusLabel: status.label,

@@ -1,6 +1,9 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import { getAgeBandLabel, getSkillLevelLabel } from "@/lib/constants";
+import type { SkillLevel } from "@/lib/types";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -89,6 +92,14 @@ export function formatStartAt(date: string) {
   const minute = parts.find((part) => part.type === "minute")?.value ?? "";
 
   return `${month}월 ${day}일 ${hour}:${minute}`;
+}
+
+export function formatSkillLevel(level: SkillLevel) {
+  return getSkillLevelLabel(level);
+}
+
+export function formatAgeBand(age: number) {
+  return getAgeBandLabel(age);
 }
 
 export function formatRelativeStart(minutesUntilStart: number) {

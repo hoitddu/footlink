@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getRegionLabel } from "@/lib/constants";
 import {
   getParticipationContactLink,
   getParticipationStatusLabel,
@@ -38,7 +39,7 @@ export function RequestStatusCard({
   onWithdraw?: () => void;
 }) {
   const contactLink = getParticipationContactLink(state, request);
-  const canWithdraw = request.status === "pending" || request.status === "chat_entered";
+  const canWithdraw = request.status === "pending";
 
   return (
     <article
@@ -67,6 +68,7 @@ export function RequestStatusCard({
       <div className="mt-3 space-y-1 text-sm text-muted">
         <p>호스트: {host?.nickname ?? "FootLink 호스트"}</p>
         <p>참여 방식: {request.entry_channel === "openchat" ? "오픈채팅" : "참가 요청"}</p>
+        <p>지역: {getRegionLabel(match.region_slug)}</p>
         {request.host_note ? <p>호스트 메모: {request.host_note}</p> : null}
       </div>
 
