@@ -142,7 +142,7 @@ function MatchDetailBody({
       <div>
         <h1 className="text-[1.3rem] font-bold tracking-[-0.03em] text-[#112317]">{match.title}</h1>
         <p className="mt-1 text-[13px] font-semibold text-[#5f6c64]">
-          {match.region_label} 쨌 {formatSkillLevel(match.skill_level)} 쨌 {getMatchFormatLabel(match)} 쨌 {remainingLabel}
+          {match.region_label} · {formatSkillLevel(match.skill_level)} · {getMatchFormatLabel(match)} · {remainingLabel}
         </p>
       </div>
 
@@ -169,7 +169,7 @@ function MatchDetailBody({
             const Icon = travelIcons[est.mode];
             return (
               <span key={est.mode} className="flex items-center gap-0.5">
-                {index > 0 ? <span className="mr-1.5 text-[#c8cec9]">쨌</span> : null}
+                {index > 0 ? <span className="mr-1.5 text-[#c8cec9]">·</span> : null}
                 <Icon className="h-3 w-3" />
                 {est.minutes}분
               </span>
@@ -195,8 +195,8 @@ function MatchDetailBody({
           <div>
             <p className="text-[13px] font-bold text-[#112317]">{match.organizer?.nickname ?? "FootLink 호스트"}</p>
             <p className="text-[12px] text-[#5f6c64]">
-              {match.organizer?.preferred_regions.join(" 쨌 ") ?? match.region_label}
-              {match.organizer ? ` 쨌 ${formatAgeBand(match.organizer.age)}` : ""}
+              {match.organizer?.preferred_regions.join(" · ") ?? match.region_label}
+              {match.organizer ? ` · ${formatAgeBand(match.organizer.age)}` : ""}
             </p>
           </div>
         </div>
