@@ -4,7 +4,9 @@ import { createBrowserClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
 
 import { getAppDataSource } from "@/lib/app-config";
+import { mapMatchRequestRow, mapProfileRow } from "@/lib/supabase/mappers";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/config";
+import type { MatchRequestRow, ProfileRow } from "@/lib/supabase/types";
 
 let browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -42,4 +44,66 @@ export async function ensureAnonymousSession() {
   }
 
   return data.user as User | null;
+}
+
+export async function getBrowserCurrentProfile() {
+  if (getAppDataSource() !== "supabase") {
+    return null;
+  }
+
+  const supabase = createBrowserSupabaseClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    if (userError && !userError.message.toLowerCase().includes("auth session missing")) {
+      throw userError;
+    }
+
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? mapProfileRow(data as ProfileRow) : null;
+}
+
+export async function getBrowserMatchPersonalization(matchId: string) {
+  const currentProfile = await getBrowserCurrentProfile();
+
+  if (!currentProfile) {
+    return {
+      currentProfile: null,
+      myRequest: null,
+    };
+  }
+
+  const supabase = createBrowserSupabaseClient();
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select("*")
+    .eq("match_id", matchId)
+    .eq("requester_profile_id", currentProfile.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    currentProfile,
+    myRequest: data ? mapMatchRequestRow(data as MatchRequestRow) : null,
+  };
 }

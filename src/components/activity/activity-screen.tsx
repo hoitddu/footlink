@@ -1,22 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { cancelMatchAction } from "@/app/actions/matches";
 import {
   acceptParticipationAction,
   confirmParticipationAction,
   rejectParticipationAction,
   withdrawParticipationAction,
 } from "@/app/actions/requests";
-import { cancelMatchAction } from "@/app/actions/matches";
-import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
-import { FlashBanner } from "@/components/app/flash-banner";
-import { SectionHeading } from "@/components/app/section-heading";
 import { HostListingCard } from "@/components/activity/host-listing-card";
 import { NotificationCenter } from "@/components/activity/notification-center";
 import { RequestStatusCard } from "@/components/activity/request-status-card";
+import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
+import { FlashBanner } from "@/components/app/flash-banner";
+import { SectionHeading } from "@/components/app/section-heading";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDemoApp } from "@/lib/demo-state/provider";
@@ -24,8 +24,8 @@ import {
   getHostedMatches,
   getInboundRequestsForMatch,
   getMyParticipationRequests,
-  getProfileById,
   getNotificationsForCurrentProfile,
+  getProfileById,
   getUnreadNotificationIds,
 } from "@/lib/demo-state/selectors";
 import type { DemoAppState } from "@/lib/types";
@@ -39,6 +39,9 @@ type ActivityFlash =
   | "rejected"
   | "withdrawn"
   | "deleted";
+type PendingActivityAction =
+  | { targetId: string; kind: "withdraw" | "accept" | "reject" | "confirm" | "delete" }
+  | null;
 
 function ActivityScreenBody({
   flash,
@@ -69,12 +72,18 @@ function ActivityScreenBody({
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [pendingAction, setPendingAction] = useState<PendingActivityAction>(null);
   const currentTab = initialTab;
 
   const myRequests = useMemo(() => getMyParticipationRequests(state), [state]);
   const hostedMatches = useMemo(() => getHostedMatches(state), [state]);
   const notifications = useMemo(() => getNotificationsForCurrentProfile(state), [state]);
   const unreadNotificationIds = useMemo(() => getUnreadNotificationIds(state), [state]);
+
+  useEffect(() => {
+    router.prefetch("/activity?tab=requests");
+    router.prefetch("/activity?tab=listings");
+  }, [router]);
 
   function replaceActivityQuery(next: Record<string, string | undefined>) {
     const params = new URLSearchParams();
@@ -111,6 +120,7 @@ function ActivityScreenBody({
 
   async function handleWithdraw(requestId: string) {
     setError("");
+    setPendingAction({ targetId: requestId, kind: "withdraw" });
 
     try {
       await onWithdraw(requestId);
@@ -122,11 +132,14 @@ function ActivityScreenBody({
       router.refresh();
     } catch (withdrawError) {
       setError(withdrawError instanceof Error ? withdrawError.message : "요청을 취소하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
     }
   }
 
   async function handleAccept(requestId: string, matchId: string) {
     setError("");
+    setPendingAction({ targetId: requestId, kind: "accept" });
 
     try {
       await onAccept(requestId);
@@ -138,11 +151,14 @@ function ActivityScreenBody({
       router.refresh();
     } catch (acceptError) {
       setError(acceptError instanceof Error ? acceptError.message : "요청을 수락하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
     }
   }
 
   async function handleReject(requestId: string, matchId: string) {
     setError("");
+    setPendingAction({ targetId: requestId, kind: "reject" });
 
     try {
       await onReject(requestId);
@@ -154,11 +170,14 @@ function ActivityScreenBody({
       router.refresh();
     } catch (rejectError) {
       setError(rejectError instanceof Error ? rejectError.message : "요청을 거절하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
     }
   }
 
   async function handleConfirm(requestId: string, matchId: string) {
     setError("");
+    setPendingAction({ targetId: requestId, kind: "confirm" });
 
     try {
       await onConfirm(requestId);
@@ -170,6 +189,8 @@ function ActivityScreenBody({
       router.refresh();
     } catch (confirmError) {
       setError(confirmError instanceof Error ? confirmError.message : "최종 확정을 처리하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
     }
   }
 
@@ -179,6 +200,7 @@ function ActivityScreenBody({
     }
 
     setError("");
+    setPendingAction({ targetId: matchId, kind: "delete" });
 
     try {
       await onDelete(matchId);
@@ -190,6 +212,8 @@ function ActivityScreenBody({
       router.refresh();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "모집을 삭제하지 못했습니다.");
+    } finally {
+      setPendingAction(null);
     }
   }
 
@@ -250,6 +274,9 @@ function ActivityScreenBody({
                   onWithdraw={() => handleWithdraw(request.id)}
                   request={request}
                   state={state}
+                  withdrawPending={
+                    pendingAction?.targetId === request.id && pendingAction.kind === "withdraw"
+                  }
                 />
               );
             })
@@ -274,6 +301,16 @@ function ActivityScreenBody({
                 onConfirm={(requestId) => handleConfirm(requestId, match.id)}
                 onDelete={() => handleDelete(match.id)}
                 onReject={(requestId) => handleReject(requestId, match.id)}
+                pendingRequestAction={
+                  pendingAction &&
+                  ["accept", "reject", "confirm"].includes(pendingAction.kind)
+                    ? {
+                        requestId: pendingAction.targetId,
+                        kind: pendingAction.kind as "accept" | "reject" | "confirm",
+                      }
+                    : null
+                }
+                deletePending={pendingAction?.targetId === match.id && pendingAction.kind === "delete"}
                 requests={getInboundRequestsForMatch(state, match.id)}
                 state={state}
               />

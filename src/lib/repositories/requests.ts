@@ -1,16 +1,26 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { mapMatchRequestRow, mapMatchRow } from "@/lib/supabase/mappers";
 import { getCurrentProfile, listProfilesByIds } from "@/lib/repositories/profiles";
-import { createAppStateSnapshot, deriveNotificationsFromRequests } from "@/lib/repositories/snapshots";
-import type { Match, ParticipationRequest } from "@/lib/types";
+import {
+  createAppStateSnapshot,
+  deriveNotificationsFromRequests,
+} from "@/lib/repositories/snapshots";
+import type { ParticipationRequest } from "@/lib/types";
 import type { MatchRequestRow, MatchRow } from "@/lib/supabase/types";
 
-async function listMatchesByIds(matchIds: string[]) {
+export type ActivitySnapshotTab = "requests" | "listings";
+
+function dedupeById<T extends { id: string }>(items: T[]) {
+  return Array.from(new Map(items.map((item) => [item.id, item])).values());
+}
+
+type SupabaseClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+async function listMatchesByIds(supabase: SupabaseClient, matchIds: string[]) {
   if (matchIds.length === 0) {
-    return [] satisfies Match[];
+    return [];
   }
 
-  const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("matches")
     .select("*")
@@ -24,7 +34,95 @@ async function listMatchesByIds(matchIds: string[]) {
   return (data ?? []).map(mapMatchRow);
 }
 
-export async function getActivitySnapshot() {
+async function listMyRequests(supabase: SupabaseClient, currentProfileId: string) {
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select("*")
+    .eq("requester_profile_id", currentProfileId)
+    .order("created_at", { ascending: false })
+    .returns<MatchRequestRow[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapMatchRequestRow);
+}
+
+async function listHostedMatches(supabase: SupabaseClient, currentProfileId: string) {
+  const { data, error } = await supabase
+    .from("matches")
+    .select("*")
+    .eq("creator_profile_id", currentProfileId)
+    .neq("status", "cancelled")
+    .order("start_at", { ascending: true })
+    .returns<MatchRow[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapMatchRow);
+}
+
+async function listInboundRequests(supabase: SupabaseClient, matchIds: string[]) {
+  if (matchIds.length === 0) {
+    return [] satisfies ParticipationRequest[];
+  }
+
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select("*")
+    .in("match_id", matchIds)
+    .order("created_at", { ascending: false })
+    .returns<MatchRequestRow[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapMatchRequestRow);
+}
+
+async function listRequesterNotifications(supabase: SupabaseClient, currentProfileId: string) {
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select("*")
+    .eq("requester_profile_id", currentProfileId)
+    .in("status", ["accepted", "confirmed", "rejected"])
+    .order("created_at", { ascending: false })
+    .limit(20)
+    .returns<MatchRequestRow[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapMatchRequestRow);
+}
+
+async function listPendingHostNotifications(supabase: SupabaseClient, matchIds: string[]) {
+  if (matchIds.length === 0) {
+    return [] satisfies ParticipationRequest[];
+  }
+
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select("*")
+    .in("match_id", matchIds)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false })
+    .limit(20)
+    .returns<MatchRequestRow[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapMatchRequestRow);
+}
+
+export async function getActivitySnapshot(tab: ActivitySnapshotTab = "requests") {
   const currentProfile = await getCurrentProfile();
 
   if (!currentProfile) {
@@ -32,76 +130,60 @@ export async function getActivitySnapshot() {
   }
 
   const supabase = await createServerSupabaseClient();
-  const { data: myRequestsData, error: myRequestsError } = await supabase
-    .from("match_requests")
-    .select("*")
-    .eq("requester_profile_id", currentProfile.id)
-    .order("created_at", { ascending: false })
-    .returns<MatchRequestRow[]>();
+  const [hostedMatches, primaryRequests] = await Promise.all([
+    listHostedMatches(supabase, currentProfile.id),
+    tab === "requests" ? listMyRequests(supabase, currentProfile.id) : Promise.resolve([]),
+  ]);
 
-  if (myRequestsError) {
-    throw myRequestsError;
-  }
-
-  const { data: hostedMatchesData, error: hostedMatchesError } = await supabase
-    .from("matches")
-    .select("*")
-    .eq("creator_profile_id", currentProfile.id)
-    .neq("status", "cancelled")
-    .order("start_at", { ascending: true })
-    .returns<MatchRow[]>();
-
-  if (hostedMatchesError) {
-    throw hostedMatchesError;
-  }
-
-  const hostedMatches = (hostedMatchesData ?? []).map(mapMatchRow);
   const hostedMatchIds = hostedMatches.map((match) => match.id);
-  let inboundRequests: ParticipationRequest[] = [];
 
-  if (hostedMatchIds.length > 0) {
-    const { data: inboundData, error: inboundError } = await supabase
-      .from("match_requests")
-      .select("*")
-      .in("match_id", hostedMatchIds)
-      .order("created_at", { ascending: false })
-      .returns<MatchRequestRow[]>();
+  const [inboundRequests, requesterNotifications, hostNotifications] = await Promise.all([
+    tab === "listings" ? listInboundRequests(supabase, hostedMatchIds) : Promise.resolve([]),
+    tab === "listings"
+      ? listRequesterNotifications(supabase, currentProfile.id)
+      : Promise.resolve([]),
+    tab === "requests"
+      ? listPendingHostNotifications(supabase, hostedMatchIds)
+      : Promise.resolve([]),
+  ]);
 
-    if (inboundError) {
-      throw inboundError;
-    }
+  const requests = dedupeById([
+    ...primaryRequests,
+    ...inboundRequests,
+    ...requesterNotifications,
+    ...hostNotifications,
+  ]);
 
-    inboundRequests = (inboundData ?? []).map(mapMatchRequestRow);
-  }
-
-  const myRequests = (myRequestsData ?? []).map(mapMatchRequestRow);
-  const allRequests = [...myRequests, ...inboundRequests];
-  const relatedMatchIds = Array.from(new Set(allRequests.map((request) => request.match_id)));
-  const requestMatches = await listMatchesByIds(
-    relatedMatchIds.filter((matchId) => !hostedMatchIds.includes(matchId)),
+  const knownMatchIds = new Set(hostedMatchIds);
+  const externalMatchIds = Array.from(
+    new Set(
+      requests.map((request) => request.match_id).filter((matchId) => !knownMatchIds.has(matchId)),
+    ),
   );
-  const allMatches = [...hostedMatches, ...requestMatches];
+  const externalMatches = await listMatchesByIds(supabase, externalMatchIds);
+  const matches = dedupeById([...hostedMatches, ...externalMatches]);
+
   const relatedProfileIds = Array.from(
     new Set([
       currentProfile.id,
-      ...allMatches.map((match) => match.creator_profile_id),
-      ...allRequests.map((request) => request.requester_profile_id),
-      ...allRequests.map((request) => request.host_profile_id),
+      ...matches.map((match) => match.creator_profile_id),
+      ...requests.map((request) => request.requester_profile_id),
+      ...requests.map((request) => request.host_profile_id),
     ]),
   );
   const profiles = await listProfilesByIds(relatedProfileIds);
   const notifications = deriveNotificationsFromRequests(
     currentProfile.id,
-    allMatches,
-    allRequests,
+    matches,
+    requests,
     profiles,
   );
 
   return createAppStateSnapshot({
     currentProfile,
     profiles,
-    matches: allMatches,
-    requests: allRequests,
+    matches,
+    requests,
     notifications,
   });
 }

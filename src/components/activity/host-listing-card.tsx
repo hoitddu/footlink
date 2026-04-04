@@ -2,7 +2,6 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatAgeBand, formatSkillLevel } from "@/lib/utils";
 import {
   getParticipationStatusLabel,
   getParticipationStatusTone,
@@ -10,6 +9,7 @@ import {
   getProfileById,
 } from "@/lib/demo-state/selectors";
 import type { DemoAppState, Match, ParticipationRequest } from "@/lib/types";
+import { formatAgeBand, formatSkillLevel } from "@/lib/utils";
 
 function formatCreatedAt(date: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -21,6 +21,11 @@ function formatCreatedAt(date: string) {
   }).format(new Date(date));
 }
 
+type PendingRequestAction = {
+  requestId: string;
+  kind: "accept" | "reject" | "confirm";
+} | null;
+
 export function HostListingCard({
   state,
   match,
@@ -30,6 +35,8 @@ export function HostListingCard({
   onConfirm,
   onDelete,
   onReject,
+  pendingRequestAction = null,
+  deletePending = false,
 }: {
   state: DemoAppState;
   match: Match;
@@ -39,10 +46,16 @@ export function HostListingCard({
   onConfirm: (requestId: string) => void;
   onDelete: () => void;
   onReject: (requestId: string) => void;
+  pendingRequestAction?: PendingRequestAction;
+  deletePending?: boolean;
 }) {
   const hasLockedRequest = requests.some((request) =>
     ["accepted", "confirmed"].includes(request.status),
   );
+
+  function isRequestPending(requestId: string, kind: "accept" | "reject" | "confirm") {
+    return pendingRequestAction?.requestId === requestId && pendingRequestAction.kind === kind;
+  }
 
   return (
     <article
@@ -58,18 +71,30 @@ export function HostListingCard({
           </p>
         </div>
         <Badge variant={match.status === "matched" ? "success" : match.mode === "team" ? "team" : "soon"}>
-          {match.status === "matched" ? "모집 완료" : match.mode === "team" ? "팀 매치" : `${match.remaining_slots}명 모집`}
+          {match.status === "matched"
+            ? "모집 완료"
+            : match.mode === "team"
+              ? "팀 매치"
+              : `${match.remaining_slots}명 모집`}
         </Badge>
       </div>
 
       <div className="mt-3 flex items-center justify-end">
-        <Button size="sm" type="button" variant="secondary" onClick={onDelete} disabled={hasLockedRequest}>
-          삭제
+        <Button
+          size="sm"
+          type="button"
+          variant="secondary"
+          onClick={onDelete}
+          disabled={hasLockedRequest || deletePending || pendingRequestAction !== null}
+        >
+          {deletePending ? "삭제 중..." : "삭제"}
         </Button>
       </div>
 
       {hasLockedRequest ? (
-        <p className="mt-2 text-sm text-muted">조율 중이거나 최종 확정된 참가자가 있으면 모집을 삭제할 수 없습니다.</p>
+        <p className="mt-2 text-sm text-muted">
+          조율 중이거나 최종 확정된 참가자가 있으면 모집을 삭제할 수 없습니다.
+        </p>
       ) : null}
 
       <div className="mt-4 space-y-3">
@@ -82,6 +107,11 @@ export function HostListingCard({
             const requester = getProfileById(state, request.requester_profile_id);
             const canAccept = request.status === "pending";
             const canConfirm = request.status === "accepted";
+            const acceptPending = isRequestPending(request.id, "accept");
+            const rejectPending = isRequestPending(request.id, "reject");
+            const confirmPending = isRequestPending(request.id, "confirm");
+            const isActionPending =
+              acceptPending || rejectPending || confirmPending || deletePending;
 
             return (
               <div key={request.id} className="rounded-[1.2rem] bg-[#f7f9f7] p-4">
@@ -103,11 +133,15 @@ export function HostListingCard({
                 </div>
 
                 {request.message ? (
-                  <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#415047]">{request.message}</p>
+                  <p className="mt-3 whitespace-pre-line text-sm leading-6 text-[#415047]">
+                    {request.message}
+                  </p>
                 ) : null}
 
                 {request.host_note ? (
-                  <p className="mt-2 text-sm font-medium text-[#536157]">메모: {request.host_note}</p>
+                  <p className="mt-2 text-sm font-medium text-[#536157]">
+                    메모: {request.host_note}
+                  </p>
                 ) : null}
 
                 {canAccept ? (
@@ -117,9 +151,13 @@ export function HostListingCard({
                       size="sm"
                       type="button"
                       onClick={() => onAccept(request.id)}
-                      disabled={match.remaining_slots < request.requested_count || match.status !== "open"}
+                      disabled={
+                        isActionPending ||
+                        match.remaining_slots < request.requested_count ||
+                        match.status !== "open"
+                      }
                     >
-                      수락
+                      {acceptPending ? "수락 중..." : "수락"}
                     </Button>
                     <Button
                       className="flex-1"
@@ -127,23 +165,34 @@ export function HostListingCard({
                       type="button"
                       variant="secondary"
                       onClick={() => onReject(request.id)}
+                      disabled={isActionPending}
                     >
-                      거절
+                      {rejectPending ? "거절 중..." : "거절"}
                     </Button>
                   </div>
                 ) : null}
 
                 {canConfirm ? (
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm text-muted">오픈채팅에서 이야기한 뒤 최종 참가가 맞으면 확정하세요.</p>
-                    <Button className="w-full" size="sm" type="button" onClick={() => onConfirm(request.id)}>
-                      최종 확정
+                    <p className="text-sm text-muted">
+                      오픈채팅에서 이야기한 뒤 최종 참가가 맞으면 확정하세요.
+                    </p>
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      type="button"
+                      onClick={() => onConfirm(request.id)}
+                      disabled={isActionPending}
+                    >
+                      {confirmPending ? "최종 확정 중..." : "최종 확정"}
                     </Button>
                   </div>
                 ) : null}
 
                 {request.status === "confirmed" ? (
-                  <p className="mt-4 text-sm font-medium text-[#1f7a38]">최종 확정된 참가자입니다.</p>
+                  <p className="mt-4 text-sm font-medium text-[#1f7a38]">
+                    최종 확정된 참가자입니다.
+                  </p>
                 ) : null}
               </div>
             );

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { ClipboardList, House, Plus, UserRound } from "lucide-react";
 
 import { getAppDataSource } from "@/lib/app-config";
@@ -18,7 +19,14 @@ const items = [
 
 function BottomNavFrame({ unreadCount }: { unreadCount: number }) {
   const pathname = usePathname();
+  const router = useRouter();
   const hideOnMatchDetail = pathname.startsWith("/match/");
+
+  useEffect(() => {
+    items.forEach((item) => {
+      router.prefetch(item.href);
+    });
+  }, [router]);
 
   if (hideOnMatchDetail) {
     return null;

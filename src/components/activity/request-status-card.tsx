@@ -30,6 +30,7 @@ export function RequestStatusCard({
   host,
   highlighted = false,
   onWithdraw,
+  withdrawPending = false,
 }: {
   state: DemoAppState;
   match: Match;
@@ -37,6 +38,7 @@ export function RequestStatusCard({
   host?: Profile;
   highlighted?: boolean;
   onWithdraw?: () => void;
+  withdrawPending?: boolean;
 }) {
   const contactLink = getParticipationContactLink(state, request);
   const canWithdraw = request.status === "pending";
@@ -66,9 +68,9 @@ export function RequestStatusCard({
       ) : null}
 
       <div className="mt-3 space-y-1 text-sm text-muted">
-        <p>호스트: {host?.nickname ?? "FootLink 호스트"}</p>
-        <p>참여 흐름: 요청 → 수락 → 오픈채팅 조율 → 최종 확정</p>
-        <p>지역: {getRegionLabel(match.region_slug)}</p>
+        <p>호스트 · {host?.nickname ?? "FootLink 호스트"}</p>
+        <p>참여 흐름: 요청 후 수락, 오픈채팅 조율, 최종 확정</p>
+        <p>지역 · {getRegionLabel(match.region_slug)}</p>
         {request.host_note ? <p>호스트 메모: {request.host_note}</p> : null}
       </div>
 
@@ -82,8 +84,15 @@ export function RequestStatusCard({
             </Button>
           ) : null}
           {canWithdraw ? (
-            <Button className="flex-1" size="sm" type="button" variant="secondary" onClick={onWithdraw}>
-              요청 취소
+            <Button
+              className="flex-1"
+              size="sm"
+              type="button"
+              variant="secondary"
+              onClick={onWithdraw}
+              disabled={withdrawPending}
+            >
+              {withdrawPending ? "요청 취소 중..." : "요청 취소"}
             </Button>
           ) : null}
         </div>

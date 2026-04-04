@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BusFront,
   CalendarDays,
@@ -33,6 +33,7 @@ import {
   getParticipationStatusLabel,
 } from "@/lib/demo-state/selectors";
 import { isProfileComplete } from "@/lib/profiles";
+import { getBrowserMatchPersonalization } from "@/lib/supabase/browser";
 import { ensureAnonymousSession } from "@/lib/supabase/client";
 import { formatAgeBand, formatFee, formatSkillLevel, formatStartAt, getTravelEstimates } from "@/lib/utils";
 import type { DemoAppState, ListingType, Profile } from "@/lib/types";
@@ -51,27 +52,61 @@ function getMatchFormatLabel(match: { mode: string; min_group_size: number; max_
   return "5v5";
 }
 
+function mergePersonalizedState(
+  state: DemoAppState,
+  currentProfile: Profile | null,
+  myRequest: DemoAppState["participationRequests"][number] | null,
+) {
+  if (!currentProfile) {
+    return state;
+  }
+
+  const profiles = [
+    currentProfile,
+    ...state.profiles.filter((profile) => profile.id !== currentProfile.id),
+  ];
+  const participationRequests = myRequest
+    ? [
+        myRequest,
+        ...state.participationRequests.filter((request) => request.id !== myRequest.id),
+      ]
+    : state.participationRequests;
+
+  return {
+    ...state,
+    currentProfileId: currentProfile.id,
+    profiles,
+    participationRequests,
+  };
+}
+
 function MatchDetailBody({
   matchId,
   searchParams,
   referenceNow,
-  state,
+  initialState,
   onSubmitParticipation,
   profileCompletionEnabled = false,
+  hydratePersonalState = false,
 }: {
   matchId: string;
   searchParams: Record<string, string | undefined>;
   referenceNow: number;
-  state: DemoAppState;
+  initialState: DemoAppState;
   onSubmitParticipation: (input: { requestedCount: number; message: string }) => Promise<string>;
   profileCompletionEnabled?: boolean;
+  hydratePersonalState?: boolean;
 }) {
   const router = useRouter();
+  const [state, setState] = useState(initialState);
+  const [personalizationReady, setPersonalizationReady] = useState(!hydratePersonalState);
+  const [joinSubmitPending, setJoinSubmitPending] = useState(false);
+  const autoIntentHandled = useRef(false);
+
   const match = useMemo(() => getMatchMetaForState(state, matchId, referenceNow), [matchId, referenceNow, state]);
   const backContext = parseFeedContext(searchParams);
   const backHref = `/home?${buildContextQuery(backContext)}`;
-  const initialProfile = getCurrentProfile(state) ?? null;
-  const [resolvedProfile, setResolvedProfile] = useState<Profile | null>(initialProfile);
+  const resolvedProfile = getCurrentProfile(state) ?? null;
 
   const activeRequest = match
     ? getActiveParticipationForMatch(state, match.id, resolvedProfile?.id ?? "")
@@ -79,15 +114,62 @@ function MatchDetailBody({
   const isHostView = match ? resolvedProfile?.id === match.creator_profile_id : false;
   const canStartJoinFlow = Boolean(match && match.status === "open" && !isHostView && !activeRequest);
   const shouldOpenJoinFlow = searchParams.intent === "join";
-  const shouldOpenProfileFirst =
-    shouldOpenJoinFlow && profileCompletionEnabled && !isProfileComplete(initialProfile);
-  const [profileSheetOpen, setProfileSheetOpen] = useState(shouldOpenProfileFirst);
-  const [joinSheetOpen, setJoinSheetOpen] = useState(
-    shouldOpenJoinFlow && (!profileCompletionEnabled || isProfileComplete(initialProfile)) && canStartJoinFlow,
-  );
-  const [pendingJoinAfterProfile, setPendingJoinAfterProfile] = useState(shouldOpenProfileFirst);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [joinSheetOpen, setJoinSheetOpen] = useState(false);
+  const [pendingJoinAfterProfile, setPendingJoinAfterProfile] = useState(false);
   const travelEstimates = match ? getTravelEstimates(match.distanceKm).sort((a, b) => a.minutes - b.minutes) : [];
   const defaultRequestedCount = match ? getDefaultRequestedCount(match, backContext) : 1;
+
+  useEffect(() => {
+    if (!hydratePersonalState) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void getBrowserMatchPersonalization(matchId)
+      .then(({ currentProfile, myRequest }) => {
+        if (!cancelled) {
+          setState((currentState) => mergePersonalizedState(currentState, currentProfile, myRequest));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPersonalizationReady(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydratePersonalState, matchId]);
+
+  useEffect(() => {
+    if (!shouldOpenJoinFlow || autoIntentHandled.current || !personalizationReady || !match) {
+      return;
+    }
+
+    autoIntentHandled.current = true;
+
+    if (!canStartJoinFlow) {
+      return;
+    }
+
+    if (profileCompletionEnabled && !isProfileComplete(resolvedProfile)) {
+      setPendingJoinAfterProfile(true);
+      setProfileSheetOpen(true);
+      return;
+    }
+
+    setJoinSheetOpen(true);
+  }, [
+    canStartJoinFlow,
+    match,
+    personalizationReady,
+    profileCompletionEnabled,
+    resolvedProfile,
+    shouldOpenJoinFlow,
+  ]);
 
   if (!match) {
     return (
@@ -118,14 +200,24 @@ function MatchDetailBody({
   const travelIcons = { walk: Footprints, transit: BusFront, car: CarFront } as const;
 
   function getPrimaryLabel() {
+    if (!personalizationReady && hydratePersonalState) {
+      return "불러오는 중...";
+    }
+
     if (isHostView) return "내 모집 보기";
     if (!activeRequest) return "참가 요청 보내기";
     return getParticipationStatusLabel(activeRequest.status);
   }
 
   async function handleJoinSubmit(input: { requestedCount: number; message: string }) {
-    const requestId = await onSubmitParticipation(input);
-    router.push(`/activity?tab=requests&highlight=${requestId}&flash=requested`);
+    setJoinSubmitPending(true);
+
+    try {
+      const requestId = await onSubmitParticipation(input);
+      router.push(`/activity?tab=requests&highlight=${requestId}&flash=requested`);
+    } finally {
+      setJoinSubmitPending(false);
+    }
   }
 
   return (
@@ -193,7 +285,9 @@ function MatchDetailBody({
             <User className="h-3.5 w-3.5" />
           </div>
           <div>
-            <p className="text-[13px] font-bold text-[#112317]">{match.organizer?.nickname ?? "FootLink 호스트"}</p>
+            <p className="text-[13px] font-bold text-[#112317]">
+              {match.organizer?.nickname ?? "FootLink 호스트"}
+            </p>
             <p className="text-[12px] text-[#5f6c64]">
               {match.organizer?.preferred_regions.join(" · ") ?? match.region_label}
               {match.organizer ? ` · ${formatAgeBand(match.organizer.age)}` : ""}
@@ -212,7 +306,12 @@ function MatchDetailBody({
             className="w-full"
             size="lg"
             type="button"
-            disabled={match.status !== "open" || isHostView}
+            disabled={
+              !personalizationReady ||
+              joinSubmitPending ||
+              match.status !== "open" ||
+              isHostView
+            }
             onClick={() => {
               if (profileCompletionEnabled && !isProfileComplete(resolvedProfile)) {
                 setPendingJoinAfterProfile(true);
@@ -243,7 +342,7 @@ function MatchDetailBody({
         regionLabel={match.region_label}
         confirmLabel="저장하고 참가 요청하기"
         onCompleted={(profile) => {
-          setResolvedProfile(profile);
+          setState((currentState) => mergePersonalizedState(currentState, profile, null));
 
           if (pendingJoinAfterProfile && match.status === "open" && profile.id !== match.creator_profile_id) {
             setPendingJoinAfterProfile(false);
@@ -265,7 +364,7 @@ function DemoMatchDetailScreen(props: {
   return (
     <MatchDetailBody
       {...props}
-      state={state}
+      initialState={state}
       onSubmitParticipation={async (input) => {
         const request = actions.submitParticipation({
           matchId: props.matchId,
@@ -296,8 +395,9 @@ export function MatchDetailScreen({
         matchId={matchId}
         searchParams={searchParams}
         referenceNow={referenceNow}
-        state={stateSnapshot}
+        initialState={stateSnapshot}
         profileCompletionEnabled
+        hydratePersonalState
         onSubmitParticipation={async (input) => {
           await ensureAnonymousSession();
           const request = await submitParticipationAction({
@@ -312,7 +412,13 @@ export function MatchDetailScreen({
     );
   }
 
-  return <DemoMatchDetailScreen matchId={matchId} referenceNow={referenceNow} searchParams={searchParams} />;
+  return (
+    <DemoMatchDetailScreen
+      matchId={matchId}
+      referenceNow={referenceNow}
+      searchParams={searchParams}
+    />
+  );
 }
 
 function InfoRow({

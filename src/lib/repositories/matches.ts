@@ -1,10 +1,11 @@
+import { unstable_cache } from "next/cache";
+
 import { REGION_OPTIONS } from "@/lib/constants";
 import { getFeedMatches } from "@/lib/feed";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { mapMatchRequestRow, mapMatchRow } from "@/lib/supabase/mappers";
-import type { FeedContext, FeedDataSource, ParticipationRequest } from "@/lib/types";
-import type { MatchRequestRow, MatchRow } from "@/lib/supabase/types";
-import { getCurrentProfile, listProfilesByIds } from "@/lib/repositories/profiles";
+import { createPublicServerSupabaseClient } from "@/lib/supabase/server";
+import { mapMatchRow, mapProfileRow } from "@/lib/supabase/mappers";
+import type { FeedContext, FeedDataSource } from "@/lib/types";
+import type { MatchRow, ProfileRow } from "@/lib/supabase/types";
 import { createAppStateSnapshot } from "@/lib/repositories/snapshots";
 
 function getDateRangeBounds(context: FeedContext) {
@@ -19,46 +20,112 @@ function getDateRangeBounds(context: FeedContext) {
   return { start, end };
 }
 
+function serializeFeedContext(context: FeedContext) {
+  return JSON.stringify({
+    mode: context.mode,
+    groupSize: context.groupSize,
+    regionSlug: context.regionSlug ?? null,
+    selectedDateFrom: context.selectedDateFrom ?? null,
+    selectedDateTo: context.selectedDateTo ?? null,
+    skillLevel: context.skillLevel ?? null,
+  });
+}
+
+const getCachedFeedRows = unstable_cache(
+  async (serializedContext: string) => {
+    const context = JSON.parse(serializedContext) as FeedContext;
+    const supabase = createPublicServerSupabaseClient();
+    let query = supabase
+      .from("matches")
+      .select("*")
+      .eq("status", "open")
+      .gt("remaining_slots", 0)
+      .gte("start_at", new Date().toISOString())
+      .order("start_at", { ascending: true })
+      .limit(50);
+
+    if (context.regionSlug) {
+      query = query.eq("region_slug", context.regionSlug);
+    }
+
+    const dateBounds = getDateRangeBounds(context);
+    if (dateBounds) {
+      query = query.gte("start_at", dateBounds.start).lte("start_at", dateBounds.end);
+    }
+
+    if (context.mode === "solo") {
+      query = query.in("listing_type", ["mercenary", "partial_join"]);
+    } else if (context.mode === "small_group") {
+      query = query
+        .eq("listing_type", "partial_join")
+        .lte("min_group_size", context.groupSize)
+        .gte("max_group_size", context.groupSize);
+    } else {
+      query = query.eq("listing_type", "team_match");
+    }
+
+    if (context.skillLevel) {
+      query = query.eq("skill_level", context.skillLevel);
+    }
+
+    const { data, error } = await query.returns<MatchRow[]>();
+
+    if (error) {
+      throw error;
+    }
+
+    return data ?? [];
+  },
+  ["feed-rows"],
+  { revalidate: 30 },
+);
+
+const getCachedPublicMatchRow = unstable_cache(
+  async (matchId: string) => {
+    const supabase = createPublicServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("matches")
+      .select("*")
+      .eq("id", matchId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return (data as MatchRow | null) ?? null;
+  },
+  ["public-match-row"],
+  { revalidate: 30 },
+);
+
+const getCachedPublicProfiles = unstable_cache(
+  async (serializedIds: string) => {
+    const profileIds = serializedIds.split(",").filter(Boolean);
+
+    if (profileIds.length === 0) {
+      return [] satisfies ProfileRow[];
+    }
+
+    const supabase = createPublicServerSupabaseClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("id", profileIds)
+      .returns<ProfileRow[]>();
+
+    if (error) {
+      throw error;
+    }
+
+    return data ?? [];
+  },
+  ["public-profiles"],
+  { revalidate: 60 },
+);
+
 export async function getFeedDataSource(context: FeedContext): Promise<FeedDataSource> {
-  const supabase = await createServerSupabaseClient();
-  let query = supabase
-    .from("matches")
-    .select("*")
-    .eq("status", "open")
-    .gt("remaining_slots", 0)
-    .gte("start_at", new Date().toISOString())
-    .order("start_at", { ascending: true })
-    .limit(50);
-
-  if (context.regionSlug) {
-    query = query.eq("region_slug", context.regionSlug);
-  }
-
-  const dateBounds = getDateRangeBounds(context);
-  if (dateBounds) {
-    query = query.gte("start_at", dateBounds.start).lte("start_at", dateBounds.end);
-  }
-
-  if (context.mode === "solo") {
-    query = query.in("listing_type", ["mercenary", "partial_join"]);
-  } else if (context.mode === "small_group") {
-    query = query
-      .eq("listing_type", "partial_join")
-      .lte("min_group_size", context.groupSize)
-      .gte("max_group_size", context.groupSize);
-  } else {
-    query = query.eq("listing_type", "team_match");
-  }
-
-  if (context.skillLevel) {
-    query = query.eq("skill_level", context.skillLevel);
-  }
-
-  const { data, error } = await query.returns<MatchRow[]>();
-
-  if (error) {
-    throw error;
-  }
+  const data = await getCachedFeedRows(serializeFeedContext(context));
 
   return {
     matches: (data ?? []).map(mapMatchRow),
@@ -88,53 +155,20 @@ export async function getMatchDetail(id: string) {
 }
 
 export async function getMatchDetailSnapshot(matchId: string) {
-  const supabase = await createServerSupabaseClient();
-  const currentProfile = await getCurrentProfile();
-
-  const { data: matchRow, error: matchError } = await supabase
-    .from("matches")
-    .select("*")
-    .eq("id", matchId)
-    .maybeSingle();
-
-  if (matchError) {
-    throw matchError;
-  }
+  const matchRow = await getCachedPublicMatchRow(matchId);
 
   if (!matchRow) {
     return null;
   }
 
-  const match = mapMatchRow(matchRow as MatchRow);
-  const profileIds = [match.creator_profile_id];
-  let myRequest: ParticipationRequest | undefined;
-
-  if (currentProfile) {
-    profileIds.push(currentProfile.id);
-    const { data: requestRow, error: requestError } = await supabase
-      .from("match_requests")
-      .select("*")
-      .eq("match_id", matchId)
-      .eq("requester_profile_id", currentProfile.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (requestError) {
-      throw requestError;
-    }
-
-    if (requestRow) {
-      myRequest = mapMatchRequestRow(requestRow as MatchRequestRow);
-    }
-  }
-
-  const profiles = await listProfilesByIds(Array.from(new Set(profileIds)));
+  const match = mapMatchRow(matchRow);
+  const profiles = await getCachedPublicProfiles(match.creator_profile_id);
+  const mappedProfiles = profiles.map(mapProfileRow);
 
   return createAppStateSnapshot({
-    currentProfile,
-    profiles,
+    currentProfile: null,
+    profiles: mappedProfiles,
     matches: [match],
-    requests: myRequest ? [myRequest] : [],
+    requests: [],
   });
 }

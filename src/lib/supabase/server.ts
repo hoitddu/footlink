@@ -22,6 +22,19 @@ export async function createServerSupabaseClient() {
   });
 }
 
+export function createPublicServerSupabaseClient() {
+  return createServerClient(getSupabaseUrl(), getSupabasePublishableKey(), {
+    cookies: {
+      getAll() {
+        return [];
+      },
+      setAll() {
+        // Public reads do not need cookie persistence.
+      },
+    },
+  });
+}
+
 export async function getServerAuthUser() {
   const supabase = await createServerSupabaseClient();
   const {

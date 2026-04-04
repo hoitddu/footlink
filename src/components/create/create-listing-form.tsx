@@ -10,12 +10,20 @@ import { ProfileCompletionSheet } from "@/components/profile/profile-completion-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import type { AppDataSource } from "@/lib/app-config";
 import { SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { isProfileComplete } from "@/lib/profiles";
+import { getBrowserCurrentProfile } from "@/lib/supabase/browser";
 import { ensureAnonymousSession } from "@/lib/supabase/client";
 import { formatFee, haversineDistance } from "@/lib/utils";
-import type { CreateMatchInput, ListingType, Match, MatchWithMeta, Profile } from "@/lib/types";
+import type {
+  CreateMatchInput,
+  ListingType,
+  Match,
+  MatchWithMeta,
+  Profile,
+} from "@/lib/types";
 
 type MatchType = "mercenary" | "team_match";
 
@@ -166,10 +174,12 @@ function CreateListingFormBody({
   currentProfile,
   onCreateListing,
   profileCompletionEnabled = false,
+  shouldLoadCurrentProfile = false,
 }: {
   currentProfile?: Profile | null;
   onCreateListing: (input: CreateMatchInput) => Promise<Match>;
   profileCompletionEnabled?: boolean;
+  shouldLoadCurrentProfile?: boolean;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -210,6 +220,28 @@ function CreateListingFormBody({
   const [resolvedProfile, setResolvedProfile] = useState(currentProfile ?? null);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const pendingSubmitAfterProfileRef = useRef(false);
+
+  useEffect(() => {
+    if (!shouldLoadCurrentProfile || currentProfile) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void getBrowserCurrentProfile()
+      .then((profile) => {
+        if (!cancelled && profile) {
+          setResolvedProfile(profile);
+        }
+      })
+      .catch(() => {
+        // Keep creation fast even if profile bootstrap fails.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProfile, shouldLoadCurrentProfile]);
 
   const listingType: ListingType = matchType === "team_match" ? "team_match" : "mercenary";
   const preview = getPreviewStatus(matchType, neededCount);
@@ -1094,14 +1126,17 @@ function DemoCreateListingForm() {
 
 export function CreateListingForm({
   currentProfile,
+  dataSource = currentProfile !== undefined ? "supabase" : "demo",
 }: {
   currentProfile?: Profile | null;
+  dataSource?: AppDataSource;
 }) {
-  if (currentProfile !== undefined) {
+  if (dataSource === "supabase") {
     return (
       <CreateListingFormBody
-        currentProfile={currentProfile}
+        currentProfile={currentProfile ?? null}
         profileCompletionEnabled
+        shouldLoadCurrentProfile={currentProfile == null}
         onCreateListing={async (input) => {
           await ensureAnonymousSession();
 
