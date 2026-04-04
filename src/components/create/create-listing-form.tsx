@@ -570,7 +570,7 @@ function CreateListingFormBody({
   );
 
   return (
-    <div className="space-y-5 pb-[15.5rem]">
+    <div className="space-y-5 pb-[10.5rem]">
       <section className="surface-card rounded-[1.85rem] p-5">
         <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
           CREATE MATCH
@@ -961,7 +961,7 @@ function CreateListingFormBody({
         ) : null}
       </form>
 
-      <div className="fixed inset-x-0 bottom-[6.9rem] z-30 mx-auto max-w-[430px] px-4">
+      <div className="glass-panel safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-4 pb-4 pt-3 shadow-[0_-18px_48px_rgba(10,18,13,0.06)]">
         <div className="flex gap-3">
           {step > 1 ? (
             <Button

@@ -20,7 +20,8 @@ const items = [
 function BottomNavFrame({ unreadCount }: { unreadCount: number }) {
   const pathname = usePathname();
   const router = useRouter();
-  const hideOnMatchDetail = pathname.startsWith("/match/");
+  const hideOnFocusedFlow =
+    pathname.startsWith("/match/") || pathname.startsWith("/create");
 
   useEffect(() => {
     items.forEach((item) => {
@@ -28,7 +29,7 @@ function BottomNavFrame({ unreadCount }: { unreadCount: number }) {
     });
   }, [router]);
 
-  if (hideOnMatchDetail) {
+  if (hideOnFocusedFlow) {
     return null;
   }
 
