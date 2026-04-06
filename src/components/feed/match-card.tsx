@@ -2,6 +2,7 @@ import Link from "next/link";
 import { BusFront, CarFront, Clock, Footprints, MapPin } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { getMatchFormatLabel } from "@/lib/match-format";
 import { formatSkillLevel } from "@/lib/utils";
 import type { FeedContext, MatchWithMeta } from "@/lib/types";
 import { formatFee, formatRelativeStart } from "@/lib/utils";
@@ -52,14 +53,6 @@ function getCardStatusTone(match: MatchWithMeta, selectedGroupSize: FeedContext[
   }
 
   return "success" as const;
-}
-
-function getMatchFormatLabel(match: MatchWithMeta) {
-  if (match.mode === "team") {
-    return `${match.min_group_size}v${match.max_group_size}`;
-  }
-
-  return "5v5";
 }
 
 function formatDistanceShort(km: number) {

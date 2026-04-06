@@ -14,6 +14,11 @@ import { Textarea } from "@/components/ui/textarea";
 import type { AppDataSource } from "@/lib/app-config";
 import { SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
+import {
+  buildMatchNote,
+  formatMatchFormatLabel,
+  type MatchFormatOption,
+} from "@/lib/match-format";
 import { isProfileComplete } from "@/lib/profiles";
 import { formatFee, haversineDistance } from "@/lib/utils";
 import type {
@@ -130,6 +135,8 @@ const steps = [
   { num: 3, label: "상세 · 확인" },
 ];
 
+const compactSummaryCardClass = "rounded-[1.35rem] bg-[#eef2ee] p-3";
+
 function getPreviewStatus(type: MatchType, count: number) {
   if (type === "team_match") {
     return { label: "팀 매치 모집 중", variant: "team" as const };
@@ -191,6 +198,7 @@ function CreateListingFormBody({
   const [matchType, setMatchType] = useState<MatchType>("mercenary");
   const [neededCount, setNeededCount] = useState(2);
   const [teamFormat, setTeamFormat] = useState<TeamFormat>("5vs5");
+  const [mercenaryFormat, setMercenaryFormat] = useState<TeamFormat>("5vs5");
   const [level, setLevel] = useState<CreateMatchInput["skill_level"]>("mid");
   const [fee, setFee] = useState<number>(feeConfig.mercenary.default);
   const [editingFee, setEditingFee] = useState(false);
@@ -246,6 +254,8 @@ function CreateListingFormBody({
   const preview = getPreviewStatus(matchType, neededCount);
   const feePreset = feeConfig[matchType];
   const previewStartAt = `${date}T${time}:00`;
+  const resolvedMatchFormat = (matchType === "team_match" ? teamFormat : mercenaryFormat) as MatchFormatOption;
+  const storedNote = buildMatchNote(note, resolvedMatchFormat);
   const missingKakaoKeyError =
     isPlacePickerOpen && !KAKAO_MAP_KEY ? "카카오 지도 키가 아직 설정되지 않았습니다." : "";
 
@@ -435,6 +445,11 @@ function CreateListingFormBody({
   }
 
   function handleNavigateBack() {
+    if (step > 1) {
+      handleBack();
+      return;
+    }
+
     if (window.history.length > 1) {
       router.back();
       return;
@@ -480,7 +495,7 @@ function CreateListingFormBody({
         skill_level: level,
         contact_type: "request_only",
         contact_link: resolvedContactValue,
-        note: note.trim(),
+        note: storedNote,
       });
 
       startTransition(() => {
@@ -546,7 +561,7 @@ function CreateListingFormBody({
         skill_level: level,
         contact_type: "request_only",
         contact_link: contactValue,
-        note,
+        note: storedNote,
         status: "open",
         region_label: SUWON_LABEL,
         distanceKm: previewDistanceKm,
@@ -564,7 +579,7 @@ function CreateListingFormBody({
       listingType,
       matchType,
       neededCount,
-      note,
+      storedNote,
       placeLat,
       placeLng,
       preview.label,
@@ -578,34 +593,40 @@ function CreateListingFormBody({
   );
 
   return (
-    <div className="space-y-5 pb-[10.5rem]">
-      <section className="surface-card rounded-[1.85rem] p-5">
-        <button
-          type="button"
-          onClick={handleNavigateBack}
-          className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#eef2ee] px-3 py-2 text-sm font-semibold text-[#112317] transition active:scale-95"
-          aria-label="이전 화면으로 돌아가기"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          뒤로
-        </button>
-        <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+    <div className="space-y-2.5 pb-[6.8rem]">
+      <section className="surface-card rounded-[1.55rem] p-3.5">
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={handleNavigateBack}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-[1rem] bg-[#eef2ee] px-3 py-2 text-sm font-semibold text-[#112317] transition active:scale-95"
+            aria-label="이전 화면으로 돌아가기"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            뒤로
+          </button>
+          <div className="rounded-full bg-[#eef2ee] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#5f6a63]">
+            Step {step}/3
+          </div>
+        </div>
+
+        <p className="mt-3 font-display text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
           CREATE MATCH
         </p>
-        <h1 className="mt-1 text-[1.6rem] font-bold tracking-[-0.04em] text-[#112317]">
+        <h1 className="mt-1 text-[1.28rem] font-bold tracking-[-0.04em] text-[#112317]">
           {steps[step - 1].label}
         </h1>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-3 gap-2">
           {steps.map((item) => (
-            <div key={item.num} className="space-y-1.5">
+            <div key={item.num} className="space-y-1">
               <div
                 className={`h-1.5 rounded-full transition-colors ${
                   item.num <= step ? "bg-[#112317]" : "bg-[#dce3dc]"
                 }`}
               />
               <p
-                className={`text-center text-[11px] font-bold ${
+                className={`text-center text-[10px] font-bold ${
                   item.num === step ? "text-[#112317]" : "text-[#a0a8a2]"
                 }`}
               >
@@ -616,13 +637,11 @@ function CreateListingFormBody({
         </div>
       </section>
 
-      <form ref={formRef} className="space-y-4" onSubmit={handleSubmit}>
+      <form ref={formRef} className="space-y-2.5" onSubmit={handleSubmit}>
         {step === 1 ? (
           <section
-            className={`surface-card rounded-[1.85rem] px-5 ${
-              matchType === "team_match"
-                ? "min-h-[31.75rem] space-y-5 py-5"
-                : "min-h-[28.5rem] space-y-7 py-6"
+            className={`surface-card rounded-[1.6rem] px-4 ${
+              matchType === "team_match" ? "space-y-3 py-4" : "space-y-4 py-4"
             }`}
           >
             <div className="rounded-[1.25rem] bg-[#eef2ee] p-1.5">
@@ -635,7 +654,7 @@ function CreateListingFormBody({
                     key={type.value}
                     type="button"
                     onClick={() => handleTypeChange(type.value)}
-                    className={`rounded-[1rem] px-4 py-4 text-[15px] font-bold transition ${
+                    className={`rounded-[1rem] px-3 py-3 text-[14px] font-bold transition ${
                       matchType === type.value
                         ? "bg-[#112317] text-white shadow-[0_14px_28px_rgba(6,21,12,0.14)]"
                         : "text-foreground"
@@ -648,43 +667,41 @@ function CreateListingFormBody({
             </div>
 
             {matchType === "mercenary" ? (
-              <div className="flex flex-col items-center gap-4 py-5">
-                <div className="flex items-center gap-6">
+              <div className="flex flex-col items-center gap-3 py-1">
+                <div className="flex items-center gap-4">
                   <button
                     type="button"
                     onClick={() => setNeededCount((count) => Math.max(1, count - 1))}
-                    className="flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-full border-2 border-[#dce3dc] text-[30px] font-bold text-[#112317] transition active:scale-95"
+                    className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[24px] font-bold text-[#112317] transition active:scale-95"
                   >
                     -
                   </button>
-                  <span className="font-display tabular-nums text-[4.6rem] font-bold leading-none tracking-[-0.07em] text-[#112317]">
+                  <span className="font-display tabular-nums text-[3.1rem] font-bold leading-none tracking-[-0.07em] text-[#112317]">
                     {neededCount}
                   </span>
                   <button
                     type="button"
                     onClick={() => setNeededCount((count) => Math.min(10, count + 1))}
-                    className="kinetic-gradient flex h-[3.8rem] w-[3.8rem] items-center justify-center rounded-full text-[30px] font-bold text-white transition active:scale-95"
+                    className="kinetic-gradient flex h-11 w-11 items-center justify-center rounded-full text-[24px] font-bold text-white transition active:scale-95"
                   >
                     +
                   </button>
                 </div>
-                <p className="font-display text-[15px] font-bold uppercase tracking-[0.22em] text-[#6a766f]">
+                <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a766f]">
                   PLAYER
                 </p>
               </div>
             ) : null}
 
             {matchType === "team_match" ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-2">
                   {teamFormats.map((format) => (
                     <button
                       key={format}
                       type="button"
                       onClick={() => setTeamFormat(format)}
-                      className={`rounded-[1.2rem] text-center font-display font-bold tracking-tight transition ${
-                        matchType === "team_match" ? "py-4 text-[1.3rem]" : "py-[1.15rem] text-[1.45rem]"
-                      } ${
+                      className={`rounded-[1.1rem] py-2.5 text-center font-display text-[1rem] font-bold tracking-tight transition ${
                         teamFormat === format
                           ? "bg-[#112317] text-white shadow-[0_14px_28px_rgba(6,21,12,0.14)]"
                           : "bg-[#eef2ee] text-foreground"
@@ -695,27 +712,27 @@ function CreateListingFormBody({
                   ))}
                 </div>
 
-                <div className="flex flex-col items-center gap-3 py-2">
-                  <div className="flex items-center gap-5">
+                <div className="flex flex-col items-center gap-2 py-1">
+                  <div className="flex items-center gap-4">
                     <button
                       type="button"
                       onClick={() => setNeededCount((count) => Math.max(1, count - 1))}
-                      className="flex h-[3.45rem] w-[3.45rem] items-center justify-center rounded-full border-2 border-[#dce3dc] text-[28px] font-bold text-[#112317] transition active:scale-95"
+                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[24px] font-bold text-[#112317] transition active:scale-95"
                     >
                       -
                     </button>
-                    <span className="font-display tabular-nums text-[4rem] font-bold leading-none tracking-[-0.07em] text-[#112317]">
+                    <span className="font-display tabular-nums text-[3rem] font-bold leading-none tracking-[-0.07em] text-[#112317]">
                       {neededCount}
                     </span>
                     <button
                       type="button"
                       onClick={() => setNeededCount((count) => Math.min(5, count + 1))}
-                      className="kinetic-gradient flex h-[3.45rem] w-[3.45rem] items-center justify-center rounded-full text-[28px] font-bold text-white transition active:scale-95"
+                      className="kinetic-gradient flex h-11 w-11 items-center justify-center rounded-full text-[24px] font-bold text-white transition active:scale-95"
                     >
                       +
                     </button>
                   </div>
-                  <p className="font-display text-[14px] font-bold uppercase tracking-[0.2em] text-[#6a766f]">
+                  <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a766f]">
                     TEAM
                   </p>
                 </div>
@@ -723,21 +740,17 @@ function CreateListingFormBody({
             ) : null}
 
             <div>
-              <p className="font-display mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              <p className="font-display mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                 실력
               </p>
-              <div className={`grid grid-cols-4 ${matchType === "team_match" ? "gap-2" : "gap-2.5"}`}>
+              <div className="grid grid-cols-4 gap-2">
                 {SKILL_LEVELS.map((skill) => (
                   <button
                     key={skill}
                     type="button"
                     onClick={() => setLevel(skill)}
-                    className={`rounded-full px-3 ${
-                      matchType === "team_match" ? "py-2.5 text-[14px]" : "py-3 text-[15px]"
-                    } font-bold transition ${
-                      level === skill
-                        ? "bg-[#112317] text-white"
-                        : "bg-[#eef2ee] text-foreground"
+                    className={`rounded-full px-3 py-2.5 text-[13px] font-bold transition ${
+                      level === skill ? "bg-[#112317] text-white" : "bg-[#eef2ee] text-foreground"
                     }`}
                   >
                     {getSkillLevelLabel(skill)}
@@ -747,25 +760,17 @@ function CreateListingFormBody({
             </div>
 
             <div>
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                 {feePreset.unit} 참가비
               </p>
               {!editingFee ? (
-                <div
-                  className={`flex items-center justify-center ${
-                    matchType === "team_match" ? "gap-4" : "gap-5"
-                  }`}
-                >
+                <div className="flex items-center justify-center gap-4">
                   <button
                     type="button"
                     onClick={() =>
                       setFee((currentFee) => Math.max(feePreset.min, currentFee - feePreset.step))
                     }
-                    className={`flex items-center justify-center rounded-full border-2 border-[#dce3dc] font-bold text-[#112317] transition active:scale-95 ${
-                      matchType === "team_match"
-                        ? "h-[3rem] w-[3rem] text-[24px]"
-                        : "h-[3.2rem] w-[3.2rem] text-[26px]"
-                    }`}
+                    className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[22px] font-bold text-[#112317] transition active:scale-95"
                   >
                     -
                   </button>
@@ -775,22 +780,14 @@ function CreateListingFormBody({
                       setEditingFee(true);
                       setFeeInput(String(fee));
                     }}
-                    className={`text-center tabular-nums font-bold tracking-tight text-[#112317] ${
-                      matchType === "team_match"
-                        ? "min-w-[120px] text-[1.75rem]"
-                        : "min-w-[132px] text-[2rem]"
-                    }`}
+                    className="min-w-[108px] text-center text-[1.45rem] font-bold tracking-tight text-[#112317]"
                   >
                     {formatFee(fee)}
                   </button>
                   <button
                     type="button"
                     onClick={() => setFee((currentFee) => currentFee + feePreset.step)}
-                    className={`kinetic-gradient flex items-center justify-center rounded-full font-bold text-white transition active:scale-95 ${
-                      matchType === "team_match"
-                        ? "h-[3rem] w-[3rem] text-[24px]"
-                        : "h-[3.2rem] w-[3.2rem] text-[26px]"
-                    }`}
+                    className="kinetic-gradient flex h-11 w-11 items-center justify-center rounded-full text-[22px] font-bold text-white transition active:scale-95"
                   >
                     +
                   </button>
@@ -802,7 +799,7 @@ function CreateListingFormBody({
                     value={feeInput}
                     onChange={(event) => setFeeInput(event.target.value)}
                     placeholder="금액 입력"
-                    className="flex-1 text-center tabular-nums text-lg font-bold"
+                    className="h-11 flex-1 text-center tabular-nums text-base font-bold"
                     autoFocus
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
@@ -825,12 +822,8 @@ function CreateListingFormBody({
                 </div>
               )}
               {!editingFee ? (
-                <p
-                  className={`text-center text-[#a0a8a2] ${
-                    matchType === "team_match" ? "mt-2 text-[12px]" : "mt-3 text-[13px]"
-                  }`}
-                >
-                  금액을 누르면 직접 입력할 수 있어요.
+                <p className="mt-2 text-center text-[12px] text-[#a0a8a2]">
+                  금액을 누르면 직접 입력할 수 있어요
                 </p>
               ) : null}
             </div>
@@ -838,9 +831,9 @@ function CreateListingFormBody({
         ) : null}
 
         {step === 2 ? (
-          <section className="surface-card space-y-4 rounded-[1.85rem] p-5">
-            <div className="grid grid-cols-2 gap-3">
-              <label className="space-y-2">
+          <section className="surface-card space-y-2.5 rounded-[1.6rem] p-4">
+            <div className="grid min-w-0 grid-cols-2 gap-2">
+              <label className="min-w-0 space-y-1.5">
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                   날짜
                 </span>
@@ -848,9 +841,10 @@ function CreateListingFormBody({
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
+                  className="h-11 min-w-0 px-3 text-[14px]"
                 />
               </label>
-              <label className="space-y-2">
+              <label className="min-w-0 space-y-1.5">
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                   시간
                 </span>
@@ -858,34 +852,36 @@ function CreateListingFormBody({
                   type="time"
                   value={time}
                   onChange={(event) => setTime(event.target.value)}
+                  className="h-11 min-w-0 px-3 text-[14px]"
                 />
               </label>
             </div>
 
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                지역
-              </span>
-              <Input value={SUWON_LABEL} readOnly className="bg-[#e7ece7] text-[#112317]" />
-            </label>
+            <div className="grid grid-cols-[0.9fr_1.1fr] gap-2">
+              <label className="space-y-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+                  지역
+                </span>
+                <Input value={SUWON_LABEL} readOnly className="h-11 bg-[#e7ece7] text-[#112317]" />
+              </label>
 
-            <label className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                장소 검색
-              </span>
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full rounded-[1rem]"
-                onClick={() => {
-                  setIsPlacePickerOpen(true);
-                  setPlaceSearchError("");
-                }}
-              >
-                카카오 지도에서 검색
-              </Button>
-            </label>
-
+              <div className="space-y-1.5">
+                <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+                  장소 검색
+                </span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="h-11 w-full rounded-[1rem] px-3"
+                  onClick={() => {
+                    setIsPlacePickerOpen(true);
+                    setPlaceSearchError("");
+                  }}
+                >
+                  카카오맵에서 찾기
+                </Button>
+              </div>
+            </div>
 
             {missingKakaoKeyError || placeSearchError ? (
               <p className="text-sm font-medium text-[#c3342b]">
@@ -893,24 +889,25 @@ function CreateListingFormBody({
               </p>
             ) : null}
 
-            <label className="space-y-2">
+            <label className="space-y-1.5">
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                구장명
+                구장 이름
               </span>
               <Input
                 value={venueName}
                 onChange={(event) => setVenueName(event.target.value)}
-                placeholder="검색 결과에서 자동 입력됩니다."
+                placeholder="검색 결과에서 자동 입력됩니다"
+                className="h-11"
               />
             </label>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                자동 등록 주소
+                주소
               </span>
-              <div className="rounded-[1.4rem] bg-[#eef2ee] px-4 py-3">
-                <p className={address ? "text-sm leading-6 text-[#112317]" : "text-sm text-[#88948c]"}>
-                  {address || "장소를 검색하면 주소가 자동으로 등록됩니다."}
+              <div className="rounded-[1.15rem] bg-[#eef2ee] px-3 py-2.5">
+                <p className={address ? "text-sm leading-5 text-[#112317]" : "text-sm leading-5 text-[#88948c]"}>
+                  {address || "장소를 검색하면 주소가 자동으로 채워집니다."}
                 </p>
               </div>
             </div>
@@ -919,44 +916,55 @@ function CreateListingFormBody({
 
         {step === 3 ? (
           <>
-            <section className="surface-card space-y-4 rounded-[1.85rem] p-5">
-              <div className="space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                  참여 흐름
-                </p>
-                <div className="rounded-[1.2rem] bg-[#eef2ee] px-4 py-4">
-                  <p className="text-sm font-semibold text-[#112317]">
-                    참가 요청 후 호스트가 수락하면 오픈채팅 입장이 열립니다.
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-[#6f7c73]">
-                    생성자는 연결용 오픈채팅 링크만 입력하면 됩니다.
-                  </p>
+            <section className="surface-card space-y-2.5 rounded-[1.6rem] p-4">              {matchType === "mercenary" ? (
+                <div className={`${compactSummaryCardClass} space-y-2`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a766f]">
+                      매치 형식
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {teamFormats.map((format) => (
+                      <button
+                        key={format}
+                        type="button"
+                        onClick={() => setMercenaryFormat(format)}
+                        className={`rounded-[0.95rem] px-2 py-2 text-[13px] font-bold transition ${
+                          mercenaryFormat === format ? "bg-[#112317] text-white" : "bg-white text-[#112317]"
+                        }`}
+                      >
+                        {formatMatchFormatLabel(format)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : null}
 
-              <label className="space-y-2">
-                  <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                    오픈채팅 링크
-                  </span>
-                  <Input
-                    type="url"
-                    value={contactValue}
-                    onChange={(event) => setContactValue(event.target.value)}
-                    placeholder="https://open.kakao.com/o/..."
-                  />
-                  <p className="text-xs leading-5 text-[#6f7c73]">
-                    카카오톡 오픈채팅방 &gt; 공유 &gt; 링크 복사 후 붙여넣어 주세요.
-                  </p>
-                </label>
-
-              <label className="space-y-2">
+              <label className="space-y-1.5">
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
-                  추가 메모
+                  오픈채팅 링크
+                </span>
+                <Input
+                  type="url"
+                  value={contactValue}
+                  onChange={(event) => setContactValue(event.target.value)}
+                  placeholder="https://open.kakao.com/o/..."
+                  className="h-11"
+                />
+                <p className="text-[11px] leading-4 text-[#6f7c73]">
+                  카카오톡 오픈채팅방 공유 링크를 붙여 넣으면 됩니다.
+                </p>
+              </label>
+
+              <label className="space-y-1.5">
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+                  한 줄 메모
                 </span>
                 <Textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
-                  placeholder="매너 좋게 즐기는 분 환영합니다."
+                  placeholder="예: 밝은 분위기, 정시 시작, 주차 가능"
+                  className="min-h-[78px] rounded-[1.15rem] px-3 py-2.5"
                 />
               </label>
 
@@ -965,25 +973,29 @@ function CreateListingFormBody({
               ) : null}
             </section>
 
-            <section className="space-y-3">
-              <p className="px-1 text-sm font-semibold text-[#55625a]">미리보기</p>
-              <MatchCard
-                match={previewMatch}
-                detailHref="/home"
-                selectedGroupSize={previewSelectedGroupSize}
-                preview
-              />
+            <section className="space-y-1.5">
+              <div className="px-1">
+                <p className="text-sm font-semibold text-[#55625a]">미리보기</p>
+              </div>
+              <div className="origin-top scale-[0.94]">
+                <MatchCard
+                  match={previewMatch}
+                  detailHref="/home"
+                  selectedGroupSize={previewSelectedGroupSize}
+                  preview
+                />
+              </div>
             </section>
           </>
         ) : null}
       </form>
 
-      <div className="glass-panel safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-4 pb-4 pt-3 shadow-[0_-18px_48px_rgba(10,18,13,0.06)]">
-        <div className="flex gap-3">
+      <div className="glass-panel safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-4 pb-3 pt-2 shadow-[0_-18px_48px_rgba(10,18,13,0.06)]">
+        <div className="flex gap-2">
           {step > 1 ? (
             <Button
-              className="flex-1"
-              size="lg"
+              className="h-11 flex-[0.9] rounded-[1rem]"
+              size="default"
               type="button"
               variant="secondary"
               onClick={handleBack}
@@ -994,8 +1006,8 @@ function CreateListingFormBody({
 
           {step < 3 ? (
             <Button
-              className="flex-[1.45] disabled:shadow-none disabled:brightness-95"
-              size="lg"
+              className="h-11 flex-[1.55] rounded-[1rem] disabled:shadow-none disabled:brightness-95"
+              size="default"
               type="button"
               disabled={cta.disabled}
               onClick={handleNext}
@@ -1004,8 +1016,8 @@ function CreateListingFormBody({
             </Button>
           ) : (
             <Button
-              className="flex-[1.45] disabled:shadow-none disabled:brightness-95"
-              size="lg"
+              className="h-11 flex-[1.55] rounded-[1rem] disabled:shadow-none disabled:brightness-95"
+              size="default"
               type="button"
               disabled={cta.disabled}
               onClick={() => formRef.current?.requestSubmit()}
@@ -1014,9 +1026,7 @@ function CreateListingFormBody({
             </Button>
           )}
         </div>
-      </div>
-
-      <ProfileCompletionSheet
+      </div>      <ProfileCompletionSheet
         open={profileSheetOpen}
         onOpenChange={setProfileSheetOpen}
         profile={resolvedProfile}

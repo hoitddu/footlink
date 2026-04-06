@@ -26,6 +26,10 @@ import { Button } from "@/components/ui/button";
 import { buildContextQuery, parseFeedContext } from "@/lib/context";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import {
+  getMatchFormatLabel,
+  getStoredNoteWithoutFormat,
+} from "@/lib/match-format";
+import {
   getActiveParticipationForMatch,
   getCurrentProfile,
   getDefaultRequestedCount,
@@ -49,14 +53,6 @@ const listingTypeLabels: Record<ListingType, string> = {
   partial_join: "부분 합류",
   team_match: "팀 매치",
 };
-
-function getMatchFormatLabel(match: { mode: string; min_group_size: number; max_group_size: number }) {
-  if (match.mode === "team") {
-    return `${match.min_group_size}v${match.max_group_size}`;
-  }
-
-  return "5v5";
-}
 
 function mergePersonalizedState(
   state: DemoAppState,
@@ -277,11 +273,11 @@ function MatchDetailBody({
         </div>
       </section>
 
-      {match.note ? (
+      {getStoredNoteWithoutFormat(match.note) ? (
         <section className="surface-card rounded-[1.25rem] px-4 py-3">
           <div className="flex items-start gap-2.5">
             <MessageSquareText className="mt-0.5 h-4 w-4 shrink-0 text-[#112317]" />
-            <p className="text-[13px] leading-5 text-[#3a4a3f]">{match.note}</p>
+            <p className="text-[13px] leading-5 text-[#3a4a3f]">{getStoredNoteWithoutFormat(match.note)}</p>
           </div>
         </section>
       ) : null}
