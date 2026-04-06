@@ -48,8 +48,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
-      <body className={`${brandFont.variable} min-h-screen antialiased`}>
+    <html lang="ko" style={{ backgroundColor: "#04070d" }}>
+      <body
+        className={`${brandFont.variable} min-h-screen antialiased`}
+        style={{ backgroundColor: "#04070d", color: "#f8faf8" }}
+      >
         {children}
       </body>
     </html>
