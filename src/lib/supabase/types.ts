@@ -63,3 +63,10 @@ export interface MatchRequestRow {
   decided_at: string | null;
   updated_at: string;
 }
+
+export interface NotificationReadRow {
+  profile_id: string;
+  notification_id: string;
+  read_at: string;
+  created_at: string;
+}

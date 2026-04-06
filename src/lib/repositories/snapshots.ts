@@ -5,6 +5,33 @@ function dedupeById<T extends { id: string }>(items: T[]) {
   return Array.from(new Map(items.map((item) => [item.id, item])).values());
 }
 
+export function getDerivedNotificationId(
+  currentProfileId: string,
+  request: ParticipationRequest,
+) {
+  if (request.host_profile_id === currentProfileId && request.status === "pending") {
+    return `host-${request.id}`;
+  }
+
+  if (request.requester_profile_id !== currentProfileId) {
+    return null;
+  }
+
+  if (request.status === "accepted") {
+    return `accepted-${request.id}`;
+  }
+
+  if (request.status === "confirmed") {
+    return `confirmed-${request.id}`;
+  }
+
+  if (request.status === "rejected") {
+    return `rejected-${request.id}`;
+  }
+
+  return null;
+}
+
 export function createAppStateSnapshot({
   currentProfile,
   profiles,
@@ -50,7 +77,7 @@ export function deriveNotificationsFromRequests(
     if (request.host_profile_id === currentProfileId && request.status === "pending") {
       const requester = profileMap.get(request.requester_profile_id);
       notifications.push({
-        id: `host-${request.id}`,
+        id: getDerivedNotificationId(currentProfileId, request) ?? request.id,
         profile_id: currentProfileId,
         kind: "host_request_received",
         title: "새 참가 요청이 도착했어요",
@@ -69,7 +96,7 @@ export function deriveNotificationsFromRequests(
     if (request.status === "accepted") {
       const host = profileMap.get(request.host_profile_id);
       notifications.push({
-        id: `accepted-${request.id}`,
+        id: getDerivedNotificationId(currentProfileId, request) ?? request.id,
         profile_id: currentProfileId,
         kind: "request_accepted",
         title: "참가 요청이 수락됐어요",
@@ -84,7 +111,7 @@ export function deriveNotificationsFromRequests(
     if (request.status === "confirmed") {
       const host = profileMap.get(request.host_profile_id);
       notifications.push({
-        id: `confirmed-${request.id}`,
+        id: getDerivedNotificationId(currentProfileId, request) ?? request.id,
         profile_id: currentProfileId,
         kind: "request_confirmed",
         title: "참가가 최종 확정됐어요",
@@ -99,7 +126,7 @@ export function deriveNotificationsFromRequests(
     if (request.status === "rejected") {
       const host = profileMap.get(request.host_profile_id);
       notifications.push({
-        id: `rejected-${request.id}`,
+        id: getDerivedNotificationId(currentProfileId, request) ?? request.id,
         profile_id: currentProfileId,
         kind: "request_rejected",
         title: "참가 요청이 거절됐어요",

@@ -136,7 +136,7 @@ const steps = [
   { num: 3, label: "상세 · 확인" },
 ];
 
-const compactSummaryCardClass = "rounded-[1.35rem] bg-[#eef2ee] p-3";
+const compactSummaryCardClass = "rounded-[1.4rem] bg-[#eef2ee] p-3.5";
 
 function getPreviewStatus(type: MatchType, count: number) {
   if (type === "team_match") {
@@ -585,32 +585,32 @@ function CreateListingFormBody({
 
   return (
     <div className="space-y-2.5 pb-[6.8rem]">
-      <section className="surface-card rounded-[1.55rem] p-3.5">
-        <div className="flex items-center justify-between gap-3">
+      <section className="surface-card rounded-[2rem] px-5 pb-5 pt-4">
+        <div className="flex min-h-11 items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleNavigateBack}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-[1rem] bg-[#eef2ee] px-3 py-2 text-sm font-semibold text-[#112317] transition active:scale-95"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/78 text-[#112317] shadow-[0_12px_30px_rgba(6,21,12,0.05)] transition active:scale-95"
             aria-label="이전 화면으로 돌아가기"
           >
-            <ChevronLeft className="h-4 w-4" />
-            뒤로
+            <ChevronLeft className="h-5 w-5" />
           </button>
-          <div className="rounded-full bg-[#eef2ee] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#5f6a63]">
+          <span className="font-display text-[1.08rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
+          <div className="rounded-full bg-[#eef2ee] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#66736a]">
             Step {step}/3
           </div>
         </div>
 
-        <p className="mt-3 font-display text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+        <p className="mt-4 font-display text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
           CREATE MATCH
         </p>
-        <h1 className="mt-1 text-[1.28rem] font-bold tracking-[-0.04em] text-[#112317]">
+        <h1 className="mt-1.5 text-[1.28rem] font-bold tracking-[-0.04em] text-[#112317]">
           {steps[step - 1].label}
         </h1>
 
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid grid-cols-3 gap-2.5">
           {steps.map((item) => (
-            <div key={item.num} className="space-y-1">
+            <div key={item.num} className="space-y-1.5">
               <div
                 className={`h-1.5 rounded-full transition-colors ${
                   item.num <= step ? "bg-[#112317]" : "bg-[#dce3dc]"
@@ -631,11 +631,11 @@ function CreateListingFormBody({
       <form ref={formRef} className="space-y-2.5" onSubmit={handleSubmit}>
         {step === 1 ? (
           <section
-            className={`surface-card rounded-[1.6rem] px-4 ${
-              matchType === "team_match" ? "space-y-3 py-4" : "space-y-4 py-4"
+            className={`surface-card rounded-[2rem] px-5 ${
+              matchType === "team_match" ? "space-y-3.5 py-5" : "space-y-4.5 py-5"
             }`}
           >
-            <div className="rounded-[1.25rem] bg-[#eef2ee] p-1.5">
+            <div className="rounded-[1.35rem] bg-[#eef2ee] p-1.5">
               <div className="grid grid-cols-2 gap-1">
                 {[
                   { value: "mercenary" as MatchType, label: "용병 구함" },
@@ -645,7 +645,7 @@ function CreateListingFormBody({
                     key={type.value}
                     type="button"
                     onClick={() => handleTypeChange(type.value)}
-                    className={`rounded-[1rem] px-3 py-3 text-[14px] font-bold transition ${
+                    className={`rounded-[1.1rem] px-3 py-3.5 text-[14px] font-bold transition ${
                       matchType === type.value
                         ? "bg-[#112317] text-white shadow-[0_14px_28px_rgba(6,21,12,0.14)]"
                         : "text-foreground"
@@ -663,7 +663,7 @@ function CreateListingFormBody({
                   <button
                     type="button"
                     onClick={() => setNeededCount((count) => Math.max(1, count - 1))}
-                    className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[24px] font-bold text-[#112317] transition active:scale-95"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[24px] font-bold text-[#112317] transition active:scale-95"
                   >
                     -
                   </button>
@@ -673,7 +673,7 @@ function CreateListingFormBody({
                   <button
                     type="button"
                     onClick={() => setNeededCount((count) => Math.min(10, count + 1))}
-                    className="kinetic-gradient flex h-11 w-11 items-center justify-center rounded-full text-[24px] font-bold text-white transition active:scale-95"
+                    className="kinetic-gradient flex h-12 w-12 items-center justify-center rounded-full text-[24px] font-bold text-white transition active:scale-95"
                   >
                     +
                   </button>
@@ -708,7 +708,7 @@ function CreateListingFormBody({
                     <button
                       type="button"
                       onClick={() => setNeededCount((count) => Math.max(1, count - 1))}
-                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[24px] font-bold text-[#112317] transition active:scale-95"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[24px] font-bold text-[#112317] transition active:scale-95"
                     >
                       -
                     </button>
@@ -718,7 +718,7 @@ function CreateListingFormBody({
                     <button
                       type="button"
                       onClick={() => setNeededCount((count) => Math.min(5, count + 1))}
-                      className="kinetic-gradient flex h-11 w-11 items-center justify-center rounded-full text-[24px] font-bold text-white transition active:scale-95"
+                    className="kinetic-gradient flex h-12 w-12 items-center justify-center rounded-full text-[24px] font-bold text-white transition active:scale-95"
                     >
                       +
                     </button>
@@ -761,7 +761,7 @@ function CreateListingFormBody({
                     onClick={() =>
                       setFee((currentFee) => Math.max(feePreset.min, currentFee - feePreset.step))
                     }
-                    className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[22px] font-bold text-[#112317] transition active:scale-95"
+                    className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#dce3dc] text-[22px] font-bold text-[#112317] transition active:scale-95"
                   >
                     -
                   </button>
@@ -778,7 +778,7 @@ function CreateListingFormBody({
                   <button
                     type="button"
                     onClick={() => setFee((currentFee) => currentFee + feePreset.step)}
-                    className="kinetic-gradient flex h-11 w-11 items-center justify-center rounded-full text-[22px] font-bold text-white transition active:scale-95"
+                    className="kinetic-gradient flex h-12 w-12 items-center justify-center rounded-full text-[22px] font-bold text-white transition active:scale-95"
                   >
                     +
                   </button>
@@ -822,7 +822,7 @@ function CreateListingFormBody({
         ) : null}
 
         {step === 2 ? (
-          <section className="surface-card space-y-2.5 rounded-[1.6rem] p-4">
+          <section className="surface-card space-y-3 rounded-[2rem] p-5">
             <div className="grid min-w-0 grid-cols-2 gap-2">
               <label className="min-w-0 space-y-1.5">
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
@@ -832,7 +832,7 @@ function CreateListingFormBody({
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  className="h-11 min-w-0 px-3 text-[14px]"
+                  className="h-12 min-w-0 rounded-[1.1rem] px-3 text-[14px]"
                 />
               </label>
               <label className="min-w-0 space-y-1.5">
@@ -843,7 +843,7 @@ function CreateListingFormBody({
                   type="time"
                   value={time}
                   onChange={(event) => setTime(event.target.value)}
-                  className="h-11 min-w-0 px-3 text-[14px]"
+                  className="h-12 min-w-0 rounded-[1.1rem] px-3 text-[14px]"
                 />
               </label>
             </div>
@@ -853,7 +853,7 @@ function CreateListingFormBody({
                 <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                   지역
                 </span>
-                <Input value={SUWON_LABEL} readOnly className="h-11 bg-[#e7ece7] text-[#112317]" />
+                <Input value={SUWON_LABEL} readOnly className="h-12 rounded-[1.1rem] bg-[#e7ece7] text-[#112317]" />
               </label>
 
               <div className="space-y-1.5">
@@ -863,7 +863,7 @@ function CreateListingFormBody({
                 <Button
                   type="button"
                   variant="secondary"
-                  className="h-11 w-full rounded-[1rem] px-3"
+                  className="h-12 w-full rounded-[1.1rem] px-3"
                   onClick={() => {
                     setIsPlacePickerOpen(true);
                     setPlaceSearchError("");
@@ -888,7 +888,7 @@ function CreateListingFormBody({
                 value={venueName}
                 onChange={(event) => setVenueName(event.target.value)}
                 placeholder="검색 결과에서 자동 입력됩니다"
-                className="h-11"
+                className="h-12 rounded-[1.1rem]"
               />
             </label>
 
@@ -896,7 +896,7 @@ function CreateListingFormBody({
               <span className="block text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
                 주소
               </span>
-              <div className="rounded-[1.15rem] bg-[#eef2ee] px-3 py-2.5">
+              <div className="rounded-[1.2rem] bg-[#eef2ee] px-3.5 py-3">
                 <p className={address ? "text-sm leading-5 text-[#112317]" : "text-sm leading-5 text-[#88948c]"}>
                   {address || "장소를 검색하면 주소가 자동으로 채워집니다."}
                 </p>
@@ -907,8 +907,8 @@ function CreateListingFormBody({
 
         {step === 3 ? (
           <>
-            <section className="surface-card space-y-2.5 rounded-[1.6rem] p-4">              {matchType === "mercenary" ? (
-                <div className={`${compactSummaryCardClass} space-y-2`}>
+            <section className="surface-card space-y-3 rounded-[2rem] p-5">              {matchType === "mercenary" ? (
+                <div className={`${compactSummaryCardClass} space-y-2.5`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a766f]">
                       매치 형식
@@ -940,7 +940,7 @@ function CreateListingFormBody({
                   value={contactValue}
                   onChange={(event) => setContactValue(event.target.value)}
                   placeholder="https://open.kakao.com/o/..."
-                  className="h-11"
+                  className="h-12 rounded-[1.1rem]"
                 />
                 <p className="text-[11px] leading-4 text-[#6f7c73]">
                   카카오톡 오픈채팅방 공유 링크를 붙여 넣으면 됩니다.
@@ -955,7 +955,7 @@ function CreateListingFormBody({
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="예: 밝은 분위기, 정시 시작, 주차 가능"
-                  className="min-h-[78px] rounded-[1.15rem] px-3 py-2.5"
+                  className="min-h-[88px] rounded-[1.2rem] px-3.5 py-3"
                 />
               </label>
 
@@ -983,7 +983,7 @@ function CreateListingFormBody({
 
       <div className="glass-panel safe-bottom fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[430px] px-4 pb-3 pt-2 shadow-[0_-18px_48px_rgba(10,18,13,0.06)]">
         <div className="flex gap-2">
-          {step > 1 ? (
+          {step > 1 && step !== 2 ? (
             <Button
               className="h-11 flex-[0.9] rounded-[1rem]"
               size="default"
@@ -997,7 +997,9 @@ function CreateListingFormBody({
 
           {step < 3 ? (
             <Button
-              className="h-11 flex-[1.55] rounded-[1rem] disabled:shadow-none disabled:brightness-95"
+              className={`h-11 rounded-[1rem] disabled:shadow-none disabled:brightness-95 ${
+                step === 2 ? "flex-1" : "flex-[1.55]"
+              }`}
               size="default"
               type="button"
               disabled={cta.disabled}
@@ -1007,7 +1009,9 @@ function CreateListingFormBody({
             </Button>
           ) : (
             <Button
-              className="h-11 flex-[1.55] rounded-[1rem] disabled:shadow-none disabled:brightness-95"
+              className={`h-11 rounded-[1rem] disabled:shadow-none disabled:brightness-95 ${
+                step === 2 ? "flex-1" : "flex-[1.55]"
+              }`}
               size="default"
               type="button"
               disabled={cta.disabled}

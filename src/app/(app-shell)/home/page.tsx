@@ -3,6 +3,7 @@ import { FeedScreen } from "@/components/feed/feed-screen";
 import { parseFeedContext } from "@/lib/context";
 import { getFeedDataSource } from "@/lib/repositories/matches";
 import { getCurrentProfile } from "@/lib/repositories/profiles";
+import { getUnreadNotificationCount } from "@/lib/repositories/requests";
 
 type HomePageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -17,15 +18,20 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const referenceNow = Date.now();
   const context = parseFeedContext(normalized);
   const isSupabase = getAppDataSource() === "supabase";
-  const [source, currentProfile] = isSupabase
-    ? await Promise.all([getFeedDataSource(context), getCurrentProfile()])
-    : [undefined, undefined];
+  const [source, currentProfile, notificationCount] = isSupabase
+    ? await Promise.all([
+        getFeedDataSource(context),
+        getCurrentProfile(),
+        getUnreadNotificationCount(),
+      ])
+    : [undefined, undefined, undefined];
 
   return (
     <FeedScreen
       initialContext={context}
       initialReferenceNow={referenceNow}
       currentProfile={currentProfile}
+      notificationCount={notificationCount}
       source={source}
     />
   );

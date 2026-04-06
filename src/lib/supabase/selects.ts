@@ -1,4 +1,4 @@
-import type { MatchRequestRow, MatchRow, ProfileRow } from "@/lib/supabase/types";
+import type { MatchRequestRow, MatchRow, NotificationReadRow, ProfileRow } from "@/lib/supabase/types";
 
 function joinColumns(columns: string[]) {
   return columns.join(", ");
@@ -131,6 +131,13 @@ export const MATCH_REQUEST_PERSONALIZATION_SELECT = joinColumns([
 
 export const MATCH_REQUEST_PATH_SELECT = joinColumns(["id", "match_id"]);
 
+export const NOTIFICATION_READ_SELECT = joinColumns([
+  "profile_id",
+  "notification_id",
+  "read_at",
+  "created_at",
+]);
+
 export type FeedMatchRow = PartialRow<
   MatchRow,
   | "id"
@@ -222,3 +229,8 @@ export type ActivityMatchRequestRow = PartialRow<
 >;
 
 export type RequestPathRow = Pick<MatchRequestRow, "id" | "match_id">;
+
+export type NotificationReadSelectRow = Pick<
+  NotificationReadRow,
+  "profile_id" | "notification_id" | "read_at" | "created_at"
+>;

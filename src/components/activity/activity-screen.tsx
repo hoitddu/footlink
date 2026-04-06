@@ -12,7 +12,6 @@ import {
   withdrawParticipationAction,
 } from "@/app/actions/requests";
 import { HostListingCard } from "@/components/activity/host-listing-card";
-import { NotificationCenter } from "@/components/activity/notification-center";
 import { RequestStatusCard } from "@/components/activity/request-status-card";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
 import { FlashBanner } from "@/components/app/flash-banner";
@@ -25,9 +24,7 @@ import {
   getHostedMatches,
   getInboundRequestsForMatch,
   getMyParticipationRequests,
-  getNotificationsForCurrentProfile,
   getProfileById,
-  getUnreadNotificationIds,
 } from "@/lib/demo-state/selectors";
 import type { DemoAppState } from "@/lib/types";
 
@@ -55,8 +52,6 @@ function ActivityScreenBody({
   onReject,
   onDelete,
   showDemoIdentitySwitcher,
-  notificationsReadEnabled,
-  onMarkAllNotificationsRead,
 }: {
   flash?: ActivityFlash;
   initialTab?: ActivityTab;
@@ -68,8 +63,6 @@ function ActivityScreenBody({
   onReject: (requestId: string) => Promise<void>;
   onDelete: (matchId: string) => Promise<void>;
   showDemoIdentitySwitcher: boolean;
-  notificationsReadEnabled: boolean;
-  onMarkAllNotificationsRead?: () => void;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -78,8 +71,6 @@ function ActivityScreenBody({
 
   const myRequests = useMemo(() => getMyParticipationRequests(state), [state]);
   const hostedMatches = useMemo(() => getHostedMatches(state), [state]);
-  const notifications = useMemo(() => getNotificationsForCurrentProfile(state), [state]);
-  const unreadNotificationIds = useMemo(() => getUnreadNotificationIds(state), [state]);
 
   useEffect(() => {
     router.prefetch("/activity?tab=requests");
@@ -233,12 +224,6 @@ function ActivityScreenBody({
 
       {showDemoIdentitySwitcher ? <DemoIdentitySwitcher /> : null}
 
-      <NotificationCenter
-        notifications={notifications}
-        unreadCount={notificationsReadEnabled ? unreadNotificationIds.length : notifications.length}
-        onMarkAllRead={notificationsReadEnabled ? onMarkAllNotificationsRead : undefined}
-      />
-
       <Tabs value={currentTab} onValueChange={handleTabChange}>
         <TabsList className="shadow-[0_16px_34px_rgba(10,18,13,0.05)]">
           <TabsTrigger value="requests">내 요청</TabsTrigger>
@@ -345,13 +330,6 @@ function DemoActivityScreen(props: {
         actions.cancelMatch(matchId);
       }}
       showDemoIdentitySwitcher
-      notificationsReadEnabled
-      onMarkAllNotificationsRead={() => {
-        const ids = getUnreadNotificationIds(state);
-        if (ids.length > 0) {
-          actions.markNotificationsRead(ids);
-        }
-      }}
     />
   );
 }
@@ -390,7 +368,6 @@ export function ActivityScreen({
           await cancelMatchAction(matchId);
         }}
         showDemoIdentitySwitcher={false}
-        notificationsReadEnabled={false}
       />
     );
   }

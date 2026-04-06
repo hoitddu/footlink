@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  BellDot,
   CalendarDays,
   ChevronDown,
   ChevronLeft,
@@ -16,10 +17,12 @@ import {
 import { useRouter } from "next/navigation";
 
 import { MatchCard } from "@/components/feed/match-card";
+import { BrandHeader } from "@/components/app/brand-header";
 import { Button } from "@/components/ui/button";
 import { buildContextQuery } from "@/lib/context";
 import { REGION_OPTIONS, SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
+import { getUnreadNotificationCount } from "@/lib/demo-state/selectors";
 import { getFeedMatches } from "@/lib/feed";
 import { isProfileComplete } from "@/lib/profiles";
 import type { EntryMode, FeedContext, FeedDataSource, FeedPreset, Profile, SkillLevel } from "@/lib/types";
@@ -151,12 +154,14 @@ function FeedScreenView({
   source,
   currentProfile,
   hydrateCurrentProfile = false,
+  notificationCount = 0,
 }: {
   initialContext: FeedContext;
   initialReferenceNow: number;
   source: FeedDataSource;
   currentProfile?: Profile | null;
   hydrateCurrentProfile?: boolean;
+  notificationCount?: number;
 }) {
   const router = useRouter();
   const [context, setContext] = useState(initialContext);
@@ -224,6 +229,7 @@ function FeedScreenView({
   useEffect(() => {
     router.prefetch("/create");
     router.prefetch("/activity");
+    router.prefetch("/notifications");
     router.prefetch("/profile");
 
     feedItems.slice(0, 4).forEach((match) => {
@@ -310,20 +316,33 @@ function FeedScreenView({
 
   return (
     <div className="space-y-2">
-      {/* Header: brand + match count */}
-      <div className="flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#112317] text-[#b8ff5a]">
-            <MapPin className="h-3.5 w-3.5 stroke-[2.2]" />
-          </div>
-          <span className="font-display text-[15px] font-bold tracking-[-0.03em] text-[#112317]">
-            FOOTLINK
-          </span>
-        </Link>
-        <span className="text-[12px] font-semibold text-[#88948c]">
-          {feedItems.length}경기
-        </span>
-      </div>
+      {/* Header: brand + notification inbox */}
+      <BrandHeader
+        left={
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#112317] text-[#b8ff5a]">
+              <MapPin className="h-3.5 w-3.5 stroke-[2.2]" />
+            </div>
+            <span className="font-display text-[15px] font-bold tracking-[-0.03em] text-[#112317]">
+              FOOTLINK
+            </span>
+          </Link>
+        }
+        right={
+          <Link
+            href="/notifications"
+            aria-label="알림함 열기"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/90 bg-white text-[#112317] shadow-[0_10px_24px_rgba(6,21,12,0.12),0_1px_0_rgba(255,255,255,0.9)_inset] transition active:scale-95"
+          >
+            <BellDot className="h-[1.15rem] w-[1.15rem] text-[#112317] opacity-100 [stroke-width:2.3]" />
+            {notificationCount > 0 ? (
+              <span className="absolute -right-0.5 -top-0.5 flex min-h-[1.15rem] min-w-[1.15rem] items-center justify-center rounded-full border-2 border-[#f6f8f6] bg-[#d94b3d] px-1 text-[9px] font-bold leading-none text-white shadow-[0_6px_12px_rgba(217,75,61,0.32)]">
+                {notificationCount > 9 ? "9+" : notificationCount}
+              </span>
+            ) : null}
+          </Link>
+        }
+      />
 
       {/* Sticky: filter summary bar + sort chips */}
       <div className="sticky top-0 z-20 -mx-4 px-4 pb-1.5 pt-1 bg-[#f6f8f6]">
@@ -696,13 +715,21 @@ function DemoFeedScreen(props: {
 }) {
   const { state } = useDemoApp();
 
-  return <FeedScreenView {...props} source={state} hydrateCurrentProfile={false} />;
+  return (
+    <FeedScreenView
+      {...props}
+      source={state}
+      hydrateCurrentProfile={false}
+      notificationCount={getUnreadNotificationCount(state)}
+    />
+  );
 }
 
 export function FeedScreen({
   source,
   currentProfile,
   hydrateCurrentProfile = false,
+  notificationCount,
   ...props
 }: {
   initialContext: FeedContext;
@@ -710,6 +737,7 @@ export function FeedScreen({
   source?: FeedDataSource;
   currentProfile?: Profile | null;
   hydrateCurrentProfile?: boolean;
+  notificationCount?: number;
 }) {
   if (source) {
     return (
@@ -718,6 +746,7 @@ export function FeedScreen({
         source={source}
         currentProfile={currentProfile}
         hydrateCurrentProfile={hydrateCurrentProfile}
+        notificationCount={notificationCount}
       />
     );
   }

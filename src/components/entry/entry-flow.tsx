@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronRight, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -318,28 +318,35 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
 
   return (
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col">
-      <header className="px-5 pb-3 pt-5">
-        <div className="flex items-center justify-between">
+      <header className="px-5 pb-4 pt-4">
+        <div className="flex min-h-11 items-center justify-between">
           <button
             type="button"
             onClick={handleBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/70 text-[#112317] shadow-[0_12px_30px_rgba(6,21,12,0.05)] transition active:scale-95"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/78 text-[#112317] shadow-[0_12px_30px_rgba(6,21,12,0.05)] transition active:scale-95"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <span className="font-display text-lg font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
-          <div className="flex items-center gap-1 rounded-full bg-white/72 px-3 py-1 text-[11px] font-bold tracking-[0.18em] text-[#607066] shadow-[0_12px_30px_rgba(6,21,12,0.04)]">
-            <Sparkles className="h-3.5 w-3.5" />
-            {currentMeta.index}/3
+          <span className="font-display text-[1.08rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
+          <div className="rounded-full bg-[#eef2ee] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#66736a] shadow-[0_12px_30px_rgba(6,21,12,0.04)]">
+            Step {currentMeta.index}/3
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid grid-cols-3 gap-2.5">
           {Object.values(stepMeta).map((item) => (
-            <div
-              key={item.label}
-              className={`h-1.5 rounded-full transition ${item.index <= currentMeta.index ? "bg-[#112317]" : "bg-[#dde3dc]"}`}
-            />
+            <div key={item.label} className="space-y-1.5">
+              <div
+                className={`h-1.5 rounded-full transition ${item.index <= currentMeta.index ? "bg-[#112317]" : "bg-[#dde3dc]"}`}
+              />
+              <p
+                className={`text-center text-[10px] font-bold ${
+                  item.index === currentMeta.index ? "text-[#112317]" : "text-[#a0a8a2]"
+                }`}
+              >
+                {item.label}
+              </p>
+            </div>
           ))}
         </div>
       </header>

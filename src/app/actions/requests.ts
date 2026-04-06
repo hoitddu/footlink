@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { createAppError, isAppError, toUserFacingError } from "@/lib/errors";
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
+import { markNotificationsRead } from "@/lib/repositories/requests";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import type { SubmitParticipationInput } from "@/lib/types";
 import {
@@ -225,5 +226,20 @@ export async function withdrawParticipationAction(requestId: string) {
     }
 
     throw toUserFacingError(error, "요청을 취소하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
+export async function markNotificationsReadAction(notificationIds: string[]) {
+  try {
+    await markNotificationsRead(notificationIds);
+
+    revalidatePath("/home");
+    revalidatePath("/notifications");
+  } catch (error) {
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw toUserFacingError(error, "알림 읽음 상태를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }

@@ -12,10 +12,8 @@ import {
   Footprints,
   MapPin,
   MessageSquareText,
-  ShieldCheck,
   Tag,
   User,
-  Wallet,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -185,10 +183,6 @@ function MatchDetailBody({
     );
   }
 
-  const participationMethodLabel = "참가 요청 후 호스트 승인";
-  const participationFlowLabel = activeRequest
-    ? getParticipationStatusLabel(activeRequest.status)
-    : "수락되면 오픈채팅 입장";
   const remainingLabel =
     match.mode === "team"
       ? "상대 팀 모집"
@@ -246,8 +240,6 @@ function MatchDetailBody({
           <InfoRow icon={CalendarDays} label="시간" value={formatStartAt(match.start_at)} />
           <InfoRow icon={Tag} label="비용" value={formatFee(match.fee)} />
           <InfoRow icon={Clock} label="유형" value={listingTypeLabels[match.listing_type]} />
-          <InfoRow icon={Wallet} label="진행 방식" value={participationMethodLabel} />
-          <InfoRow icon={ShieldCheck} label="연결 방식" value={participationFlowLabel} />
         </div>
       </section>
 
