@@ -22,29 +22,33 @@ function getModeFromGroupSize(groupSize: number): EntryMode {
 
 function LandingScreen({ onStart }: { onStart: () => void }) {
   return (
-    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-[#08110b]">
+    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-[#04070d]">
       <Image
         src="/landing-bg.jpg"
         alt=""
         fill
         priority
         sizes="430px"
-        className="absolute inset-0 object-cover opacity-55"
+        className="absolute inset-0 scale-[1.08] object-cover object-center brightness-[0.54] saturate-[0.72]"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,16,11,0.45)_0%,rgba(6,16,11,0.9)_100%)]" />
-      <div className="absolute inset-0 turf-texture opacity-35" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,9,18,0.82)_0%,rgba(8,14,25,0.38)_36%,rgba(7,12,18,0.22)_58%,rgba(4,7,10,0.9)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(180,203,240,0.2),transparent_28%),radial-gradient(circle_at_14%_43%,rgba(255,255,255,0.9),transparent_12%),radial-gradient(circle_at_86%_43%,rgba(255,255,255,0.9),transparent_12%),radial-gradient(circle_at_50%_78%,rgba(145,214,88,0.24),transparent_30%)] opacity-85" />
+      <div className="absolute left-[-22%] top-[34%] h-[20rem] w-[20rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.26)_18%,transparent_58%)] blur-2xl opacity-80" />
+      <div className="absolute right-[-22%] top-[34%] h-[20rem] w-[20rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.26)_18%,transparent_58%)] blur-2xl opacity-80" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,7,11,0.16)_0%,transparent_26%,transparent_74%,rgba(2,4,6,0.46)_100%)]" />
+      <div className="absolute inset-0 turf-texture opacity-[0.14]" />
 
-      <main className="relative z-10 flex flex-1 flex-col justify-between px-6 pb-10 pt-8 text-white">
-        <div className="flex items-center">
-          <span className="font-display text-lg font-bold tracking-[0.18em]">FOOTLINK</span>
+      <main className="relative z-10 flex flex-1 flex-col px-8 pb-[calc(3.25rem+env(safe-area-inset-bottom))] pt-10 text-white">
+        <div className="flex items-center justify-center">
+          <span className="font-display text-[1.15rem] font-medium tracking-[0.42em]">FOOTLINK</span>
         </div>
 
-        <div className="pb-14">
-          <div className="space-y-3">
-            <p className="font-display text-sm font-bold uppercase tracking-[0.18em] text-[#b8ff5a]">
+        <div className="flex flex-1 flex-col justify-between pb-3 pt-[16vh]">
+          <div className="space-y-5 text-center">
+            <p className="font-display text-[1.05rem] font-medium uppercase tracking-[0.24em] text-[#c4e89a]">
               SUWON PILOT
             </p>
-            <h1 className="font-display text-[3.8rem] font-bold leading-[0.92] tracking-[-0.08em]">
+            <h1 className="font-display text-[clamp(4.55rem,18vw,6.7rem)] font-bold leading-[0.86] tracking-[-0.085em] text-white drop-shadow-[0_10px_24px_rgba(0,0,0,0.26)]">
               Connect.
               <br />
               Play.
@@ -52,20 +56,18 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
               Repeat.
             </h1>
           </div>
+
+          <button
+            type="button"
+            onClick={onStart}
+            className="flex min-h-[6.3rem] w-full items-center justify-center rounded-[1.85rem] bg-[#bfff4b] px-6 py-5 text-[#05070a] shadow-[0_28px_54px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,255,255,0.14)_inset] transition duration-200 active:scale-[0.985]"
+          >
+            <span className="block text-center text-[2rem] font-black leading-none tracking-[-0.05em]">
+              Let&apos;s hit the pitch!
+            </span>
+          </button>
         </div>
       </main>
-
-      <div className="relative z-10 px-6 pb-12">
-        <button
-          type="button"
-          onClick={onStart}
-          className="kinetic-gradient lime-glow flex min-h-[6.6rem] w-full items-center justify-center rounded-[1.2rem] px-6 py-5 text-white transition active:scale-95"
-        >
-          <span className="block whitespace-nowrap text-center font-display text-[1.95rem] font-black leading-none tracking-[-0.03em] [transform:skewX(-12deg)]">
-            Let&apos;s hit the pitch!
-          </span>
-        </button>
-      </div>
     </div>
   );
 }
