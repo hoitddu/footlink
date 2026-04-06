@@ -20,6 +20,7 @@ import { SectionHeading } from "@/components/app/section-heading";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDemoApp } from "@/lib/demo-state/provider";
+import { getUserFacingErrorMessage } from "@/lib/errors";
 import {
   getHostedMatches,
   getInboundRequestsForMatch,
@@ -130,7 +131,7 @@ function ActivityScreenBody({
         flash: "withdrawn",
       });
     } catch (withdrawError) {
-      setError(withdrawError instanceof Error ? withdrawError.message : "요청을 취소하지 못했습니다.");
+      setError(getUserFacingErrorMessage(withdrawError, "요청을 취소하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }
@@ -148,7 +149,7 @@ function ActivityScreenBody({
         flash: "accepted",
       });
     } catch (acceptError) {
-      setError(acceptError instanceof Error ? acceptError.message : "요청을 수락하지 못했습니다.");
+      setError(getUserFacingErrorMessage(acceptError, "요청을 수락하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }
@@ -166,7 +167,7 @@ function ActivityScreenBody({
         flash: "rejected",
       });
     } catch (rejectError) {
-      setError(rejectError instanceof Error ? rejectError.message : "요청을 거절하지 못했습니다.");
+      setError(getUserFacingErrorMessage(rejectError, "요청을 거절하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }
@@ -184,7 +185,7 @@ function ActivityScreenBody({
         flash: "confirmed",
       });
     } catch (confirmError) {
-      setError(confirmError instanceof Error ? confirmError.message : "최종 확정을 처리하지 못했습니다.");
+      setError(getUserFacingErrorMessage(confirmError, "최종 확정을 처리하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }
@@ -206,7 +207,7 @@ function ActivityScreenBody({
         flash: "deleted",
       });
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "모집을 삭제하지 못했습니다.");
+      setError(getUserFacingErrorMessage(deleteError, "모집을 삭제하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }

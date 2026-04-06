@@ -362,11 +362,11 @@ export function confirmParticipation(state: DemoAppState, requestId: string, hos
   const request = getRequest(next, requestId);
 
   if (request.host_profile_id !== currentProfile.id) {
-    throw new Error("?몄뒪?몃쭔 理쒖쥌 ?뺤젙?????덉뒿?덈떎.");
+    throw new Error("호스트만 최종 확정할 수 있습니다.");
   }
 
   if (request.status !== "accepted") {
-    throw new Error("理쒖쥌 ?뺤젙?????녿뒗 ?붿껌 ?곹깭?낅땲??");
+    throw new Error("최종 확정할 수 없는 요청 상태입니다.");
   }
 
   const requester = getProfile(next, request.requester_profile_id);
@@ -381,8 +381,8 @@ export function confirmParticipation(state: DemoAppState, requestId: string, hos
   pushNotification(next, {
     profile_id: requester.id,
     kind: "request_confirmed",
-    title: "李멸?媛 理쒖쥌 ?뺤젙?섏뿀?듬땲??",
-    body: `${currentProfile.nickname}?섏씠 ${match.title} 李멸?瑜?理쒖쥌 ?뺤젙?덉뼱??`,
+    title: "참가가 최종 확정됐어요",
+    body: `${currentProfile.nickname}님이 ${match.title} 참가를 최종 확정했어요.`,
     href: `/activity?tab=requests&highlight=${request.id}&flash=confirmed`,
     related_match_id: match.id,
     related_request_id: request.id,
@@ -401,11 +401,11 @@ export function cancelParticipationConfirmation(
   const request = getRequest(next, requestId);
 
   if (request.host_profile_id !== currentProfile.id) {
-    throw new Error("?몄뒪?몃쭔 ?뺤젙??痍⑥냼?????덉뒿?덈떎.");
+    throw new Error("호스트만 확정을 취소할 수 있습니다.");
   }
 
   if (request.status !== "confirmed") {
-    throw new Error("?뺤젙??痍⑥냼?????녿뒗 ?붿껌 ?곹깭?낅땲??");
+    throw new Error("확정을 취소할 수 없는 요청 상태입니다.");
   }
 
   const now = new Date().toISOString();

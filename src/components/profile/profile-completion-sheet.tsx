@@ -3,14 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { saveProfile } from "@/components/profile/profile-save";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { AGE_BANDS, REGION_OPTIONS, SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
+import { createAppError, getUserFacingErrorMessage } from "@/lib/errors";
 import { isProfileComplete } from "@/lib/profiles";
-import { ensureAnonymousSession, createBrowserSupabaseClient } from "@/lib/supabase/client";
-import { mapProfileRow } from "@/lib/supabase/mappers";
-import { PROFILE_APP_SELECT, type AppProfileRow } from "@/lib/supabase/selects";
 import type { EntryMode, Profile } from "@/lib/types";
 
 type ProfileCompletionSheetProps = {
@@ -62,39 +61,18 @@ export function ProfileCompletionSheet({
     setIsSaving(true);
 
     try {
-      const user = await ensureAnonymousSession();
-
-      if (!user) {
-        throw new Error("익명 세션을 만들지 못했습니다. 다시 시도해 주세요.");
-      }
-
-      const supabase = createBrowserSupabaseClient();
-      const { data, error: saveError } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            auth_user_id: user.id,
-            nickname: nickname.trim() || profile?.nickname || "플레이어",
-            age: ageBand,
-            preferred_mode: preferredMode ?? profile?.preferred_mode ?? "solo",
-            preferred_regions:
-              profile?.preferred_regions.length ? profile.preferred_regions : [regionLabel],
-            skill_level: skillLevel,
-            open_chat_link: profile?.open_chat_link ?? null,
-          },
-          { onConflict: "auth_user_id" },
-        )
-        .select(PROFILE_APP_SELECT)
-        .single();
-
-      if (saveError) {
-        throw saveError;
-      }
-
-      const savedProfile = mapProfileRow(data as unknown as AppProfileRow);
+      const savedProfile = await saveProfile({
+        nickname: nickname.trim() || profile?.nickname || "플레이어",
+        age: ageBand,
+        preferred_mode: preferredMode ?? profile?.preferred_mode ?? "solo",
+        preferred_regions:
+          profile?.preferred_regions.length ? profile.preferred_regions : [regionLabel],
+        skill_level: skillLevel,
+        open_chat_link: profile?.open_chat_link ?? null,
+      });
 
       if (!isProfileComplete(savedProfile)) {
-        throw new Error("프로필 저장이 완전하지 않습니다. 다시 시도해 주세요.");
+        throw createAppError("PROFILE_SAVE_INCOMPLETE");
       }
 
       onCompleted?.(savedProfile);
@@ -104,7 +82,7 @@ export function ProfileCompletionSheet({
         router.refresh();
       }
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "프로필을 저장하지 못했습니다.");
+      setError(getUserFacingErrorMessage(saveError, "프로필을 저장하지 못했습니다."));
     } finally {
       setIsSaving(false);
     }
@@ -180,7 +158,7 @@ export function ProfileCompletionSheet({
             ) : null}
 
             <Button className="w-full" size="lg" type="button" disabled={isSaving} onClick={handleSave}>
-              {isSaving ? "저장 중.." : confirmLabel}
+              {isSaving ? "저장 중..." : confirmLabel}
             </Button>
           </div>
         </div>

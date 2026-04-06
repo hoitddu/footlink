@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { getUserFacingErrorMessage } from "@/lib/errors";
 import type { MatchWithMeta } from "@/lib/types";
 
 function getRequestBounds(match: MatchWithMeta) {
@@ -74,7 +75,7 @@ export function JoinIntentSheet({
       );
       onOpenChange(false);
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "참가 요청을 처리하지 못했습니다.");
+      setError(getUserFacingErrorMessage(submitError, "참가 요청을 처리하지 못했습니다."));
     } finally {
       setIsSubmitting(false);
     }

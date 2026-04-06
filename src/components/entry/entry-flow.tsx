@@ -127,7 +127,7 @@ function LocationPermissionStep({
             disabled={status === "loading"}
             className="kinetic-gradient lime-glow flex h-14 w-full items-center justify-center rounded-[1.25rem] text-base font-bold text-white transition active:scale-95 disabled:opacity-60"
           >
-            {status === "loading" ? "위치 확인 중.." : "위치 허용"}
+            {status === "loading" ? "위치 확인 중..." : "위치 허용"}
           </button>
           <button
             type="button"

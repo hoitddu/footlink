@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { saveProfile } from "@/components/profile/profile-save";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
 import { SectionHeading } from "@/components/app/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AGE_BANDS, REGION_OPTIONS, SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
+import { getUserFacingErrorMessage } from "@/lib/errors";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import type { Profile } from "@/lib/types";
 
@@ -69,7 +71,7 @@ function ProfileEditor({
 
       router.refresh();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "프로필을 저장하지 못했습니다.");
+      setError(getUserFacingErrorMessage(saveError, "프로필을 저장하지 못했습니다."));
     }
   }
 
@@ -206,32 +208,14 @@ export function ProfileForm({
         profile={profile}
         returnTo={returnTo}
         onSaveProfile={async (input) => {
-          const { createBrowserSupabaseClient, ensureAnonymousSession } = await import(
-            "@/lib/supabase/client"
-          );
-          const user = await ensureAnonymousSession();
-
-          if (!user) {
-            throw new Error("인증 세션을 만들지 못했습니다. 새로고침 후 다시 시도해주세요.");
-          }
-
-          const supabase = createBrowserSupabaseClient();
-          const { error } = await supabase.from("profiles").upsert(
-            {
-              auth_user_id: user.id,
-              nickname: input.nickname.trim(),
-              age: input.age,
-              preferred_mode: profile?.preferred_mode ?? "solo",
-              preferred_regions: input.preferred_regions,
-              skill_level: input.skill_level,
-              open_chat_link: profile?.open_chat_link ?? null,
-            },
-            { onConflict: "auth_user_id" },
-          );
-
-          if (error) {
-            throw error;
-          }
+          await saveProfile({
+            nickname: input.nickname.trim(),
+            age: input.age,
+            preferred_mode: profile?.preferred_mode ?? "solo",
+            preferred_regions: input.preferred_regions,
+            skill_level: input.skill_level,
+            open_chat_link: profile?.open_chat_link ?? null,
+          });
         }}
       />
     );

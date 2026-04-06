@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { AppDataSource } from "@/lib/app-config";
 import { SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
+import { getUserFacingErrorMessage, requiresProfileSetup } from "@/lib/errors";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import {
   buildMatchNote,
@@ -163,16 +164,6 @@ function normalizeKakaoPlace(place: KakaoPlace): PlaceSearchResult {
     lat: Number(place.y),
     lng: Number(place.x),
   };
-}
-
-function isProfileSetupError(message: string) {
-  const normalized = message.toLowerCase();
-
-  return (
-    normalized.includes("auth session missing") ||
-    normalized.includes("auth_required") ||
-    normalized.includes("profile_required")
-  );
 }
 
 function CreateListingFormBody({
@@ -502,16 +493,16 @@ function CreateListingFormBody({
         router.push(`/activity?tab=listings&highlight=${createdMatch.id}&flash=created`);
       });
     } catch (createError) {
-      const message =
-        createError instanceof Error ? createError.message : "매치를 올리지 못했습니다.";
-
-      if (isProfileSetupError(message)) {
+      if (requiresProfileSetup(createError)) {
         setSubmitError("프로필을 먼저 저장한 뒤 다시 매치를 올려주세요.");
         setProfileSheetOpen(true);
+        setIsSubmitting(false);
         return;
       }
 
-      setSubmitError(message);
+      setSubmitError(
+        getUserFacingErrorMessage(createError, "매치를 올리지 못했습니다. 잠시 후 다시 시도해 주세요."),
+      );
       setIsSubmitting(false);
     }
   }

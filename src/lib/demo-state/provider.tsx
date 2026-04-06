@@ -145,7 +145,7 @@ export function DemoAppProvider({
         });
 
         if (!updated) {
-          throw new Error("?붿껌???뺤젙?섏? 紐삵뻽?듬땲??");
+          throw new Error("요청을 최종 확정하지 못했습니다.");
         }
 
         return updated;
@@ -160,7 +160,7 @@ export function DemoAppProvider({
         });
 
         if (!updated) {
-          throw new Error("?뺤젙??痍⑥냼?섏? 紐삵뻽?듬땲??");
+          throw new Error("최종 확정을 취소하지 못했습니다.");
         }
 
         return updated;
