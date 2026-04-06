@@ -5,7 +5,7 @@ import { Space_Grotesk } from "next/font/google";
 import "@/app/globals.css";
 
 const koreanFont = localFont({
-  src: "./fonts/PretendardVariable.ttf",
+  src: "./fonts/PretendardVariable.woff2",
   variable: "--font-korean",
   display: "swap",
 });

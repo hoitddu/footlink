@@ -130,21 +130,43 @@ export async function getActivitySnapshot(tab: ActivitySnapshotTab = "requests")
   }
 
   const supabase = await createServerSupabaseClient();
-  const [hostedMatches, primaryRequests] = await Promise.all([
+
+  // Round 1: fetch hosted matches + primary requests + tab-independent notifications in parallel
+  const [hostedMatches, primaryRequests, requesterNotifications] = await Promise.all([
     listHostedMatches(supabase, currentProfile.id),
     tab === "requests" ? listMyRequests(supabase, currentProfile.id) : Promise.resolve([]),
+    tab === "listings"
+      ? listRequesterNotifications(supabase, currentProfile.id)
+      : Promise.resolve([]),
   ]);
 
   const hostedMatchIds = hostedMatches.map((match) => match.id);
 
-  const [inboundRequests, requesterNotifications, hostNotifications] = await Promise.all([
+  // Round 2: fetch dependent queries + eagerly resolve profiles in parallel
+  const earlyProfileIds = new Set([
+    currentProfile.id,
+    ...hostedMatches.map((match) => match.creator_profile_id),
+    ...primaryRequests.map((r) => r.requester_profile_id),
+    ...primaryRequests.map((r) => r.host_profile_id),
+    ...requesterNotifications.map((r) => r.requester_profile_id),
+    ...requesterNotifications.map((r) => r.host_profile_id),
+  ]);
+
+  const externalMatchIdsFromRequests = Array.from(
+    new Set(
+      [...primaryRequests, ...requesterNotifications]
+        .map((r) => r.match_id)
+        .filter((id) => !new Set(hostedMatchIds).has(id)),
+    ),
+  );
+
+  const [inboundRequests, hostNotifications, externalMatches, earlyProfiles] = await Promise.all([
     tab === "listings" ? listInboundRequests(supabase, hostedMatchIds) : Promise.resolve([]),
-    tab === "listings"
-      ? listRequesterNotifications(supabase, currentProfile.id)
-      : Promise.resolve([]),
     tab === "requests"
       ? listPendingHostNotifications(supabase, hostedMatchIds)
       : Promise.resolve([]),
+    listMatchesByIds(supabase, externalMatchIdsFromRequests),
+    listProfilesByIds(Array.from(earlyProfileIds)),
   ]);
 
   const requests = dedupeById([
@@ -154,24 +176,22 @@ export async function getActivitySnapshot(tab: ActivitySnapshotTab = "requests")
     ...hostNotifications,
   ]);
 
-  const knownMatchIds = new Set(hostedMatchIds);
-  const externalMatchIds = Array.from(
-    new Set(
-      requests.map((request) => request.match_id).filter((matchId) => !knownMatchIds.has(matchId)),
-    ),
-  );
-  const externalMatches = await listMatchesByIds(supabase, externalMatchIds);
   const matches = dedupeById([...hostedMatches, ...externalMatches]);
 
-  const relatedProfileIds = Array.from(
-    new Set([
-      currentProfile.id,
-      ...matches.map((match) => match.creator_profile_id),
-      ...requests.map((request) => request.requester_profile_id),
-      ...requests.map((request) => request.host_profile_id),
-    ]),
-  );
-  const profiles = await listProfilesByIds(relatedProfileIds);
+  // Collect any missing profile IDs from inbound/host notifications (usually already covered)
+  const allProfileIds = new Set([
+    ...earlyProfileIds,
+    ...inboundRequests.map((r) => r.requester_profile_id),
+    ...inboundRequests.map((r) => r.host_profile_id),
+    ...hostNotifications.map((r) => r.requester_profile_id),
+    ...hostNotifications.map((r) => r.host_profile_id),
+    ...externalMatches.map((m) => m.creator_profile_id),
+  ]);
+  const missingProfileIds = Array.from(allProfileIds).filter((id) => !earlyProfileIds.has(id));
+  const extraProfiles =
+    missingProfileIds.length > 0 ? await listProfilesByIds(missingProfileIds) : [];
+  const profiles = dedupeById([...earlyProfiles, ...extraProfiles]);
+
   const notifications = deriveNotificationsFromRequests(
     currentProfile.id,
     matches,
