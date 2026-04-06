@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/home", label: "홈", icon: House },
-  { href: "/create", label: "생성", icon: Plus },
+  { href: "/create", label: "매치생성", icon: Plus },
   { href: "/activity", label: "활동", icon: ClipboardList },
   { href: "/profile", label: "프로필", icon: UserRound },
 ];

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { LoaderCircle, Search, X } from "lucide-react";
+import { ChevronLeft, LoaderCircle, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { createMatchAction } from "@/app/actions/matches";
@@ -434,6 +434,15 @@ function CreateListingFormBody({
     setStep((current) => Math.max(1, current - 1));
   }
 
+  function handleNavigateBack() {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push("/home");
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitError("");
@@ -571,6 +580,15 @@ function CreateListingFormBody({
   return (
     <div className="space-y-5 pb-[10.5rem]">
       <section className="surface-card rounded-[1.85rem] p-5">
+        <button
+          type="button"
+          onClick={handleNavigateBack}
+          className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#eef2ee] px-3 py-2 text-sm font-semibold text-[#112317] transition active:scale-95"
+          aria-label="이전 화면으로 돌아가기"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          뒤로
+        </button>
         <p className="font-display text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
           CREATE MATCH
         </p>
