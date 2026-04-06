@@ -386,11 +386,13 @@ export function MatchDetailScreen({
   searchParams,
   referenceNow,
   stateSnapshot,
+  hydratePersonalState = false,
 }: {
   matchId: string;
   searchParams: Record<string, string | undefined>;
   referenceNow: number;
   stateSnapshot?: DemoAppState | null;
+  hydratePersonalState?: boolean;
 }) {
   if (stateSnapshot) {
     return (
@@ -400,7 +402,7 @@ export function MatchDetailScreen({
         referenceNow={referenceNow}
         initialState={stateSnapshot}
         profileCompletionEnabled
-        hydratePersonalState
+        hydratePersonalState={hydratePersonalState}
         onSubmitParticipation={async (input) => {
           const { ensureAnonymousSession } = await import("@/lib/supabase/client");
           await ensureAnonymousSession();

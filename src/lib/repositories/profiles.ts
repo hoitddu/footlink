@@ -1,9 +1,11 @@
+import { cache } from "react";
+
 import { createServerSupabaseClient, getServerAuthUser } from "@/lib/supabase/server";
 import { mapProfileRow } from "@/lib/supabase/mappers";
 import type { Profile, UpdateProfileInput } from "@/lib/types";
 import { PROFILE_APP_SELECT, type AppProfileRow } from "@/lib/supabase/selects";
 
-export async function getCurrentProfile() {
+export const getCurrentProfile = cache(async () => {
   const user = await getServerAuthUser();
 
   if (!user) {
@@ -22,7 +24,7 @@ export async function getCurrentProfile() {
   }
 
   return data ? mapProfileRow(data as unknown as AppProfileRow) : null;
-}
+});
 
 export async function requireCurrentProfile() {
   const profile = await getCurrentProfile();

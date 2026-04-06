@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { DEMO_STORAGE_KEY, createDemoSeed, normalizeDemoState } from "@/lib/demo-state/seed";
 import {
@@ -29,6 +29,10 @@ type DemoAppContextValue = {
 
 const DemoAppContext = createContext<DemoAppContextValue | null>(null);
 
+function serializeDemoState(state: DemoAppState) {
+  return JSON.stringify(state);
+}
+
 export function DemoAppProvider({
   children,
   initialState,
@@ -36,7 +40,9 @@ export function DemoAppProvider({
   children: React.ReactNode;
   initialState?: DemoAppState;
 }) {
-  const [state, setState] = useState<DemoAppState>(() => initialState ?? createDemoSeed());
+  const initialStateRef = useRef<DemoAppState>(initialState ?? createDemoSeed());
+  const initialStateJsonRef = useRef(serializeDemoState(initialStateRef.current));
+  const [state, setState] = useState<DemoAppState>(() => initialStateRef.current);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -47,17 +53,19 @@ export function DemoAppProvider({
         const parsed = JSON.parse(rawState) as unknown;
 
         if (validateDemoState(parsed)) {
-          setState(normalizeDemoState(parsed));
-        } else {
-          setState(initialState ?? createDemoSeed());
+          const normalized = normalizeDemoState(parsed);
+
+          if (serializeDemoState(normalized) !== initialStateJsonRef.current) {
+            setState(normalized);
+          }
         }
       }
     } catch {
-      setState(initialState ?? createDemoSeed());
+      // Keep the server seed if storage is missing or corrupted.
     } finally {
       setHydrated(true);
     }
-  }, [initialState]);
+  }, []);
 
   useEffect(() => {
     if (!hydrated) {

@@ -702,12 +702,14 @@ function DemoFeedScreen(props: {
 export function FeedScreen({
   source,
   currentProfile,
+  hydrateCurrentProfile = false,
   ...props
 }: {
   initialContext: FeedContext;
   initialReferenceNow: number;
   source?: FeedDataSource;
   currentProfile?: Profile | null;
+  hydrateCurrentProfile?: boolean;
 }) {
   if (source) {
     return (
@@ -715,7 +717,7 @@ export function FeedScreen({
         {...props}
         source={source}
         currentProfile={currentProfile}
-        hydrateCurrentProfile={currentProfile === undefined}
+        hydrateCurrentProfile={hydrateCurrentProfile}
       />
     );
   }

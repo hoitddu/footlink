@@ -24,7 +24,7 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
   return (
     <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-[#04070d]">
       <Image
-        src="/landing-bg.jpg"
+        src="/landing-bg.webp"
         alt=""
         fill
         priority

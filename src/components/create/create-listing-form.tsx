@@ -1147,9 +1147,11 @@ function DemoCreateListingForm() {
 
 export function CreateListingForm({
   currentProfile,
+  shouldLoadCurrentProfile = false,
   dataSource = currentProfile !== undefined ? "supabase" : "demo",
 }: {
   currentProfile?: Profile | null;
+  shouldLoadCurrentProfile?: boolean;
   dataSource?: AppDataSource;
 }) {
   if (dataSource === "supabase") {
@@ -1157,7 +1159,7 @@ export function CreateListingForm({
       <CreateListingFormBody
         currentProfile={currentProfile ?? null}
         profileCompletionEnabled
-        shouldLoadCurrentProfile={currentProfile == null}
+        shouldLoadCurrentProfile={shouldLoadCurrentProfile}
         onCreateListing={async (input) => {
           const { ensureAnonymousSession } = await import("@/lib/supabase/client");
           await ensureAnonymousSession();

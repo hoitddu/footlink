@@ -2,14 +2,17 @@ import { unstable_cache } from "next/cache";
 
 import { REGION_OPTIONS } from "@/lib/constants";
 import { getFeedMatches } from "@/lib/feed";
-import { createPublicServerSupabaseClient } from "@/lib/supabase/server";
-import { mapMatchRow, mapProfileRow } from "@/lib/supabase/mappers";
+import { getCurrentProfile } from "@/lib/repositories/profiles";
+import { createPublicServerSupabaseClient, createServerSupabaseClient } from "@/lib/supabase/server";
+import { mapMatchRequestRow, mapMatchRow, mapProfileRow } from "@/lib/supabase/mappers";
 import type { FeedContext, FeedDataSource } from "@/lib/types";
 import { createAppStateSnapshot } from "@/lib/repositories/snapshots";
 import {
   MATCH_DETAIL_SELECT,
   MATCH_FEED_SELECT,
+  MATCH_REQUEST_PERSONALIZATION_SELECT,
   PROFILE_DETAIL_SELECT,
+  type ActivityMatchRequestRow,
   type DetailMatchRow,
   type DetailProfileRow,
   type FeedMatchRow,
@@ -162,20 +165,44 @@ export async function getMatchDetail(id: string) {
 }
 
 export async function getMatchDetailSnapshot(matchId: string) {
-  const matchRow = await getCachedPublicMatchRow(matchId);
+  const [matchRow, currentProfile] = await Promise.all([
+    getCachedPublicMatchRow(matchId),
+    getCurrentProfile(),
+  ]);
 
   if (!matchRow) {
     return null;
   }
 
   const match = mapMatchRow(matchRow);
-  const profiles = await getCachedPublicProfiles(match.creator_profile_id);
+  const [profiles, myRequest] = await Promise.all([
+    getCachedPublicProfiles(match.creator_profile_id),
+    currentProfile ? getMatchPersonalization(matchId, currentProfile.id) : Promise.resolve(null),
+  ]);
   const mappedProfiles = profiles.map(mapProfileRow);
 
   return createAppStateSnapshot({
-    currentProfile: null,
+    currentProfile,
     profiles: mappedProfiles,
     matches: [match],
-    requests: [],
+    requests: myRequest ? [myRequest] : [],
   });
+}
+
+async function getMatchPersonalization(matchId: string, currentProfileId: string) {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("match_requests")
+    .select(MATCH_REQUEST_PERSONALIZATION_SELECT)
+    .eq("match_id", matchId)
+    .eq("requester_profile_id", currentProfileId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? mapMatchRequestRow(data as unknown as ActivityMatchRequestRow) : null;
 }

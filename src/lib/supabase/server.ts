@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/config";
 
@@ -35,11 +36,11 @@ export function createPublicServerSupabaseClient() {
   });
 }
 
-export async function getServerAuthUser() {
+export const getServerAuthUser = cache(async () => {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   return user;
-}
+});
