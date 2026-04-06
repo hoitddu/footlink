@@ -10,7 +10,7 @@ import { AGE_BANDS, REGION_OPTIONS, SKILL_LEVELS, getSkillLevelLabel } from "@/l
 import { isProfileComplete } from "@/lib/profiles";
 import { ensureAnonymousSession, createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { mapProfileRow } from "@/lib/supabase/mappers";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { PROFILE_APP_SELECT, type AppProfileRow } from "@/lib/supabase/selects";
 import type { EntryMode, Profile } from "@/lib/types";
 
 type ProfileCompletionSheetProps = {
@@ -84,14 +84,14 @@ export function ProfileCompletionSheet({
           },
           { onConflict: "auth_user_id" },
         )
-        .select("*")
+        .select(PROFILE_APP_SELECT)
         .single();
 
       if (saveError) {
         throw saveError;
       }
 
-      const savedProfile = mapProfileRow(data as ProfileRow);
+      const savedProfile = mapProfileRow(data as unknown as AppProfileRow);
 
       if (!isProfileComplete(savedProfile)) {
         throw new Error("프로필 저장이 완전하지 않습니다. 다시 시도해 주세요.");

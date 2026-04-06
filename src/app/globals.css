@@ -15,6 +15,8 @@
   --surface-muted: #eef2ee;
   --shadow: 0 20px 48px rgba(10, 18, 13, 0.08);
   --radius: 1.25rem;
+  --font-korean:
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Segoe UI", system-ui, sans-serif;
 }
 
 @theme inline {
@@ -48,7 +50,7 @@ html {
 
 body {
   min-height: 100vh;
-  font-family: var(--font-korean), sans-serif;
+  font-family: var(--font-korean);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

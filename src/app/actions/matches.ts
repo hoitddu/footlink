@@ -5,8 +5,11 @@ import { revalidatePath } from "next/cache";
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
 import { mapMatchRow } from "@/lib/supabase/mappers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import {
+  MATCH_CREATE_RETURN_SELECT,
+  type CreateMatchReturnRow,
+} from "@/lib/supabase/selects";
 import type { CreateMatchInput } from "@/lib/types";
-import type { MatchRow } from "@/lib/supabase/types";
 
 export async function createMatchAction(input: CreateMatchInput) {
   const currentProfile = await requireCurrentProfile();
@@ -30,14 +33,14 @@ export async function createMatchAction(input: CreateMatchInput) {
   const { data, error } = await supabase
     .from("matches")
     .insert(payload)
-    .select("*")
+    .select(MATCH_CREATE_RETURN_SELECT)
     .single();
 
   if (error) {
     throw error;
   }
 
-  const match = mapMatchRow(data as MatchRow);
+  const match = mapMatchRow(data as unknown as CreateMatchReturnRow);
 
   revalidatePath("/home");
   revalidatePath("/create");
@@ -62,11 +65,11 @@ export async function cancelMatchAction(matchId: string) {
   }
 
   if ((acceptedRequests ?? []).length > 0) {
-    throw new Error("이미 수락된 참가자가 있는 모집은 삭제할 수 없습니다.");
+    throw new Error("?대? ?섎씫??李멸??먭? ?덈뒗 紐⑥쭛? ??젣?????놁뒿?덈떎.");
   }
 
   const now = new Date().toISOString();
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("matches")
     .update({
       status: "cancelled",
@@ -74,9 +77,7 @@ export async function cancelMatchAction(matchId: string) {
     })
     .eq("id", matchId)
     .eq("creator_profile_id", currentProfile.id)
-    .neq("status", "cancelled")
-    .select("*")
-    .single();
+    .neq("status", "cancelled");
 
   if (error) {
     throw error;
@@ -86,7 +87,7 @@ export async function cancelMatchAction(matchId: string) {
     .from("match_requests")
     .update({
       status: "rejected",
-      host_note: "호스트가 모집을 삭제했습니다.",
+      host_note: "?몄뒪?멸? 紐⑥쭛????젣?덉뒿?덈떎.",
       decided_at: now,
       updated_at: now,
     })
@@ -97,11 +98,9 @@ export async function cancelMatchAction(matchId: string) {
     throw rejectPendingError;
   }
 
-  const match = mapMatchRow(data as MatchRow);
-
   revalidatePath("/home");
   revalidatePath("/activity");
-  revalidatePath(`/match/${match.id}`);
+  revalidatePath(`/match/${matchId}`);
 
-  return match;
+  return { id: matchId };
 }

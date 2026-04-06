@@ -5,8 +5,15 @@ import { getFeedMatches } from "@/lib/feed";
 import { createPublicServerSupabaseClient } from "@/lib/supabase/server";
 import { mapMatchRow, mapProfileRow } from "@/lib/supabase/mappers";
 import type { FeedContext, FeedDataSource } from "@/lib/types";
-import type { MatchRow, ProfileRow } from "@/lib/supabase/types";
 import { createAppStateSnapshot } from "@/lib/repositories/snapshots";
+import {
+  MATCH_DETAIL_SELECT,
+  MATCH_FEED_SELECT,
+  PROFILE_DETAIL_SELECT,
+  type DetailMatchRow,
+  type DetailProfileRow,
+  type FeedMatchRow,
+} from "@/lib/supabase/selects";
 
 function getDateRangeBounds(context: FeedContext) {
   if (!context.selectedDateFrom) {
@@ -37,7 +44,7 @@ const getCachedFeedRows = unstable_cache(
     const supabase = createPublicServerSupabaseClient();
     let query = supabase
       .from("matches")
-      .select("*")
+      .select(MATCH_FEED_SELECT)
       .eq("status", "open")
       .gt("remaining_slots", 0)
       .gte("start_at", new Date().toISOString())
@@ -68,7 +75,7 @@ const getCachedFeedRows = unstable_cache(
       query = query.eq("skill_level", context.skillLevel);
     }
 
-    const { data, error } = await query.returns<MatchRow[]>();
+    const { data, error } = await query.returns<FeedMatchRow[]>();
 
     if (error) {
       throw error;
@@ -85,7 +92,7 @@ const getCachedPublicMatchRow = unstable_cache(
     const supabase = createPublicServerSupabaseClient();
     const { data, error } = await supabase
       .from("matches")
-      .select("*")
+      .select(MATCH_DETAIL_SELECT)
       .eq("id", matchId)
       .maybeSingle();
 
@@ -93,7 +100,7 @@ const getCachedPublicMatchRow = unstable_cache(
       throw error;
     }
 
-    return (data as MatchRow | null) ?? null;
+    return (data as unknown as DetailMatchRow | null) ?? null;
   },
   ["public-match-row"],
   { revalidate: 30 },
@@ -104,15 +111,15 @@ const getCachedPublicProfiles = unstable_cache(
     const profileIds = serializedIds.split(",").filter(Boolean);
 
     if (profileIds.length === 0) {
-      return [] satisfies ProfileRow[];
+      return [] satisfies DetailProfileRow[];
     }
 
     const supabase = createPublicServerSupabaseClient();
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select(PROFILE_DETAIL_SELECT)
       .in("id", profileIds)
-      .returns<ProfileRow[]>();
+      .returns<DetailProfileRow[]>();
 
     if (error) {
       throw error;

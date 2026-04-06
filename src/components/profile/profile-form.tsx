@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AGE_BANDS, REGION_OPTIONS, SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
-import { createBrowserSupabaseClient, ensureAnonymousSession } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
 type SaveProfileInput = {
@@ -207,6 +206,9 @@ export function ProfileForm({
         profile={profile}
         returnTo={returnTo}
         onSaveProfile={async (input) => {
+          const { createBrowserSupabaseClient, ensureAnonymousSession } = await import(
+            "@/lib/supabase/client"
+          );
           const user = await ensureAnonymousSession();
 
           if (!user) {

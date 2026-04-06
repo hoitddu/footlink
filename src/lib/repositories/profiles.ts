@@ -1,7 +1,7 @@
 import { createServerSupabaseClient, getServerAuthUser } from "@/lib/supabase/server";
 import { mapProfileRow } from "@/lib/supabase/mappers";
 import type { Profile, UpdateProfileInput } from "@/lib/types";
-import type { ProfileRow } from "@/lib/supabase/types";
+import { PROFILE_APP_SELECT, type AppProfileRow } from "@/lib/supabase/selects";
 
 export async function getCurrentProfile() {
   const user = await getServerAuthUser();
@@ -13,7 +13,7 @@ export async function getCurrentProfile() {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_APP_SELECT)
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -21,7 +21,7 @@ export async function getCurrentProfile() {
     throw error;
   }
 
-  return data ? mapProfileRow(data as ProfileRow) : null;
+  return data ? mapProfileRow(data as unknown as AppProfileRow) : null;
 }
 
 export async function requireCurrentProfile() {
@@ -57,14 +57,14 @@ export async function upsertCurrentProfile(input: UpdateProfileInput) {
   const { data, error } = await supabase
     .from("profiles")
     .upsert(payload, { onConflict: "auth_user_id" })
-    .select("*")
+    .select(PROFILE_APP_SELECT)
     .single();
 
   if (error) {
     throw error;
   }
 
-  return mapProfileRow(data as ProfileRow);
+  return mapProfileRow(data as unknown as AppProfileRow);
 }
 
 export async function listProfilesByIds(profileIds: string[]) {
@@ -75,9 +75,9 @@ export async function listProfilesByIds(profileIds: string[]) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_APP_SELECT)
     .in("id", profileIds)
-    .returns<ProfileRow[]>();
+    .returns<AppProfileRow[]>();
 
   if (error) {
     throw error;

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -15,7 +16,6 @@ import {
 import { useRouter } from "next/navigation";
 
 import { MatchCard } from "@/components/feed/match-card";
-import { ProfileCompletionSheet } from "@/components/profile/profile-completion-sheet";
 import { Button } from "@/components/ui/button";
 import { buildContextQuery } from "@/lib/context";
 import { REGION_OPTIONS, SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
@@ -24,6 +24,14 @@ import { getFeedMatches } from "@/lib/feed";
 import { isProfileComplete } from "@/lib/profiles";
 import type { EntryMode, FeedContext, FeedDataSource, FeedPreset, Profile, SkillLevel } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const ProfileCompletionSheet = dynamic(
+  () =>
+    import("@/components/profile/profile-completion-sheet").then(
+      (module) => module.ProfileCompletionSheet,
+    ),
+  { loading: () => null, ssr: false },
+);
 
 const presets: Array<{ value: FeedPreset; label: string }> = [
   { value: "recommended", label: "추천" },
@@ -142,11 +150,13 @@ function FeedScreenView({
   initialReferenceNow,
   source,
   currentProfile,
+  hydrateCurrentProfile = false,
 }: {
   initialContext: FeedContext;
   initialReferenceNow: number;
   source: FeedDataSource;
   currentProfile?: Profile | null;
+  hydrateCurrentProfile?: boolean;
 }) {
   const router = useRouter();
   const [context, setContext] = useState(initialContext);
@@ -157,6 +167,7 @@ function FeedScreenView({
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [profilePromptDismissed, setProfilePromptDismissed] = useState(false);
   const [resolvedProfile, setResolvedProfile] = useState(currentProfile ?? null);
+  const [profileReady, setProfileReady] = useState(!hydrateCurrentProfile);
   const [viewYear, setViewYear] = useState(() => new Date(initialReferenceNow).getFullYear());
   const [viewMonth, setViewMonth] = useState(() => new Date(initialReferenceNow).getMonth());
   const [selectedQuickOptionId, setSelectedQuickOptionId] = useState<string | null>(null);
@@ -176,10 +187,39 @@ function FeedScreenView({
   const monthLabel = `${viewYear}년 ${viewMonth + 1}월`;
   const rangeStart = context.selectedDateFrom;
   const rangeEnd = context.selectedDateTo;
-  const shouldShowProfilePrompt =
-    currentProfile !== undefined &&
-    !isProfileComplete(resolvedProfile) &&
-    !profilePromptDismissed;
+  const shouldShowProfilePrompt = profileReady && !isProfileComplete(resolvedProfile) && !profilePromptDismissed;
+
+  useEffect(() => {
+    if (!hydrateCurrentProfile) {
+      setResolvedProfile(currentProfile ?? null);
+      setProfileReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      void import("@/lib/supabase/browser")
+        .then(({ getBrowserCurrentProfile }) => getBrowserCurrentProfile())
+        .then((profile) => {
+          if (!cancelled) {
+            setResolvedProfile(profile);
+          }
+        })
+        .catch(() => {
+          // Keep the feed interactive even if profile bootstrap fails.
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setProfileReady(true);
+          }
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentProfile, hydrateCurrentProfile]);
 
   useEffect(() => {
     router.prefetch("/create");
@@ -656,11 +696,12 @@ function DemoFeedScreen(props: {
 }) {
   const { state } = useDemoApp();
 
-  return <FeedScreenView {...props} source={state} />;
+  return <FeedScreenView {...props} source={state} hydrateCurrentProfile={false} />;
 }
 
 export function FeedScreen({
   source,
+  currentProfile,
   ...props
 }: {
   initialContext: FeedContext;
@@ -669,8 +710,15 @@ export function FeedScreen({
   currentProfile?: Profile | null;
 }) {
   if (source) {
-    return <FeedScreenView {...props} source={source} />;
+    return (
+      <FeedScreenView
+        {...props}
+        source={source}
+        currentProfile={currentProfile}
+        hydrateCurrentProfile={currentProfile === undefined}
+      />
+    );
   }
 
-  return <DemoFeedScreen {...props} />;
+  return <DemoFeedScreen {...props} currentProfile={currentProfile} />;
 }

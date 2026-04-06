@@ -6,7 +6,12 @@ import type { User } from "@supabase/supabase-js";
 import { getAppDataSource } from "@/lib/app-config";
 import { mapMatchRequestRow, mapProfileRow } from "@/lib/supabase/mappers";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/config";
-import type { MatchRequestRow, ProfileRow } from "@/lib/supabase/types";
+import {
+  MATCH_REQUEST_PERSONALIZATION_SELECT,
+  PROFILE_APP_SELECT,
+  type ActivityMatchRequestRow,
+  type AppProfileRow,
+} from "@/lib/supabase/selects";
 
 let browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
@@ -67,7 +72,7 @@ export async function getBrowserCurrentProfile() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_APP_SELECT)
     .eq("auth_user_id", user.id)
     .maybeSingle();
 
@@ -75,7 +80,7 @@ export async function getBrowserCurrentProfile() {
     throw error;
   }
 
-  return data ? mapProfileRow(data as ProfileRow) : null;
+  return data ? mapProfileRow(data as unknown as AppProfileRow) : null;
 }
 
 export async function getBrowserMatchPersonalization(matchId: string) {
@@ -91,7 +96,7 @@ export async function getBrowserMatchPersonalization(matchId: string) {
   const supabase = createBrowserSupabaseClient();
   const { data, error } = await supabase
     .from("match_requests")
-    .select("*")
+    .select(MATCH_REQUEST_PERSONALIZATION_SELECT)
     .eq("match_id", matchId)
     .eq("requester_profile_id", currentProfile.id)
     .order("created_at", { ascending: false })
@@ -104,6 +109,6 @@ export async function getBrowserMatchPersonalization(matchId: string) {
 
   return {
     currentProfile,
-    myRequest: data ? mapMatchRequestRow(data as MatchRequestRow) : null,
+    myRequest: data ? mapMatchRequestRow(data as unknown as ActivityMatchRequestRow) : null,
   };
 }

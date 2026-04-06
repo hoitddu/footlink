@@ -6,7 +6,12 @@ import {
   deriveNotificationsFromRequests,
 } from "@/lib/repositories/snapshots";
 import type { ParticipationRequest } from "@/lib/types";
-import type { MatchRequestRow, MatchRow } from "@/lib/supabase/types";
+import {
+  MATCH_ACTIVITY_SELECT,
+  MATCH_REQUEST_ACTIVITY_SELECT,
+  type ActivityMatchRequestRow,
+  type ActivityMatchRow,
+} from "@/lib/supabase/selects";
 
 export type ActivitySnapshotTab = "requests" | "listings";
 
@@ -23,9 +28,9 @@ async function listMatchesByIds(supabase: SupabaseClient, matchIds: string[]) {
 
   const { data, error } = await supabase
     .from("matches")
-    .select("*")
+    .select(MATCH_ACTIVITY_SELECT)
     .in("id", matchIds)
-    .returns<MatchRow[]>();
+    .returns<ActivityMatchRow[]>();
 
   if (error) {
     throw error;
@@ -37,10 +42,10 @@ async function listMatchesByIds(supabase: SupabaseClient, matchIds: string[]) {
 async function listMyRequests(supabase: SupabaseClient, currentProfileId: string) {
   const { data, error } = await supabase
     .from("match_requests")
-    .select("*")
+    .select(MATCH_REQUEST_ACTIVITY_SELECT)
     .eq("requester_profile_id", currentProfileId)
     .order("created_at", { ascending: false })
-    .returns<MatchRequestRow[]>();
+    .returns<ActivityMatchRequestRow[]>();
 
   if (error) {
     throw error;
@@ -52,11 +57,11 @@ async function listMyRequests(supabase: SupabaseClient, currentProfileId: string
 async function listHostedMatches(supabase: SupabaseClient, currentProfileId: string) {
   const { data, error } = await supabase
     .from("matches")
-    .select("*")
+    .select(MATCH_ACTIVITY_SELECT)
     .eq("creator_profile_id", currentProfileId)
     .neq("status", "cancelled")
     .order("start_at", { ascending: true })
-    .returns<MatchRow[]>();
+    .returns<ActivityMatchRow[]>();
 
   if (error) {
     throw error;
@@ -72,10 +77,10 @@ async function listInboundRequests(supabase: SupabaseClient, matchIds: string[])
 
   const { data, error } = await supabase
     .from("match_requests")
-    .select("*")
+    .select(MATCH_REQUEST_ACTIVITY_SELECT)
     .in("match_id", matchIds)
     .order("created_at", { ascending: false })
-    .returns<MatchRequestRow[]>();
+    .returns<ActivityMatchRequestRow[]>();
 
   if (error) {
     throw error;
@@ -87,12 +92,12 @@ async function listInboundRequests(supabase: SupabaseClient, matchIds: string[])
 async function listRequesterNotifications(supabase: SupabaseClient, currentProfileId: string) {
   const { data, error } = await supabase
     .from("match_requests")
-    .select("*")
+    .select(MATCH_REQUEST_ACTIVITY_SELECT)
     .eq("requester_profile_id", currentProfileId)
     .in("status", ["accepted", "confirmed", "rejected"])
     .order("created_at", { ascending: false })
     .limit(20)
-    .returns<MatchRequestRow[]>();
+    .returns<ActivityMatchRequestRow[]>();
 
   if (error) {
     throw error;
@@ -108,12 +113,12 @@ async function listPendingHostNotifications(supabase: SupabaseClient, matchIds: 
 
   const { data, error } = await supabase
     .from("match_requests")
-    .select("*")
+    .select(MATCH_REQUEST_ACTIVITY_SELECT)
     .in("match_id", matchIds)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(20)
-    .returns<MatchRequestRow[]>();
+    .returns<ActivityMatchRequestRow[]>();
 
   if (error) {
     throw error;

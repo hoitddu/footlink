@@ -1,12 +1,13 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { createMatchAction } from "@/app/actions/matches";
+import type { PlaceSearchResult } from "@/components/create/kakao-place-picker";
 import { MatchCard } from "@/components/feed/match-card";
-import { ProfileCompletionSheet } from "@/components/profile/profile-completion-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,26 +15,23 @@ import type { AppDataSource } from "@/lib/app-config";
 import { SKILL_LEVELS, getSkillLevelLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { isProfileComplete } from "@/lib/profiles";
-import { getBrowserCurrentProfile } from "@/lib/supabase/browser";
-import { ensureAnonymousSession } from "@/lib/supabase/client";
 import { formatFee, haversineDistance } from "@/lib/utils";
 import type {
   CreateMatchInput,
   ListingType,
-  Match,
   MatchWithMeta,
   Profile,
 } from "@/lib/types";
 
-type MatchType = "mercenary" | "team_match";
+const ProfileCompletionSheet = dynamic(
+  () =>
+    import("@/components/profile/profile-completion-sheet").then(
+      (module) => module.ProfileCompletionSheet,
+    ),
+  { loading: () => null, ssr: false },
+);
 
-type PlaceSearchResult = {
-  id: string;
-  name: string;
-  address: string;
-  lat: number;
-  lng: number;
-};
+type MatchType = "mercenary" | "team_match";
 
 type KakaoPlace = {
   id: string | number;
@@ -177,7 +175,7 @@ function CreateListingFormBody({
   shouldLoadCurrentProfile = false,
 }: {
   currentProfile?: Profile | null;
-  onCreateListing: (input: CreateMatchInput) => Promise<Match>;
+  onCreateListing: (input: CreateMatchInput) => Promise<{ id: string }>;
   profileCompletionEnabled?: boolean;
   shouldLoadCurrentProfile?: boolean;
 }) {
@@ -228,7 +226,8 @@ function CreateListingFormBody({
 
     let cancelled = false;
 
-    void getBrowserCurrentProfile()
+    void import("@/lib/supabase/browser")
+      .then(({ getBrowserCurrentProfile }) => getBrowserCurrentProfile())
       .then((profile) => {
         if (!cancelled && profile) {
           setResolvedProfile(profile);
@@ -1119,7 +1118,10 @@ function DemoCreateListingForm() {
   return (
     <CreateListingFormBody
       currentProfile={currentProfile}
-      onCreateListing={async (input) => actions.createMatch(input)}
+      onCreateListing={async (input) => {
+        const match = actions.createMatch(input);
+        return { id: match.id };
+      }}
     />
   );
 }
@@ -1138,6 +1140,7 @@ export function CreateListingForm({
         profileCompletionEnabled
         shouldLoadCurrentProfile={currentProfile == null}
         onCreateListing={async (input) => {
+          const { ensureAnonymousSession } = await import("@/lib/supabase/client");
           await ensureAnonymousSession();
 
           return createMatchAction(input);

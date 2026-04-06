@@ -4,15 +4,19 @@ import { revalidatePath } from "next/cache";
 
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { mapMatchRequestRow, mapMatchRow } from "@/lib/supabase/mappers";
 import type { SubmitParticipationInput } from "@/lib/types";
-import type { MatchRequestRow, MatchRow } from "@/lib/supabase/types";
+import {
+  MATCH_REQUEST_PATH_SELECT,
+  MATCH_REQUEST_VALIDATION_SELECT,
+  type MatchRequestValidationRow,
+  type RequestPathRow,
+} from "@/lib/supabase/selects";
 
 async function getRequestRow(requestId: string) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("match_requests")
-    .select("*")
+    .select(MATCH_REQUEST_PATH_SELECT)
     .eq("id", requestId)
     .single();
 
@@ -20,7 +24,7 @@ async function getRequestRow(requestId: string) {
     throw error;
   }
 
-  return mapMatchRequestRow(data as MatchRequestRow);
+  return data as unknown as RequestPathRow;
 }
 
 export async function submitParticipationAction(input: SubmitParticipationInput) {
@@ -28,7 +32,7 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
   const supabase = await createServerSupabaseClient();
   const { data: matchRow, error: matchError } = await supabase
     .from("matches")
-    .select("*")
+    .select(MATCH_REQUEST_VALIDATION_SELECT)
     .eq("id", input.matchId)
     .single();
 
@@ -36,18 +40,18 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
     throw matchError;
   }
 
-  const match = mapMatchRow(matchRow as MatchRow);
+  const match = matchRow as unknown as MatchRequestValidationRow;
 
   if (match.creator_profile_id === currentProfile.id) {
-    throw new Error("내가 만든 매치에는 참가 요청을 보낼 수 없습니다.");
+    throw new Error("?닿? 留뚮뱺 留ㅼ튂?먮뒗 李멸? ?붿껌??蹂대궪 ???놁뒿?덈떎.");
   }
 
   if (match.status !== "open" || match.remaining_slots <= 0) {
-    throw new Error("이미 마감된 매치입니다.");
+    throw new Error("?대? 留덇컧??留ㅼ튂?낅땲??");
   }
 
   if (input.requestedCount > match.remaining_slots) {
-    throw new Error("남은 자리보다 많은 인원을 요청할 수 없습니다.");
+    throw new Error("?⑥? ?먮━蹂대떎 留롮? ?몄썝???붿껌?????놁뒿?덈떎.");
   }
 
   const now = new Date().toISOString();
@@ -64,18 +68,18 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
       created_at: now,
       updated_at: now,
     })
-    .select("*")
+    .select(MATCH_REQUEST_PATH_SELECT)
     .single();
 
   if (error) {
     throw error;
   }
 
-  const request = mapMatchRequestRow(data as MatchRequestRow);
+  const request = data as unknown as RequestPathRow;
 
   revalidatePath("/home");
   revalidatePath("/activity");
-  revalidatePath(`/match/${match.id}`);
+  revalidatePath(`/match/${input.matchId}`);
 
   return request;
 }

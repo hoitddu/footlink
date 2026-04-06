@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -20,7 +21,6 @@ import { useRouter } from "next/navigation";
 
 import { submitParticipationAction } from "@/app/actions/requests";
 import { JoinIntentSheet } from "@/components/match/join-intent-sheet";
-import { ProfileCompletionSheet } from "@/components/profile/profile-completion-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buildContextQuery, parseFeedContext } from "@/lib/context";
@@ -33,10 +33,16 @@ import {
   getParticipationStatusLabel,
 } from "@/lib/demo-state/selectors";
 import { isProfileComplete } from "@/lib/profiles";
-import { getBrowserMatchPersonalization } from "@/lib/supabase/browser";
-import { ensureAnonymousSession } from "@/lib/supabase/client";
 import { formatAgeBand, formatFee, formatSkillLevel, formatStartAt, getTravelEstimates } from "@/lib/utils";
 import type { DemoAppState, ListingType, Profile } from "@/lib/types";
+
+const ProfileCompletionSheet = dynamic(
+  () =>
+    import("@/components/profile/profile-completion-sheet").then(
+      (module) => module.ProfileCompletionSheet,
+    ),
+  { loading: () => null, ssr: false },
+);
 
 const listingTypeLabels: Record<ListingType, string> = {
   mercenary: "용병 구함",
@@ -127,7 +133,8 @@ function MatchDetailBody({
 
     let cancelled = false;
 
-    void getBrowserMatchPersonalization(matchId)
+    void import("@/lib/supabase/browser")
+      .then(({ getBrowserMatchPersonalization }) => getBrowserMatchPersonalization(matchId))
       .then(({ currentProfile, myRequest }) => {
         if (!cancelled) {
           setState((currentState) => mergePersonalizedState(currentState, currentProfile, myRequest));
@@ -399,6 +406,7 @@ export function MatchDetailScreen({
         profileCompletionEnabled
         hydratePersonalState
         onSubmitParticipation={async (input) => {
+          const { ensureAnonymousSession } = await import("@/lib/supabase/client");
           await ensureAnonymousSession();
           const request = await submitParticipationAction({
             matchId,

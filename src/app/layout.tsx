@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import { Space_Grotesk } from "next/font/google";
 
 import "@/app/globals.css";
-
-const koreanFont = localFont({
-  src: "./fonts/PretendardVariable.woff2",
-  variable: "--font-korean",
-  display: "swap",
-});
 
 const brandFont = Space_Grotesk({
   variable: "--font-brand",
@@ -56,7 +49,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${koreanFont.variable} ${brandFont.variable} min-h-screen antialiased`}>
+      <body className={`${brandFont.variable} min-h-screen antialiased`}>
         {children}
       </body>
     </html>

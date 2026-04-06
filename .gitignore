@@ -3,6 +3,7 @@
 .next-dev.err.log
 node_modules
 .vercel
+supabase/.temp
 .env
 .env.local
 .env.production

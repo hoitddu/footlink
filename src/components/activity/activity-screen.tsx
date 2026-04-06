@@ -129,7 +129,6 @@ function ActivityScreenBody({
         highlight: requestId,
         flash: "withdrawn",
       });
-      router.refresh();
     } catch (withdrawError) {
       setError(withdrawError instanceof Error ? withdrawError.message : "요청을 취소하지 못했습니다.");
     } finally {
@@ -148,7 +147,6 @@ function ActivityScreenBody({
         highlight: matchId,
         flash: "accepted",
       });
-      router.refresh();
     } catch (acceptError) {
       setError(acceptError instanceof Error ? acceptError.message : "요청을 수락하지 못했습니다.");
     } finally {
@@ -167,7 +165,6 @@ function ActivityScreenBody({
         highlight: matchId,
         flash: "rejected",
       });
-      router.refresh();
     } catch (rejectError) {
       setError(rejectError instanceof Error ? rejectError.message : "요청을 거절하지 못했습니다.");
     } finally {
@@ -186,7 +183,6 @@ function ActivityScreenBody({
         highlight: matchId,
         flash: "confirmed",
       });
-      router.refresh();
     } catch (confirmError) {
       setError(confirmError instanceof Error ? confirmError.message : "최종 확정을 처리하지 못했습니다.");
     } finally {
@@ -209,7 +205,6 @@ function ActivityScreenBody({
         highlight: undefined,
         flash: "deleted",
       });
-      router.refresh();
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : "모집을 삭제하지 못했습니다.");
     } finally {
