@@ -81,6 +81,7 @@ export function HostListingCard({
 
       <div className="mt-3 flex items-center justify-end">
         <Button
+          className="h-9 rounded-[0.95rem] px-3 text-[13px]"
           size="sm"
           type="button"
           variant="secondary"
@@ -97,9 +98,9 @@ export function HostListingCard({
         </p>
       ) : null}
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 space-y-2.5">
         {requests.length === 0 ? (
-          <div className="rounded-[1rem] bg-[#f7f9f7] px-4 py-4 text-sm text-muted">
+          <div className="rounded-[1rem] bg-[#f7f9f7] px-4 py-3.5 text-sm text-muted">
             아직 들어온 참가 요청이 없습니다.
           </div>
         ) : (
@@ -114,7 +115,7 @@ export function HostListingCard({
               acceptPending || rejectPending || confirmPending || deletePending;
 
             return (
-              <div key={request.id} className="rounded-[1.2rem] bg-[#f7f9f7] p-4">
+              <div key={request.id} className="rounded-[1.15rem] bg-[#f7f9f7] px-4 py-3.5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-[#112317]">
@@ -145,9 +146,9 @@ export function HostListingCard({
                 ) : null}
 
                 {canAccept ? (
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex gap-1.5">
                     <Button
-                      className="flex-1"
+                      className="h-9 flex-1 rounded-[0.95rem] px-3 text-[13px] shadow-[0_12px_24px_rgba(6,21,12,0.14)]"
                       size="sm"
                       type="button"
                       onClick={() => onAccept(request.id)}
@@ -160,7 +161,7 @@ export function HostListingCard({
                       {acceptPending ? "수락 중..." : "수락"}
                     </Button>
                     <Button
-                      className="flex-1"
+                      className="h-9 flex-1 rounded-[0.95rem] px-3 text-[13px]"
                       size="sm"
                       type="button"
                       variant="secondary"
@@ -178,7 +179,7 @@ export function HostListingCard({
                       오픈채팅에서 이야기한 뒤 최종 참가가 맞으면 확정하세요.
                     </p>
                     <Button
-                      className="w-full"
+                      className="h-9 w-full rounded-[0.95rem] px-3 text-[13px] shadow-[0_12px_24px_rgba(6,21,12,0.14)]"
                       size="sm"
                       type="button"
                       onClick={() => onConfirm(request.id)}

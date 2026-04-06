@@ -29,26 +29,28 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
         fill
         priority
         sizes="430px"
-        className="absolute inset-0 scale-[1.08] object-cover object-center brightness-[0.54] saturate-[0.72]"
+        className="absolute inset-0 scale-[1.06] object-cover object-center brightness-[0.6] saturate-[0.76]"
       />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,9,18,0.82)_0%,rgba(8,14,25,0.38)_36%,rgba(7,12,18,0.22)_58%,rgba(4,7,10,0.9)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(180,203,240,0.2),transparent_28%),radial-gradient(circle_at_14%_43%,rgba(255,255,255,0.9),transparent_12%),radial-gradient(circle_at_86%_43%,rgba(255,255,255,0.9),transparent_12%),radial-gradient(circle_at_50%_78%,rgba(145,214,88,0.24),transparent_30%)] opacity-85" />
-      <div className="absolute left-[-22%] top-[34%] h-[20rem] w-[20rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.26)_18%,transparent_58%)] blur-2xl opacity-80" />
-      <div className="absolute right-[-22%] top-[34%] h-[20rem] w-[20rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.92)_0%,rgba(255,255,255,0.26)_18%,transparent_58%)] blur-2xl opacity-80" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,7,11,0.16)_0%,transparent_26%,transparent_74%,rgba(2,4,6,0.46)_100%)]" />
-      <div className="absolute inset-0 turf-texture opacity-[0.14]" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,9,18,0.74)_0%,rgba(8,14,25,0.34)_34%,rgba(7,12,18,0.18)_58%,rgba(2,5,8,0.9)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(180,203,240,0.18),transparent_28%),radial-gradient(circle_at_14%_44%,rgba(255,255,255,0.82),transparent_11%),radial-gradient(circle_at_86%_44%,rgba(255,255,255,0.82),transparent_11%),radial-gradient(circle_at_50%_82%,rgba(145,214,88,0.18),transparent_28%)] opacity-90" />
+      <div className="absolute left-[-20%] top-[35%] h-[18rem] w-[18rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.88)_0%,rgba(255,255,255,0.22)_18%,transparent_58%)] blur-2xl opacity-78" />
+      <div className="absolute right-[-20%] top-[35%] h-[18rem] w-[18rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.88)_0%,rgba(255,255,255,0.22)_18%,transparent_58%)] blur-2xl opacity-78" />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,7,11,0.12)_0%,transparent_24%,transparent_72%,rgba(2,4,6,0.54)_100%)]" />
+      <div className="absolute inset-0 turf-texture opacity-[0.11]" />
 
-      <main className="relative z-10 flex flex-1 flex-col px-8 pb-[calc(3.25rem+env(safe-area-inset-bottom))] pt-10 text-white">
+      <main className="relative z-10 flex min-h-[100dvh] flex-col px-8 pb-[calc(3.9rem+env(safe-area-inset-bottom))] pt-[calc(1.2rem+env(safe-area-inset-top))] text-white">
         <div className="flex items-center justify-center">
-          <span className="font-display text-[1.15rem] font-medium tracking-[0.42em]">FOOTLINK</span>
+          <span className="font-display text-[clamp(1.12rem,3.8vw,1.28rem)] font-semibold tracking-[0.34em] text-white/96">
+            FOOTLINK
+          </span>
         </div>
 
-        <div className="flex flex-1 flex-col justify-between pb-3 pt-[16vh]">
-          <div className="space-y-5 text-center">
-            <p className="font-display text-[1.05rem] font-medium uppercase tracking-[0.24em] text-[#c4e89a]">
+        <div className="mx-auto mt-[clamp(4rem,10vh,5.2rem)] flex w-full max-w-[21.5rem] flex-1 flex-col items-center text-center">
+          <div className="space-y-4">
+            <p className="font-display text-[clamp(0.96rem,3.5vw,1.06rem)] font-semibold uppercase tracking-[0.22em] text-[#c8e7a7]">
               SUWON PILOT
             </p>
-            <h1 className="font-display text-[clamp(4.55rem,18vw,6.7rem)] font-bold leading-[0.86] tracking-[-0.085em] text-white drop-shadow-[0_10px_24px_rgba(0,0,0,0.26)]">
+            <h1 className="mx-auto max-w-[18.75rem] font-display text-[clamp(4rem,16vw,4.85rem)] font-[780] leading-[0.92] tracking-[-0.048em] text-white [text-wrap:balance]">
               Connect.
               <br />
               Play.
@@ -60,12 +62,14 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
           <button
             type="button"
             onClick={onStart}
-            className="flex min-h-[6.3rem] w-full items-center justify-center rounded-[1.85rem] bg-[#bfff4b] px-6 py-5 text-[#05070a] shadow-[0_28px_54px_rgba(0,0,0,0.28),0_0_0_1px_rgba(255,255,255,0.14)_inset] transition duration-200 active:scale-[0.985]"
+            className="mt-[clamp(2.5rem,6vh,3.2rem)] flex h-[clamp(4.25rem,10vw,4.6rem)] w-[min(86%,19rem)] items-center justify-center rounded-[1.45rem] bg-[#c7ff57] px-6 text-[#071009] shadow-[0_18px_34px_rgba(0,0,0,0.24),0_0_0_1px_rgba(255,255,255,0.12)_inset] transition duration-200 active:scale-[0.988]"
           >
-            <span className="block text-center text-[2rem] font-black leading-none tracking-[-0.05em]">
-              Let&apos;s hit the pitch!
+            <span className="block text-center text-[clamp(1.22rem,4.7vw,1.45rem)] font-bold leading-none tracking-[-0.03em]">
+              Get Started
             </span>
           </button>
+
+          <div className="flex-1" />
         </div>
       </main>
     </div>

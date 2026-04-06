@@ -17,7 +17,7 @@ function RequestCard() {
 
 export default function ActivityLoading() {
   return (
-    <div className="space-y-3 pb-24">
+    <div className="space-y-3">
       {/* Tab bar skeleton */}
       <div className="flex gap-2">
         <Shimmer className="h-9 w-24 rounded-xl" />

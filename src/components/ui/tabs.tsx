@@ -18,7 +18,7 @@ export function TabsList({
   return (
     <TabsPrimitive.List
       className={cn(
-        "grid h-12 grid-cols-2 rounded-full bg-[#eef2ee] p-1 ring-1 ring-[#112317]/5",
+        "grid h-11 grid-cols-2 rounded-[1.15rem] bg-[#eef2ee] p-[0.2rem] ring-1 ring-[#112317]/5",
         className,
       )}
       {...props}
@@ -33,7 +33,7 @@ export function TabsTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        "inline-flex items-center justify-center rounded-full px-4 text-sm font-bold text-muted transition data-[state=active]:bg-[#112317] data-[state=active]:text-white",
+        "inline-flex items-center justify-center rounded-[0.95rem] px-3.5 text-[0.92rem] font-bold tracking-[-0.02em] text-muted transition data-[state=active]:bg-[#112317] data-[state=active]:text-white data-[state=active]:shadow-[0_10px_22px_rgba(6,21,12,0.14)]",
         className,
       )}
       {...props}

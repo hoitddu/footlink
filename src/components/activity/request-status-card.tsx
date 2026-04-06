@@ -75,9 +75,13 @@ export function RequestStatusCard({
       </div>
 
       {contactLink || canWithdraw ? (
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex gap-1.5">
           {contactLink ? (
-            <Button asChild className="flex-1" size="sm">
+            <Button
+              asChild
+              className="h-9 flex-1 rounded-[0.95rem] px-3 text-[13px] shadow-[0_12px_24px_rgba(6,21,12,0.14)]"
+              size="sm"
+            >
               <Link href={contactLink.href} rel="noreferrer" target="_blank">
                 {contactLink.label}
               </Link>
@@ -85,7 +89,7 @@ export function RequestStatusCard({
           ) : null}
           {canWithdraw ? (
             <Button
-              className="flex-1"
+              className="h-9 flex-1 rounded-[0.95rem] px-3 text-[13px]"
               size="sm"
               type="button"
               variant="secondary"

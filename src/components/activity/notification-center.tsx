@@ -27,14 +27,14 @@ export function NotificationCenter({
   onMarkAllRead?: () => void;
 }) {
   return (
-    <section className="surface-card rounded-[1.75rem] p-5">
+    <section className="surface-card rounded-[1.6rem] px-5 py-[1.1rem]">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">Notifications</p>
           <h2 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#112317]">앱 내부 알림</h2>
         </div>
         {unreadCount > 0 && onMarkAllRead ? (
-          <Button size="sm" type="button" variant="secondary" onClick={onMarkAllRead}>
+          <Button className="h-9 rounded-[0.95rem] px-3 text-[13px]" size="sm" type="button" variant="secondary" onClick={onMarkAllRead}>
             <CheckCheck className="mr-1 h-4 w-4" />
             모두 확인
           </Button>
@@ -42,16 +42,16 @@ export function NotificationCenter({
       </div>
 
       {notifications.length === 0 ? (
-        <div className="mt-4 rounded-[1.2rem] bg-[#f7f9f7] px-4 py-4 text-sm text-muted">
+        <div className="mt-4 rounded-[1.1rem] bg-[#f7f9f7] px-4 py-3.5 text-sm text-muted">
           아직 알림이 없습니다.
         </div>
       ) : (
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-2.5">
           {notifications.slice(0, 6).map((notification) => (
             <Link
               key={notification.id}
               href={notification.href}
-              className="block rounded-[1.2rem] bg-[#f7f9f7] p-4 transition hover:bg-[#f1f5f1]"
+              className="block rounded-[1.1rem] bg-[#f7f9f7] px-4 py-3.5 transition hover:bg-[#f1f5f1]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -62,7 +62,7 @@ export function NotificationCenter({
                   <p className="mt-2 text-sm leading-6 text-[#415047]">{notification.body}</p>
                   <p className="mt-2 text-xs font-medium text-muted">{formatCreatedAt(notification.created_at)}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${getNotificationTone(notification)}`}>
+                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${getNotificationTone(notification)}`}>
                   {notification.read_at ? "확인됨" : "새 알림"}
                 </span>
               </div>

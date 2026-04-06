@@ -13,7 +13,7 @@ function LoadingCard() {
 
 export default function AppShellLoading() {
   return (
-    <div className="space-y-3 pb-24">
+    <div className="space-y-3">
       <section className="surface-card rounded-[1.5rem] p-4">
         <div className="h-5 w-28 animate-pulse rounded-full bg-[#e7ece7]" />
         <div className="mt-3 h-10 w-full animate-pulse rounded-[1rem] bg-[#eef2ee]" />

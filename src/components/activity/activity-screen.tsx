@@ -240,7 +240,7 @@ function ActivityScreenBody({
       />
 
       <Tabs value={currentTab} onValueChange={handleTabChange}>
-        <TabsList>
+        <TabsList className="shadow-[0_16px_34px_rgba(10,18,13,0.05)]">
           <TabsTrigger value="requests">내 요청</TabsTrigger>
           <TabsTrigger value="listings">내 모집</TabsTrigger>
         </TabsList>
