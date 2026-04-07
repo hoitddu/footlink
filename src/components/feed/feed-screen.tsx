@@ -50,13 +50,13 @@ const participantOptions: Array<{
   label: string;
   groupSize: number;
 }> = [
-  { value: "solo:1", mode: "solo", label: "1명", groupSize: 1 },
-  { value: "small_group:2", mode: "small_group", label: "2명", groupSize: 2 },
-  { value: "small_group:3", mode: "small_group", label: "3명", groupSize: 3 },
-  { value: "small_group:4", mode: "small_group", label: "4명", groupSize: 4 },
-  { value: "team:5", mode: "team", label: "5명", groupSize: 5 },
-  { value: "team:6", mode: "team", label: "6명+", groupSize: 6 },
-];
+    { value: "solo:1", mode: "solo", label: "1명", groupSize: 1 },
+    { value: "small_group:2", mode: "small_group", label: "2명", groupSize: 2 },
+    { value: "small_group:3", mode: "small_group", label: "3명", groupSize: 3 },
+    { value: "small_group:4", mode: "small_group", label: "4명", groupSize: 4 },
+    { value: "team:5", mode: "team", label: "5명", groupSize: 5 },
+    { value: "team:6", mode: "team", label: "6명+", groupSize: 6 },
+  ];
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -346,365 +346,372 @@ function FeedScreenView({
 
       {/* Sticky: filter summary bar + sort chips */}
       <div className="sticky top-0 z-20 -mx-4 px-4 pb-1.5 pt-1 bg-[#f6f8f6]">
-        {/* Filter summary bar */}
-        <button
-          type="button"
-          onClick={() => setIsFilterOpen(true)}
-          className="flex w-full items-center justify-between gap-2 rounded-[1rem] bg-white/90 px-3.5 py-2.5 shadow-[0_2px_8px_rgba(6,21,12,0.06)] transition active:scale-[0.99]"
-        >
-          <span className="truncate text-[13px] font-semibold text-[#112317]">
-            {filterSummary}
-          </span>
-          <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-[#88948c]" />
-        </button>
+  {/* Filter summary bar */}
+  <button
+    type="button"
+    onClick={() => setIsFilterOpen(true)}
+    className="flex w-full items-center justify-between gap-2 rounded-[1rem] bg-white/90 px-3.5 py-2.5 shadow-[0_2px_8px_rgba(6,21,12,0.06)] transition active:scale-[0.99]"
+  >
+    <span className="truncate text-[13px] font-semibold text-[#112317]">
+      {filterSummary}
+    </span>
+    <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-[#88948c]" />
+  </button>
 
-        {/* Sort chips */}
-        <div className="mt-1.5 flex gap-1.5 overflow-x-auto scrollbar-none">
-          {presets.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              onClick={() => setPreset(item.value)}
-              className={cn(
-                "shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold leading-none transition",
-                preset === item.value
-                  ? "bg-[#112317] text-white"
-                  : "bg-white/80 text-[#55625a]",
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
+  {/* Sort chips */}
+  <div className="mt-1.5 flex gap-1.5 overflow-x-auto scrollbar-none">
+    {presets.map((item) => (
+      <button
+        key={item.value}
+        type="button"
+        onClick={() => setPreset(item.value)}
+        className={cn(
+          "shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-bold leading-none transition",
+          preset === item.value
+            ? "bg-[#112317] text-white"
+            : "bg-white/80 text-[#55625a]",
+        )}
+      >
+        {item.label}
+      </button>
+    ))}
+  </div>
+</div>
+
+{
+  shouldShowProfilePrompt ? (
+    <section className="surface-card rounded-[1.25rem] px-4 py-4">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#112317] text-[#b8ff5a]">
+          <Sparkles className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-[#112317]">
+            프로필 10초만 설정하면 바로 참가 요청할 수 있어요
+          </p>
+          <p className="mt-1 text-[13px] leading-5 text-[#5f6c64]">
+            닉네임, 연령대, 실력만 입력하면 됩니다. 오픈채팅 링크는 매치 생성할 때만 필요해요.
+          </p>
         </div>
       </div>
+      <div className="mt-3 flex gap-2">
+        <Button className="flex-1" size="sm" type="button" onClick={() => setProfileSheetOpen(true)}>
+          지금 설정
+        </Button>
+        <Button
+          className="flex-1"
+          size="sm"
+          type="button"
+          variant="secondary"
+          onClick={() => setProfilePromptDismissed(true)}
+        >
+          나중에
+        </Button>
+      </div>
+    </section>
+  ) : null
+}
 
-      {shouldShowProfilePrompt ? (
-        <section className="surface-card rounded-[1.25rem] px-4 py-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#112317] text-[#b8ff5a]">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-[#112317]">
-                프로필 10초만 설정하면 바로 참가 요청할 수 있어요
-              </p>
-              <p className="mt-1 text-[13px] leading-5 text-[#5f6c64]">
-                닉네임, 연령대, 실력만 입력하면 됩니다. 오픈채팅 링크는 매치 생성할 때만 필요해요.
-              </p>
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <Button className="flex-1" size="sm" type="button" onClick={() => setProfileSheetOpen(true)}>
-              지금 설정
-            </Button>
-            <Button
-              className="flex-1"
-              size="sm"
+{/* Match list */ }
+{
+  feedItems.length > 0 ? (
+    <div className="space-y-2">
+      {feedItems.map((match) => (
+        <MatchCard
+          key={match.id}
+          match={match}
+          detailHref={`/match/${match.id}?${contextQuery}`}
+          selectedGroupSize={context.groupSize}
+        />
+      ))}
+    </div>
+  ) : (
+  <section className="surface-card rounded-[1.25rem] p-5 text-center">
+    <p className="mb-3 text-sm text-[#88948c]">조건에 맞는 경기가 없습니다</p>
+    <Button asChild className="w-full" size="sm">
+      <Link href="/create">매치 생성하기</Link>
+    </Button>
+  </section>
+)
+}
+
+{/* Filter bottom sheet */ }
+{
+  isFilterOpen ? (
+    <div className="fixed inset-0 z-[70]">
+      <button
+        type="button"
+        aria-label="필터 닫기"
+        onClick={() => setIsFilterOpen(false)}
+        className="absolute inset-0 bg-[#09110c]/48 backdrop-blur-[3px]"
+      />
+
+      <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[430px]">
+        <div className="rounded-t-[1.6rem] bg-white p-5 shadow-[0_-16px_48px_rgba(6,21,12,0.18)]">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[1.1rem] font-bold text-[#112317]">필터</h2>
+            <button
               type="button"
-              variant="secondary"
-              onClick={() => setProfilePromptDismissed(true)}
+              onClick={() => setIsFilterOpen(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2ee] text-[#112317]"
             >
-              나중에
-            </Button>
+              <X className="h-4 w-4" />
+            </button>
           </div>
-        </section>
-      ) : null}
 
-      {/* Match list */}
-      {feedItems.length > 0 ? (
-        <div className="space-y-2">
-          {feedItems.map((match) => (
-            <MatchCard
-              key={match.id}
-              match={match}
-              detailHref={`/match/${match.id}?${contextQuery}`}
-              selectedGroupSize={context.groupSize}
-            />
-          ))}
-        </div>
-      ) : (
-        <section className="surface-card rounded-[1.25rem] p-5 text-center">
-          <p className="mb-3 text-sm text-[#88948c]">조건에 맞는 경기가 없습니다</p>
-          <Button asChild className="w-full" size="sm">
-            <Link href="/create">매치 생성하기</Link>
-          </Button>
-        </section>
-      )}
-
-      {/* Filter bottom sheet */}
-      {isFilterOpen ? (
-        <div className="fixed inset-0 z-[70]">
-          <button
-            type="button"
-            aria-label="필터 닫기"
-            onClick={() => setIsFilterOpen(false)}
-            className="absolute inset-0 bg-[#09110c]/48 backdrop-blur-[3px]"
-          />
-
-          <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-[430px]">
-            <div className="rounded-t-[1.6rem] bg-white p-5 shadow-[0_-16px_48px_rgba(6,21,12,0.18)]">
-              <div className="flex items-center justify-between">
-                <h2 className="text-[1.1rem] font-bold text-[#112317]">필터</h2>
-                <button
-                  type="button"
-                  onClick={() => setIsFilterOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2ee] text-[#112317]"
+          <div className="mt-4 space-y-4">
+            {/* Region */}
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6c776f]">
+                지역
+              </span>
+              <div className="relative">
+                <select
+                  className="w-full appearance-none rounded-[1rem] bg-[#eef2ee] px-4 py-3 pr-8 text-[14px] font-semibold outline-none"
+                  value="suwon"
+                  disabled
                 >
-                  <X className="h-4 w-4" />
-                </button>
+                  {REGION_OPTIONS.map((region) => (
+                    <option key={region.slug} value={region.slug}>
+                      {region.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#88948c]" />
               </div>
+            </label>
 
-              <div className="mt-4 space-y-4">
-                {/* Region */}
-                <label className="block">
-                  <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6c776f]">
-                    지역
-                  </span>
-                  <div className="relative">
-                    <select
-                      className="w-full appearance-none rounded-[1rem] bg-[#eef2ee] px-4 py-3 pr-8 text-[14px] font-semibold outline-none"
-                      value="suwon"
-                      disabled
-                    >
-                      {REGION_OPTIONS.map((region) => (
-                        <option key={region.slug} value={region.slug}>
-                          {region.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#88948c]" />
-                  </div>
-                </label>
-
-                {/* Participants */}
-                <label className="block">
-                  <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6c776f]">
-                    참여 인원
-                  </span>
-                  <div className="relative">
-                    <select
-                      className="w-full appearance-none rounded-[1rem] bg-[#eef2ee] px-4 py-3 pr-8 text-[14px] font-semibold outline-none"
-                      value={getParticipantValue(context)}
-                      onChange={(event) => handleParticipantChange(event.target.value)}
-                    >
-                      {participantOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#88948c]" />
-                  </div>
-                </label>
-
-                {/* Skill */}
-                <label className="block">
-                  <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6c776f]">
-                    Skill Level
-                  </span>
-                  <div className="relative">
-                    <select
-                      className="w-full appearance-none rounded-[1rem] bg-[#eef2ee] px-4 py-3 pr-8 text-[14px] font-semibold outline-none"
-                      value={context.skillLevel ?? "all"}
-                      onChange={(event) => handleSkillChange(event.target.value)}
-                    >
-                      <option value="all">전체</option>
-                      {SKILL_LEVELS.map((skill) => (
-                        <option key={skill} value={skill}>
-                          {getSkillLevelLabel(skill)}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#88948c]" />
-                  </div>
-                </label>
-
-                {/* Date */}
-                <div>
-                  <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6c776f]">
-                    날짜
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => { setIsFilterOpen(false); setIsCalendarOpen(true); }}
-                    className="flex w-full items-center justify-between rounded-[1rem] bg-[#eef2ee] px-4 py-3 text-[14px] font-semibold text-[#112317] transition active:scale-[0.99]"
-                  >
-                    <span>{selectedDateLabel || "전체 날짜"}</span>
-                    <CalendarDays className="h-4 w-4 text-[#88948c]" />
-                  </button>
-                </div>
+            {/* Participants */}
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6c776f]">
+                참여 인원
+              </span>
+              <div className="relative">
+                <select
+                  className="w-full appearance-none rounded-[1rem] bg-[#eef2ee] px-4 py-3 pr-8 text-[14px] font-semibold outline-none"
+                  value={getParticipantValue(context)}
+                  onChange={(event) => handleParticipantChange(event.target.value)}
+                >
+                  {participantOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#88948c]" />
               </div>
+            </label>
 
+            {/* Skill */}
+            <label className="block">
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6c776f]">
+                Skill Level
+              </span>
+              <div className="relative">
+                <select
+                  className="w-full appearance-none rounded-[1rem] bg-[#eef2ee] px-4 py-3 pr-8 text-[14px] font-semibold outline-none"
+                  value={context.skillLevel ?? "all"}
+                  onChange={(event) => handleSkillChange(event.target.value)}
+                >
+                  <option value="all">전체</option>
+                  {SKILL_LEVELS.map((skill) => (
+                    <option key={skill} value={skill}>
+                      {getSkillLevelLabel(skill)}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#88948c]" />
+              </div>
+            </label>
+
+            {/* Date */}
+            <div>
+              <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.12em] text-[#6c776f]">
+                날짜
+              </span>
               <button
                 type="button"
-                onClick={() => setIsFilterOpen(false)}
-                className="kinetic-gradient mt-5 flex h-12 w-full items-center justify-center rounded-[1rem] text-sm font-bold text-white transition active:scale-[0.98]"
+                onClick={() => { setIsFilterOpen(false); setIsCalendarOpen(true); }}
+                className="flex w-full items-center justify-between rounded-[1rem] bg-[#eef2ee] px-4 py-3 text-[14px] font-semibold text-[#112317] transition active:scale-[0.99]"
               >
-                적용하기
+                <span>{selectedDateLabel || "전체 날짜"}</span>
+                <CalendarDays className="h-4 w-4 text-[#88948c]" />
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
 
-      {/* Calendar modal */}
-      {isCalendarOpen ? (
-        <div className="fixed inset-0 z-[70]">
           <button
             type="button"
-            aria-label="달력 닫기"
-            onClick={() => setIsCalendarOpen(false)}
-            className="absolute inset-0 bg-[#09110c]/48 backdrop-blur-[3px]"
-          />
+            onClick={() => setIsFilterOpen(false)}
+            className="kinetic-gradient mt-5 flex h-12 w-full items-center justify-center rounded-[1rem] text-sm font-bold text-white transition active:scale-[0.98]"
+          >
+            적용하기
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null
+}
 
-          <div className="absolute inset-x-0 top-1/2 mx-auto w-full max-w-[430px] -translate-y-1/2 px-5">
-            <div className="rounded-[1.6rem] bg-white p-4 shadow-[0_28px_64px_rgba(6,21,12,0.22)]">
-              <div className="grid grid-cols-2 gap-2.5">
-                {quickOptions.map((option) => {
-                  const selected = selectedQuickOptionId === option.id;
+{/* Calendar modal */ }
+{
+  isCalendarOpen ? (
+    <div className="fixed inset-0 z-[70]">
+      <button
+        type="button"
+        aria-label="달력 닫기"
+        onClick={() => setIsCalendarOpen(false)}
+        className="absolute inset-0 bg-[#09110c]/48 backdrop-blur-[3px]"
+      />
 
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      onClick={() => handleQuickRangeSelect(option.from, option.to)}
-                      className={`flex min-h-12 items-center justify-center rounded-[1rem] px-3 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
-                        selected
-                          ? "kinetic-gradient text-white"
-                          : "bg-[#eef2ee] text-[#112317]"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
+      <div className="absolute inset-x-0 top-1/2 mx-auto w-full max-w-[430px] -translate-y-1/2 px-5">
+        <div className="rounded-[1.6rem] bg-white p-4 shadow-[0_28px_64px_rgba(6,21,12,0.22)]">
+          <div className="grid grid-cols-2 gap-2.5">
+            {quickOptions.map((option) => {
+              const selected = selectedQuickOptionId === option.id;
 
-              <div className="mt-4 flex items-center justify-between">
+              return (
                 <button
+                  key={option.id}
                   type="button"
-                  onClick={prevMonth}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2ee] text-[#455149] transition active:scale-95"
+                  onClick={() => handleQuickRangeSelect(option.from, option.to)}
+                  className={`flex min-h-12 items-center justify-center rounded-[1rem] px-3 py-2.5 text-sm font-bold transition active:scale-[0.98] ${selected
+                    ? "kinetic-gradient text-white"
+                    : "bg-[#eef2ee] text-[#112317]"
+                    }`}
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  {option.label}
                 </button>
-                <span className="text-sm font-bold tracking-[-0.03em] text-[#112317]">
-                  {monthLabel}
-                </span>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={prevMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2ee] text-[#455149] transition active:scale-95"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="text-sm font-bold tracking-[-0.03em] text-[#112317]">
+              {monthLabel}
+            </span>
+            <button
+              type="button"
+              onClick={nextMonth}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2ee] text-[#455149] transition active:scale-95"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-3 grid grid-cols-7 gap-1">
+            {WEEKDAYS.map((weekday, index) => (
+              <span
+                key={weekday}
+                className={cn(
+                  "text-center text-[11px] font-bold",
+                  index === 0
+                    ? "text-[#ff6c62]"
+                    : index === 6
+                      ? "text-[#5a8dff]"
+                      : "text-[#7b867f]",
+                )}
+              >
+                {weekday}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {calendarDays.map((cell, index) => {
+              if (!cell) {
+                return <div key={`empty-${index}`} className="h-9" />;
+              }
+
+              const isPast = cell.key < todayKey;
+              const isSelectedStart = cell.key === rangeStart;
+              const isSelectedEnd = cell.key === rangeEnd;
+              const isInRange =
+                !!rangeStart && !!rangeEnd && cell.key >= rangeStart && cell.key <= rangeEnd;
+              const isToday = cell.key === todayKey;
+              const dayOfWeek = index % 7;
+
+              return (
                 <button
+                  key={cell.key}
                   type="button"
-                  onClick={nextMonth}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[#eef2ee] text-[#455149] transition active:scale-95"
+                  disabled={isPast}
+                  onClick={() => handleDateSelect(cell.key)}
+                  className={cn(
+                    "relative flex h-9 items-center justify-center rounded-lg text-[13px] font-semibold transition active:scale-95",
+                    isPast
+                      ? "text-[#c8cec9]"
+                      : isSelectedStart || isSelectedEnd
+                        ? "kinetic-gradient text-white"
+                        : isInRange
+                          ? "bg-[#dff1d9] text-[#112317]"
+                          : isToday
+                            ? "border border-[#b8ff5a] bg-white font-bold text-[#112317]"
+                            : dayOfWeek === 0
+                              ? "text-[#ff6c62] hover:bg-[#f5f6f4]"
+                              : dayOfWeek === 6
+                                ? "text-[#5a8dff] hover:bg-[#f5f6f4]"
+                                : "text-[#4c584f] hover:bg-[#f5f6f4]",
+                  )}
                 >
-                  <ChevronRight className="h-4 w-4" />
+                  {cell.day}
+                  {isToday && !isSelectedStart && !isSelectedEnd ? (
+                    <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#b8ff5a]" />
+                  ) : null}
                 </button>
-              </div>
+              );
+            })}
+          </div>
 
-              <div className="mt-3 grid grid-cols-7 gap-1">
-                {WEEKDAYS.map((weekday, index) => (
-                  <span
-                    key={weekday}
-                    className={cn(
-                      "text-center text-[11px] font-bold",
-                      index === 0
-                        ? "text-[#ff6c62]"
-                        : index === 6
-                          ? "text-[#5a8dff]"
-                          : "text-[#7b867f]",
-                    )}
-                  >
-                    {weekday}
-                  </span>
-                ))}
-              </div>
+          <div className="mt-3 text-center text-xs font-semibold text-[#647068]">
+            {selectedDateLabel || "날짜를 선택하세요"}
+          </div>
 
-              <div className="mt-1 grid grid-cols-7 gap-1">
-                {calendarDays.map((cell, index) => {
-                  if (!cell) {
-                    return <div key={`empty-${index}`} className="h-9" />;
-                  }
-
-                  const isPast = cell.key < todayKey;
-                  const isSelectedStart = cell.key === rangeStart;
-                  const isSelectedEnd = cell.key === rangeEnd;
-                  const isInRange =
-                    !!rangeStart && !!rangeEnd && cell.key >= rangeStart && cell.key <= rangeEnd;
-                  const isToday = cell.key === todayKey;
-                  const dayOfWeek = index % 7;
-
-                  return (
-                    <button
-                      key={cell.key}
-                      type="button"
-                      disabled={isPast}
-                      onClick={() => handleDateSelect(cell.key)}
-                      className={cn(
-                        "relative flex h-9 items-center justify-center rounded-lg text-[13px] font-semibold transition active:scale-95",
-                        isPast
-                          ? "text-[#c8cec9]"
-                          : isSelectedStart || isSelectedEnd
-                            ? "kinetic-gradient text-white"
-                            : isInRange
-                              ? "bg-[#dff1d9] text-[#112317]"
-                              : isToday
-                                ? "border border-[#b8ff5a] bg-white font-bold text-[#112317]"
-                                : dayOfWeek === 0
-                                  ? "text-[#ff6c62] hover:bg-[#f5f6f4]"
-                                  : dayOfWeek === 6
-                                    ? "text-[#5a8dff] hover:bg-[#f5f6f4]"
-                                    : "text-[#4c584f] hover:bg-[#f5f6f4]",
-                      )}
-                    >
-                      {cell.day}
-                      {isToday && !isSelectedStart && !isSelectedEnd ? (
-                        <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[#b8ff5a]" />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-3 text-center text-xs font-semibold text-[#647068]">
-                {selectedDateLabel || "날짜를 선택하세요"}
-              </div>
-
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedQuickOptionId(null);
-                    updateDateRange(undefined, undefined);
-                  }}
-                  className="flex h-10 flex-1 items-center justify-center rounded-xl bg-[#eef2ee] text-sm font-bold text-[#112317] transition active:scale-95"
-                >
-                  초기화
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsCalendarOpen(false)}
-                  className="kinetic-gradient flex h-10 flex-1 items-center justify-center rounded-xl text-sm font-bold text-white transition active:scale-95"
-                >
-                  선택 완료
-                </button>
-              </div>
-            </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedQuickOptionId(null);
+                updateDateRange(undefined, undefined);
+              }}
+              className="flex h-10 flex-1 items-center justify-center rounded-xl bg-[#eef2ee] text-sm font-bold text-[#112317] transition active:scale-95"
+            >
+              초기화
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsCalendarOpen(false)}
+              className="kinetic-gradient flex h-10 flex-1 items-center justify-center rounded-xl text-sm font-bold text-white transition active:scale-95"
+            >
+              선택 완료
+            </button>
           </div>
         </div>
-      ) : null}
-
-      <ProfileCompletionSheet
-        open={profileSheetOpen}
-        onOpenChange={setProfileSheetOpen}
-        profile={resolvedProfile}
-        preferredMode={context.mode}
-        regionLabel={context.regionLabel}
-        refreshOnComplete
-        onCompleted={(profile) => {
-          setResolvedProfile(profile);
-          setProfilePromptDismissed(true);
-        }}
-      />
+      </div>
     </div>
+  ) : null
+}
+
+<ProfileCompletionSheet
+  open={profileSheetOpen}
+  onOpenChange={setProfileSheetOpen}
+  profile={resolvedProfile}
+  preferredMode={context.mode}
+  regionLabel={context.regionLabel}
+  refreshOnComplete
+  onCompleted={(profile) => {
+    setResolvedProfile(profile);
+    setProfilePromptDismissed(true);
+  }}
+/>
+    </div >
   );
 }
 

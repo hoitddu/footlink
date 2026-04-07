@@ -1,10 +1,11 @@
 "use client";
 
-import { startTransition, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronRight, MapPin, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronRight, MapPin, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+import { BackButton } from "@/components/app/back-button";
 import { DateQuickSelector } from "@/components/entry/date-quick-selector";
 import { PlayerCountSelector } from "@/components/entry/player-count-selector";
 import { REGION_OPTIONS } from "@/lib/constants";
@@ -293,7 +294,7 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
 
   function handleDateConfirm() {
     if (!startDate) return;
-    startTransition(() => router.push(homeHref));
+    router.push(homeHref);
   }
 
   function handleBack() {
@@ -320,13 +321,7 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
     <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col">
       <header className="px-5 pb-4 pt-4">
         <div className="flex min-h-11 items-center justify-between">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/78 text-[#112317] shadow-[0_12px_30px_rgba(6,21,12,0.05)] transition active:scale-95"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
+          <BackButton onClick={handleBack} />
           <span className="font-display text-[1.08rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
           <div className="rounded-full bg-[#eef2ee] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#66736a] shadow-[0_12px_30px_rgba(6,21,12,0.04)]">
             Step {currentMeta.index}/3

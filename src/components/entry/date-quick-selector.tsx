@@ -141,9 +141,6 @@ export function DateQuickSelector({
         <h1 className="text-[1.9rem] font-bold tracking-[-0.04em] text-[#0c140f]">
           언제 참여할까요?
         </h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          가장 뛰기 쉬운 날부터 골라보세요. 빠른 추천은 위에서, 세부 날짜는 달력에서 선택할 수 있어요.
-        </p>
       </div>
 
       <div className="flex flex-1 flex-col">

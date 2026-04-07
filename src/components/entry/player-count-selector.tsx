@@ -33,9 +33,6 @@ export function PlayerCountSelector({
         <h1 className="text-[1.9rem] font-bold tracking-[-0.04em] text-[#0c140f]">
           몇 명이 함께 뛰나요?
         </h1>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          인원 수와 실력을 먼저 고르면 더 맞는 매치를 빠르게 보여드릴게요.
-        </p>
       </div>
 
       <div className="surface-card rounded-[2rem] px-5 py-6">
