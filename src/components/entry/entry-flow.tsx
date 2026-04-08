@@ -6,12 +6,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { BackButton } from "@/components/app/back-button";
-import { DateQuickSelector } from "@/components/entry/date-quick-selector";
-import { PlayerCountSelector } from "@/components/entry/player-count-selector";
+import { MatchIntentStep } from "@/components/entry/match-intent-step";
 import { REGION_OPTIONS } from "@/lib/constants";
-import type { EntryMode, Profile, SkillLevel } from "@/lib/types";
+import type { EntryMode } from "@/lib/types";
 
-type Step = "landing" | "location" | "count" | "date";
+type Step = "landing" | "location" | "intent";
 
 const LOCATION_DECISION_KEY = "footlink-location-decision-v1";
 
@@ -89,7 +88,7 @@ function LocationPermissionStep({
   const statusCopy = {
     idle: "수원에서 가까운 매치를 먼저 보여드릴게요. 위치를 허용하면 더 정확한 추천이 가능합니다.",
     loading: "현재 위치를 확인하고 있어요.",
-    granted: "수원 기준으로 가까운 경기부터 보여드릴게요.",
+    granted: "현재 위치를 기준으로 가까운 경기부터 보여드릴게요.",
     fallback: "위치 없이도 수원 경기부터 바로 볼 수 있어요.",
   } as const;
 
@@ -109,11 +108,9 @@ function LocationPermissionStep({
           </div>
 
           <div className="mt-5 space-y-3">
-            <h2 className="text-[1.5rem] font-bold tracking-[-0.04em] text-[#112317]">
-              지금 서비스 지역은 수원입니다
-            </h2>
+            <h2 className="text-[1.5rem] font-bold tracking-[-0.04em] text-[#112317]">지금 서비스 지역은 수원입니다</h2>
             <p className="text-sm leading-6 text-muted">
-              위치를 허용하면 더 가까운 경기부터 보여주고, 허용하지 않아도 수원 경기 탐색은 바로 가능합니다.
+              위치를 허용하면 더 가까운 경기부터 보여주고, 허용하지 않아도 수원 경기 목록으로 바로 이동합니다.
             </p>
           </div>
 
@@ -149,11 +146,11 @@ function LocationPermissionStep({
   );
 }
 
-export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null }) {
+export function EntryFlow() {
   const router = useRouter();
+  const shouldPrefetchHome = process.env.NODE_ENV === "production";
   const [step, setStep] = useState<Step>("landing");
   const [playerCount, setPlayerCount] = useState(1);
-  const [skillLevel, setSkillLevel] = useState<SkillLevel>(initialProfile?.skill_level ?? "mid");
   const [startDate, setStartDate] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "granted" | "fallback">("idle");
   const [locationState, setLocationState] = useState<{
@@ -170,21 +167,21 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
     () =>
       ({
         location: { index: 1, label: "위치" },
-        count: { index: 2, label: "인원" },
-        date: { index: 3, label: "일정" },
+        intent: { index: 2, label: "조건" },
       }) as const,
     [],
   );
 
   const homeHref = useMemo(() => {
-    const mode = getModeFromGroupSize(playerCount);
-    const params = new URLSearchParams({
-      mode,
-      groupSize: String(playerCount),
-      region: "suwon",
-      date: startDate ?? "",
-      skill: skillLevel,
-    });
+    const params = new URLSearchParams();
+
+    params.set("mode", getModeFromGroupSize(playerCount));
+    params.set("groupSize", String(playerCount));
+    params.set("region", locationState.regionSlug);
+
+    if (startDate) {
+      params.set("date", startDate);
+    }
 
     if (typeof locationState.lat === "number" && typeof locationState.lng === "number") {
       params.set("lat", locationState.lat.toFixed(6));
@@ -192,7 +189,7 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
     }
 
     return `/home?${params.toString()}`;
-  }, [locationState.lat, locationState.lng, playerCount, skillLevel, startDate]);
+  }, [locationState.lat, locationState.lng, locationState.regionSlug, playerCount, startDate]);
 
   function saveLocationDecision(value: "granted") {
     if (typeof window === "undefined") {
@@ -202,18 +199,18 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
     window.localStorage.setItem(LOCATION_DECISION_KEY, value);
   }
 
-  function goToCountStepWithFallback() {
+  function goToIntentStepWithFallback() {
     setLocationStatus("fallback");
     setLocationState({
       regionSlug: "suwon",
       regionLabel: REGION_OPTIONS[0].label,
     });
-    setStep("count");
+    setStep("intent");
   }
 
   function handleLocationRequest() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      goToCountStepWithFallback();
+      goToIntentStepWithFallback();
       return;
     }
 
@@ -229,20 +226,20 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
         });
         saveLocationDecision("granted");
         setLocationStatus("granted");
-        setStep("count");
+        setStep("intent");
       },
       () => {
         if (typeof window !== "undefined") {
           window.localStorage.removeItem(LOCATION_DECISION_KEY);
         }
-        goToCountStepWithFallback();
+        goToIntentStepWithFallback();
       },
       { enableHighAccuracy: true, timeout: 5000 },
     );
   }
 
   function handleLocationSkip() {
-    goToCountStepWithFallback();
+    goToIntentStepWithFallback();
   }
 
   async function handleStart() {
@@ -273,7 +270,7 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
         }
 
         if (permissionStatus.state === "denied") {
-          goToCountStepWithFallback();
+          goToIntentStepWithFallback();
           return;
         }
       } catch {
@@ -285,15 +282,18 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
   }
 
   useEffect(() => {
-    if (step !== "date" || !startDate) {
+    if (!shouldPrefetchHome || step !== "intent" || !startDate) {
       return;
     }
 
     router.prefetch(homeHref);
-  }, [homeHref, router, startDate, step]);
+  }, [homeHref, router, shouldPrefetchHome, startDate, step]);
 
-  function handleDateConfirm() {
-    if (!startDate) return;
+  function handleIntentConfirm() {
+    if (!startDate) {
+      return;
+    }
+
     router.push(homeHref);
   }
 
@@ -303,12 +303,7 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
       return;
     }
 
-    if (step === "count") {
-      setStep("location");
-      return;
-    }
-
-    setStep("count");
+    setStep("location");
   }
 
   if (step === "landing") {
@@ -324,11 +319,11 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
           <BackButton onClick={handleBack} />
           <span className="font-display text-[1.08rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
           <div className="rounded-full bg-[#eef2ee] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#66736a] shadow-[0_12px_30px_rgba(6,21,12,0.04)]">
-            Step {currentMeta.index}/3
+            Step {currentMeta.index}/2
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-2.5">
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
           {Object.values(stepMeta).map((item) => (
             <div key={item.label} className="space-y-1.5">
               <div
@@ -353,27 +348,25 @@ export function EntryFlow({ initialProfile }: { initialProfile?: Profile | null 
             onRequest={handleLocationRequest}
             onSkip={handleLocationSkip}
           />
-        ) : step === "count" ? (
-          <PlayerCountSelector
-            value={playerCount}
-            onChange={setPlayerCount}
-            skillLevel={skillLevel}
-            onSkillChange={setSkillLevel}
-          />
         ) : (
-          <DateQuickSelector startDate={startDate} endDate={null} onSelect={(start) => setStartDate(start)} />
+          <MatchIntentStep
+            playerCount={playerCount}
+            onPlayerCountChange={setPlayerCount}
+            startDate={startDate}
+            onDateChange={setStartDate}
+          />
         )}
       </div>
 
-      {step !== "location" ? (
+      {step === "intent" ? (
         <footer className="glass-panel safe-bottom fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[430px] rounded-t-[2rem] px-5 pb-8 pt-4 shadow-[0_-18px_50px_rgba(10,18,13,0.06)]">
           <button
             type="button"
-            onClick={step === "count" ? () => setStep("date") : handleDateConfirm}
-            disabled={step === "date" && !startDate}
+            onClick={handleIntentConfirm}
+            disabled={!startDate}
             className="kinetic-gradient lime-glow group flex h-14 w-full items-center justify-center gap-2 rounded-[1.25rem] text-lg font-bold tracking-[-0.02em] text-white transition active:scale-95 disabled:opacity-35"
           >
-            <span>{step === "count" ? "다음" : "매치 보기"}</span>
+            <span>이 조건으로 매치 보기</span>
             <ChevronRight className="h-5 w-5 transition-transform group-active:translate-x-0.5" />
           </button>
         </footer>
