@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getContactTypeLabel } from "@/lib/contact";
 import { getRegionLabel } from "@/lib/constants";
 import {
   getParticipationContactLink,
@@ -42,6 +41,11 @@ export function RequestStatusCard({
 }) {
   const contactLink = getParticipationContactLink(state, request);
   const canWithdraw = request.status === "pending";
+  const contactFlowLabel =
+    request.entry_channel === "request_only"
+      ? "앱에서 조율"
+      : `${getContactTypeLabel(request.entry_channel)} 연락`;
+  const opensExternalContact = Boolean(contactLink?.href.startsWith("http"));
 
   return (
     <article
@@ -69,7 +73,7 @@ export function RequestStatusCard({
 
       <div className="mt-3 space-y-1 text-sm text-muted">
         <p>호스트 · {host?.nickname ?? "FootLink 호스트"}</p>
-        <p>참여 흐름: 요청 후 수락, 오픈채팅 조율, 최종 확정</p>
+        <p>참여 흐름: 요청 후 수락, {contactFlowLabel}, 최종 확정</p>
         <p>지역 · {getRegionLabel(match.region_slug)}</p>
         {request.host_note ? <p>호스트 메모: {request.host_note}</p> : null}
       </div>
@@ -82,9 +86,13 @@ export function RequestStatusCard({
               className="h-9 flex-1 rounded-[0.95rem] px-3 text-[13px] shadow-[0_12px_24px_rgba(6,21,12,0.14)]"
               size="sm"
             >
-              <Link href={contactLink.href} rel="noreferrer" target="_blank">
+              <a
+                href={contactLink.href}
+                rel={opensExternalContact ? "noreferrer" : undefined}
+                target={opensExternalContact ? "_blank" : undefined}
+              >
                 {contactLink.label}
-              </Link>
+              </a>
             </Button>
           ) : null}
           {canWithdraw ? (

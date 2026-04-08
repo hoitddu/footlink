@@ -1,14 +1,14 @@
 "use client";
 
+import { ensureAnonymousSessionAction } from "@/app/actions/auth";
 import { upsertProfileAction } from "@/app/actions/profile";
 import { createAppError } from "@/lib/errors";
-import { ensureAnonymousSession } from "@/lib/supabase/client";
 import type { UpdateProfileInput } from "@/lib/types";
 
 export async function saveProfile(input: UpdateProfileInput) {
-  const user = await ensureAnonymousSession();
+  const userId = await ensureAnonymousSessionAction();
 
-  if (!user) {
+  if (!userId) {
     throw createAppError("AUTH_REQUIRED");
   }
 

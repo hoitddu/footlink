@@ -1,7 +1,7 @@
 const APP_ERROR_MESSAGES = {
   AUTH_REQUIRED: "인증 세션이 준비되지 않았습니다. 새로고침 후 다시 시도해 주세요.",
   PROFILE_REQUIRED: "프로필을 먼저 저장해 주세요.",
-  CONTACT_LINK_REQUIRED: "연결용 오픈채팅 링크를 입력해 주세요.",
+  CONTACT_LINK_REQUIRED: "연락 정보를 입력해 주세요.",
   OWN_MATCH_REQUEST_FORBIDDEN: "내가 만든 매치에는 참가 요청을 보낼 수 없습니다.",
   MATCH_CLOSED: "이미 마감된 매치입니다.",
   REQUEST_COUNT_EXCEEDS_REMAINING: "남은 자리보다 많은 인원을 요청할 수 없습니다.",

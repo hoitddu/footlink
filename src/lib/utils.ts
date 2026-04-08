@@ -12,6 +12,36 @@ export function formatFee(value: number) {
   return `${new Intl.NumberFormat("ko-KR").format(value)}원`;
 }
 
+export function getMatchEndDate(startAt: string, durationMinutes = 120) {
+  return new Date(new Date(startAt).getTime() + durationMinutes * 60 * 1000);
+}
+
+export function formatDurationMinutes(durationMinutes: number) {
+  const hours = Math.floor(durationMinutes / 60);
+  const minutes = durationMinutes % 60;
+
+  if (hours === 0) {
+    return `${minutes}분`;
+  }
+
+  if (minutes === 0) {
+    return `${hours}시간`;
+  }
+
+  return `${hours}시간 ${minutes}분`;
+}
+
+export function formatTimeRange(startAt: string, durationMinutes = 120) {
+  const start = formatTimeOnly(startAt);
+  const end = new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(getMatchEndDate(startAt, durationMinutes));
+
+  return `${start} - ${end}`;
+}
+
 export function formatDistance(distanceKm: number) {
   if (distanceKm < 1) {
     return `도보 ${Math.max(1, Math.round(distanceKm * 12))}분`;
@@ -75,6 +105,10 @@ export function getTravelEstimates(distanceKm: number): TravelEstimate[] {
   });
 
   return estimates;
+}
+
+export function getShortestTravelEstimate(distanceKm: number): TravelEstimate {
+  return getTravelEstimates(distanceKm).sort((left, right) => left.minutes - right.minutes)[0]!;
 }
 
 export function formatStartAt(date: string) {

@@ -133,6 +133,14 @@ select {
   border-radius: 999px;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .kinetic-gradient {
   background: linear-gradient(135deg, #06150c 0%, #112317 56%, #193223 100%);
 }

@@ -92,7 +92,7 @@ export function JoinIntentSheet({
               참가 요청 보내기
             </SheetTitle>
             <SheetDescription className="mt-2 text-sm leading-6 text-muted">
-              요청을 보내면 호스트가 확인 후 수락 또는 거절합니다. 수락되면 오픈채팅 입장이 열립니다.
+              요청을 보내면 호스트가 확인 후 수락 또는 거절합니다. 수락되면 바로 연락을 이어갈 수 있습니다.
             </SheetDescription>
           </div>
 

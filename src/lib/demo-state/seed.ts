@@ -72,11 +72,28 @@ function normalizeNotification(notification: unknown): DemoNotification | null {
 export function normalizeDemoState(candidate: DemoAppState): DemoAppState {
   const seed = createDemoSeed();
 
+  const normalizedMatches = Array.isArray(candidate.matches)
+    ? candidate.matches.map((match) => {
+        const sportType = match.sport_type ?? "futsal";
+
+        return {
+          ...match,
+          sport_type: sportType,
+          duration_minutes:
+            typeof match.duration_minutes === "number" && Number.isFinite(match.duration_minutes)
+              ? Math.max(30, Math.trunc(match.duration_minutes))
+              : 120,
+          futsal_format:
+            sportType === "futsal" ? (match.futsal_format ?? "5vs5") : null,
+        };
+      })
+    : seed.matches;
+
   return {
     currentProfileId: seed.profiles.some((profile) => profile.id === candidate.currentProfileId)
       ? candidate.currentProfileId
       : seed.currentProfileId,
-    matches: Array.isArray(candidate.matches) ? candidate.matches.map((match) => ({ ...match })) : seed.matches,
+    matches: normalizedMatches,
     participationRequests: Array.isArray(candidate.participationRequests)
       ? candidate.participationRequests.map((request) => ({ ...request }))
       : seed.participationRequests,

@@ -1,6 +1,7 @@
 export type EntryMode = "solo" | "small_group" | "team";
 export type ListingType = "mercenary" | "partial_join" | "team_match";
-export type ContactType = "openchat" | "request_only";
+export type DirectContactType = "openchat" | "phone";
+export type ContactType = DirectContactType | "request_only";
 export type MatchStatus = "open" | "matched" | "closed" | "cancelled";
 export type ParticipationStatus =
   | "pending"
@@ -16,11 +17,20 @@ export type DemoNotificationKind =
   | "request_rejected";
 export type SkillLevel = "beginner" | "low" | "mid" | "high";
 export type SportType = "futsal" | "soccer";
-export type FeedTimeWindow = "now" | "today" | "tomorrow" | "weekend";
-export type FeedSort = "urgent" | "distance";
+export type FutsalFormatOption = "4vs4" | "5vs5" | "6vs6";
+export type FeedSportFilter = "all" | SportType;
+export type FeedTimeWindow = "all" | "now" | "today" | "tomorrow" | "weekend";
+export type FeedSort = "recommended" | "time" | "distance" | "fee" | "closing";
 export type FeedPreset = FeedSort;
 export type RegionSlug = "suwon";
 export type UserRole = "player" | "captain";
+
+export interface FeedDateFilterItem {
+  id: string;
+  label: string;
+  dayOfWeek: string;
+  fullDate?: string;
+}
 
 export interface Profile {
   id: string;
@@ -33,6 +43,8 @@ export interface Profile {
   skill_level: SkillLevel;
   age: number;
   open_chat_link?: string | null;
+  phone_number?: string | null;
+  default_contact_type?: DirectContactType | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -43,12 +55,14 @@ export interface Match {
   mode: EntryMode;
   listing_type: ListingType;
   sport_type?: SportType;
+  futsal_format?: FutsalFormatOption | null;
   title: string;
   region_slug: RegionSlug;
   address: string;
   lat: number;
   lng: number;
   start_at: string;
+  duration_minutes: number;
   fee: number;
   total_slots: number;
   remaining_slots: number;
@@ -103,7 +117,7 @@ export interface RegionOption {
 }
 
 export interface FeedContext {
-  sport: SportType;
+  sport: FeedSportFilter;
   window: FeedTimeWindow;
   radiusKm?: number;
   onlyLastSpot: boolean;
@@ -140,7 +154,7 @@ export interface MatchWithMeta extends Match {
   minutesUntilStart: number;
   statusLabel: string;
   statusTone: "urgent" | "soon" | "team" | "calm";
-  compatibilityScore: number;
+  recommendedScore: number;
   organizer?: Profile;
   contactAvailable: boolean;
   urgencyLevel: "last_spot" | "starting_soon" | "today" | "weekend" | "closed";
@@ -179,6 +193,8 @@ export interface UpdateProfileInput {
   preferred_regions: string[];
   skill_level: SkillLevel;
   open_chat_link?: string | null;
+  phone_number?: string | null;
+  default_contact_type?: DirectContactType | null;
 }
 
 export interface DemoAppActions {

@@ -1,14 +1,12 @@
-import type { ListingType } from "@/lib/types";
+import type { FutsalFormatOption, ListingType, SportType } from "@/lib/types";
 
 const MATCH_FORMAT_PREFIX = "[format:";
 
-export type MatchFormatOption = "4vs4" | "5vs5" | "6vs6";
-
-export function formatMatchFormatLabel(format: MatchFormatOption | string) {
+export function formatMatchFormatLabel(format: FutsalFormatOption | string) {
   return format;
 }
 
-export function buildMatchNote(note: string, format: MatchFormatOption) {
+export function buildMatchNote(note: string, format: FutsalFormatOption) {
   const trimmed = note.trim();
   const metadata = `${MATCH_FORMAT_PREFIX}${format}]`;
 
@@ -33,7 +31,7 @@ export function getStoredNoteWithoutFormat(note?: string | null) {
   return note.slice(endIndex + 1).trim();
 }
 
-export function getMatchFormatFromNote(note?: string | null): MatchFormatOption | null {
+export function getMatchFormatFromNote(note?: string | null): FutsalFormatOption | null {
   if (!note || !note.startsWith(MATCH_FORMAT_PREFIX)) {
     return null;
   }
@@ -55,11 +53,21 @@ export function getMatchFormatFromNote(note?: string | null): MatchFormatOption 
 
 export function getMatchFormatLabel(match: {
   listing_type: ListingType;
+  sport_type?: SportType | null;
+  futsal_format?: FutsalFormatOption | null;
   mode: string;
   min_group_size: number;
   max_group_size: number;
   note?: string | null;
 }) {
+  if ((match.sport_type ?? "futsal") !== "futsal") {
+    return null;
+  }
+
+  if (match.futsal_format) {
+    return formatMatchFormatLabel(match.futsal_format);
+  }
+
   const noteFormat = getMatchFormatFromNote(match.note);
 
   if (noteFormat) {

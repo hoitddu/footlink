@@ -1,6 +1,8 @@
 import type {
   ContactType,
+  DirectContactType,
   EntryMode,
+  FutsalFormatOption,
   ListingType,
   MatchStatus,
   ParticipationStatus,
@@ -21,6 +23,8 @@ export interface ProfileRow {
   skill_level: SkillLevel;
   age: number;
   open_chat_link: string | null;
+  phone_number: string | null;
+  default_contact_type: DirectContactType | null;
   created_at: string;
   updated_at: string;
 }
@@ -31,12 +35,14 @@ export interface MatchRow {
   mode: EntryMode;
   listing_type: ListingType;
   sport_type: SportType | null;
+  futsal_format: FutsalFormatOption | null;
   title: string;
   region_slug: RegionSlug;
   address: string;
   lat: number;
   lng: number;
   start_at: string;
+  duration_minutes: number | null;
   fee: number;
   total_slots: number;
   remaining_slots: number;

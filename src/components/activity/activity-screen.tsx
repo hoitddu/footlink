@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type ReactNode, useMemo, useState } from "react";
-import { Clock3, MapPin, MessageCircleMore, Plus, UserRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { cancelMatchAction } from "@/app/actions/matches";
@@ -13,9 +12,9 @@ import {
 } from "@/app/actions/requests";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
 import { FlashBanner } from "@/components/app/flash-banner";
-import { SectionHeading } from "@/components/app/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn, formatAgeBand, formatFee, formatSkillLevel, formatSportType, formatStartAt, formatTimeRange } from "@/lib/utils";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import {
   getHostedMatches,
@@ -28,12 +27,6 @@ import {
   getProfileById,
 } from "@/lib/demo-state/selectors";
 import { getUserFacingErrorMessage } from "@/lib/errors";
-import {
-  formatFee,
-  formatSkillLevel,
-  formatSportType,
-  formatStartAt,
-} from "@/lib/utils";
 import type { DemoAppState, Match, ParticipationRequest } from "@/lib/types";
 
 type ActivityTab = "requests" | "listings";
@@ -53,8 +46,45 @@ function isOpenRequest(request: ParticipationRequest) {
   return ["pending", "accepted", "confirmed"].includes(request.status);
 }
 
-function formatRequestMeta(match: Match) {
+function formatPrimaryMeta(match: Match) {
   return `${formatStartAt(match.start_at)} · ${formatFee(match.fee)}`;
+}
+
+function formatSecondaryMeta(match: Match) {
+  return `${formatTimeRange(match.start_at, match.duration_minutes)} · ${match.address}`;
+}
+
+function ActivityTabButton({
+  active,
+  count,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  count: number;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex min-h-[3.25rem] items-center justify-between gap-3 rounded-[1.1rem] px-4 py-3 text-left transition",
+        active ? "bg-[#112317] text-white shadow-[0_16px_30px_rgba(6,21,12,0.16)]" : "bg-[#eef2ee] text-[#112317]",
+      )}
+    >
+      <span className="text-sm font-bold tracking-[-0.02em]">{label}</span>
+      <span
+        className={cn(
+          "rounded-full px-2.5 py-1 text-[11px] font-bold",
+          active ? "bg-white/14 text-white" : "bg-white text-[#4f5e55]",
+        )}
+      >
+        {count}
+      </span>
+    </button>
+  );
 }
 
 function MyJoinCard({
@@ -78,9 +108,10 @@ function MyJoinCard({
 
   return (
     <article
-      className={`surface-card rounded-[1.45rem] p-4 transition ${
-        highlighted ? "ring-2 ring-[#b8ff5a]" : ""
-      }`}
+      className={cn(
+        "surface-card rounded-[1.45rem] p-4 transition",
+        highlighted && "ring-2 ring-[#b8ff5a]",
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -92,60 +123,102 @@ function MyJoinCard({
               {formatSportType(match.sport_type ?? "futsal")}
             </span>
           </div>
-          <h3 className="mt-3 text-[1.15rem] font-bold tracking-[-0.03em] text-[#112317]">
+          <h3 className="mt-2 truncate text-[1.02rem] font-bold tracking-[-0.03em] text-[#112317]">
             {match.title}
           </h3>
-          <p className="mt-1 text-sm text-[#66736a]">{formatRequestMeta(match)}</p>
-        </div>
-        <span className="rounded-full bg-[#f4f7f3] px-3 py-1 text-[11px] font-bold text-[#55625a]">
-          {getParticipationSummary(request)}
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-2 text-[13px] text-[#536157]">
-        <div className="flex items-center gap-2">
-          <Clock3 className="h-3.5 w-3.5" />
-          <span>{formatStartAt(match.start_at)}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <MapPin className="h-3.5 w-3.5" />
-          <span>{match.address}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <UserRound className="h-3.5 w-3.5" />
-          <span>{host?.nickname ?? "FootLink Host"}</span>
+          <p className="mt-1 text-[13px] text-[#66736a]">{formatPrimaryMeta(match)}</p>
+          <p className="mt-1 truncate text-[13px] text-[#66736a]">{formatSecondaryMeta(match)}</p>
+          <p className="mt-1 text-[12px] font-medium text-[#55625a]">
+            {host?.nickname ?? "FootLink Host"} · {getParticipationSummary(request)}
+          </p>
         </div>
       </div>
 
       {request.host_note ? (
-        <p className="mt-4 rounded-[1rem] bg-[#f4f7f3] px-4 py-3 text-sm leading-6 text-[#445149]">
+        <p className="mt-3 rounded-[1rem] bg-[#f4f7f3] px-3.5 py-3 text-[13px] leading-6 text-[#445149]">
           {request.host_note}
         </p>
       ) : null}
 
-      <div className="mt-4 flex gap-2">
-        {contactLink ? (
-          <Button asChild className="flex-1" size="sm">
-            <Link href={contactLink.href} rel="noreferrer" target="_blank">
-              <MessageCircleMore className="mr-1.5 h-4 w-4" />
-              {contactLink.label}
-            </Link>
-          </Button>
-        ) : null}
-        {canWithdraw ? (
-          <Button
-            className="flex-1"
-            size="sm"
-            type="button"
-            variant="secondary"
-            onClick={onWithdraw}
-            disabled={withdrawPending}
-          >
-            {withdrawPending ? "요청 취소 중..." : "요청 취소"}
-          </Button>
-        ) : null}
-      </div>
+      {contactLink || canWithdraw ? (
+        <div className="mt-3 flex gap-2">
+          {contactLink ? (
+            <Button asChild className="flex-1" size="sm">
+              <a
+                href={contactLink.href}
+                rel={contactLink.href.startsWith("http") ? "noreferrer" : undefined}
+                target={contactLink.href.startsWith("http") ? "_blank" : undefined}
+              >
+                {contactLink.label}
+              </a>
+            </Button>
+          ) : null}
+          {canWithdraw ? (
+            <Button
+              className={cn(!contactLink && "flex-1")}
+              size="sm"
+              type="button"
+              variant="secondary"
+              onClick={onWithdraw}
+              disabled={withdrawPending}
+            >
+              {withdrawPending ? "요청 취소 중..." : "요청 취소"}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </article>
+  );
+}
+
+function PendingRequestRow({
+  request,
+  requesterName,
+  requesterMeta,
+  pendingAction,
+  disabled,
+  onAccept,
+  onReject,
+}: {
+  request: ParticipationRequest;
+  requesterName: string;
+  requesterMeta: string | null;
+  pendingAction: PendingActivityAction;
+  disabled: boolean;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="rounded-[1rem] bg-[#f4f7f3] px-3.5 py-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-[#112317]">
+            {requesterName} · {getParticipationSummary(request)}
+          </p>
+          {requesterMeta ? <p className="mt-1 text-[12px] text-[#66736a]">{requesterMeta}</p> : null}
+          {request.message ? (
+            <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[#55625a]">{request.message}</p>
+          ) : null}
+        </div>
+        <Badge variant="soon">요청됨</Badge>
+      </div>
+
+      <div className="mt-3 flex gap-2">
+        <Button className="flex-1" size="sm" type="button" onClick={onAccept} disabled={disabled}>
+          {pendingAction?.targetId === request.id && pendingAction.kind === "accept" ? "수락 중..." : "수락"}
+        </Button>
+        <Button
+          className="flex-1"
+          size="sm"
+          type="button"
+          variant="secondary"
+          onClick={onReject}
+          disabled={disabled}
+        >
+          {pendingAction?.targetId === request.id && pendingAction.kind === "reject" ? "거절 중..." : "거절"}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -170,142 +243,101 @@ function HostSpotCard({
 }) {
   const pendingRequests = requests.filter((request) => request.status === "pending");
   const connectedRequests = requests.filter((request) => ["accepted", "confirmed"].includes(request.status));
+  const closedRequests = requests.filter((request) =>
+    ["rejected", "withdrawn", "expired"].includes(request.status),
+  );
   const hasLockedRequest = connectedRequests.length > 0;
+  const deletePending = pendingAction?.targetId === match.id && pendingAction.kind === "delete";
   const canDelete = !hasLockedRequest && match.status === "open";
 
   return (
     <article
-      className={`surface-card rounded-[1.45rem] p-4 transition ${
-        highlighted ? "ring-2 ring-[#b8ff5a]" : ""
-      }`}
+      className={cn(
+        "surface-card rounded-[1.45rem] p-4 transition",
+        highlighted && "ring-2 ring-[#b8ff5a]",
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={match.remaining_slots <= 1 ? "urgent" : "soon"}>
-              {match.remaining_slots <= 1 ? "1자리 남음" : `${match.remaining_slots}자리 남음`}
+              {match.remaining_slots <= 1 ? "1자리" : `${match.remaining_slots}자리`}
             </Badge>
-            <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#445149]">
-              {formatSportType(match.sport_type ?? "futsal")}
-            </span>
+            {pendingRequests.length > 0 ? (
+              <span className="rounded-full bg-[#f4f7f3] px-2.5 py-1 text-[11px] font-bold text-[#55625a]">
+                새 요청 {pendingRequests.length}
+              </span>
+            ) : null}
           </div>
-          <h3 className="mt-3 text-[1.15rem] font-bold tracking-[-0.03em] text-[#112317]">
+          <h3 className="mt-2 truncate text-[1.02rem] font-bold tracking-[-0.03em] text-[#112317]">
             {match.title}
           </h3>
-          <p className="mt-1 text-sm text-[#66736a]">{formatRequestMeta(match)}</p>
+          <p className="mt-1 text-[13px] text-[#66736a]">{formatStartAt(match.start_at)}</p>
         </div>
-        <Button
-          size="sm"
-          type="button"
-          variant="secondary"
-          onClick={onDelete}
-          disabled={!canDelete || pendingAction?.kind === "delete"}
-        >
-          {pendingAction?.kind === "delete" ? "닫는 중..." : "공석 닫기"}
+        <Button size="sm" type="button" variant="secondary" onClick={onDelete} disabled={!canDelete || deletePending}>
+          {deletePending ? "마감 중..." : "모집 마감"}
         </Button>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <div className="rounded-[1rem] bg-[#f4f7f3] px-3 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">요청</p>
-          <p className="mt-1 text-base font-bold text-[#112317]">{requests.length}</p>
-        </div>
-        <div className="rounded-[1rem] bg-[#f4f7f3] px-3 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">대기</p>
-          <p className="mt-1 text-base font-bold text-[#112317]">{pendingRequests.length}</p>
-        </div>
-        <div className="rounded-[1rem] bg-[#f4f7f3] px-3 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">연락</p>
-          <p className="mt-1 text-base font-bold text-[#112317]">{connectedRequests.length}</p>
-        </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
+          요청 {pendingRequests.length}
+        </span>
+        <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
+          연락 {connectedRequests.length}
+        </span>
+        <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
+          종료 {closedRequests.length}
+        </span>
       </div>
 
       {pendingRequests.length > 0 ? (
-        <div className="mt-4 space-y-3">
+        <div className="mt-3 space-y-2.5">
           {pendingRequests.map((request) => {
             const requester = getProfileById(state, request.requester_profile_id);
+            const requesterMeta = requester
+              ? `${formatSkillLevel(requester.skill_level)} · ${formatAgeBand(requester.age)}`
+              : null;
             const requestActionPending =
               pendingAction?.targetId === request.id &&
               (pendingAction.kind === "accept" || pendingAction.kind === "reject");
 
             return (
-              <div key={request.id} className="rounded-[1rem] bg-[#f4f7f3] px-4 py-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-bold text-[#112317]">
-                      {requester?.nickname ?? "참가자"} · {getParticipationSummary(request)}
-                    </p>
-                    <p className="mt-1 text-sm text-[#66736a]">
-                      실력 {requester ? formatSkillLevel(requester.skill_level) : "중급"} · 나이{" "}
-                      {requester?.age ?? "-"}
-                    </p>
-                  </div>
-                  <Badge variant="soon">요청됨</Badge>
-                </div>
-
-                <div className="mt-3 flex gap-2">
-                  <Button
-                    className="flex-1"
-                    size="sm"
-                    type="button"
-                    onClick={() => onAccept(request.id)}
-                    disabled={requestActionPending || match.remaining_slots < request.requested_count}
-                  >
-                    {pendingAction?.targetId === request.id && pendingAction.kind === "accept"
-                      ? "승인 중..."
-                      : "연락 허용"}
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    size="sm"
-                    type="button"
-                    variant="secondary"
-                    onClick={() => onReject(request.id)}
-                    disabled={requestActionPending}
-                  >
-                    {pendingAction?.targetId === request.id && pendingAction.kind === "reject"
-                      ? "거절 중..."
-                      : "거절"}
-                  </Button>
-                </div>
-              </div>
+              <PendingRequestRow
+                key={request.id}
+                request={request}
+                requesterName={requester?.nickname ?? "참여자"}
+                requesterMeta={requesterMeta}
+                pendingAction={pendingAction}
+                disabled={
+                  requestActionPending ||
+                  pendingAction?.kind === "delete" ||
+                  match.remaining_slots < request.requested_count
+                }
+                onAccept={() => onAccept(request.id)}
+                onReject={() => onReject(request.id)}
+              />
             );
           })}
         </div>
       ) : (
-        <div className="mt-4 rounded-[1rem] bg-[#f4f7f3] px-4 py-4 text-sm text-[#66736a]">
-          아직 새 요청이 없습니다.
+        <div className="mt-3 rounded-[1rem] bg-[#f4f7f3] px-4 py-3 text-sm text-[#66736a]">
+          아직 들어온 요청이 없습니다.
         </div>
       )}
 
       {connectedRequests.length > 0 ? (
-        <div className="mt-4 space-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
-            연락 중인 참가자
-          </p>
+        <div className="mt-3 flex flex-wrap gap-2">
           {connectedRequests.map((request) => {
             const requester = getProfileById(state, request.requester_profile_id);
-            const contactLink = getParticipationContactLink(state, request);
 
             return (
-              <div
+              <span
                 key={request.id}
-                className="flex items-center justify-between rounded-[1rem] bg-[#eef2ee] px-4 py-3"
+                className="rounded-full bg-[#eef2ee] px-3 py-1.5 text-[12px] font-medium text-[#445149]"
               >
-                <div>
-                  <p className="text-sm font-bold text-[#112317]">{requester?.nickname ?? "참가자"}</p>
-                  <p className="mt-1 text-xs text-[#66736a]">연락 가능 상태로 전달됐습니다.</p>
-                </div>
-                {contactLink ? (
-                  <Button asChild size="sm" variant="secondary">
-                    <Link href={contactLink.href} rel="noreferrer" target="_blank">
-                      연락 열기
-                    </Link>
-                  </Button>
-                ) : (
-                  <Badge variant="success">연락 가능</Badge>
-                )}
-              </div>
+                {requester?.nickname ?? "참여자"} · 연락 전달됨
+              </span>
             );
           })}
         </div>
@@ -336,16 +368,18 @@ function ActivityScreenBody({
   showDemoIdentitySwitcher: boolean;
 }) {
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<ActivityTab>(initialTab);
   const [error, setError] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingActivityAction>(null);
 
   const myRequests = useMemo(() => getMyParticipationRequests(state), [state]);
   const hostedMatches = useMemo(() => getHostedMatches(state), [state]);
+  const openRequests = useMemo(() => myRequests.filter(isOpenRequest), [myRequests]);
+  const closedRequests = useMemo(() => myRequests.filter((request) => !isOpenRequest(request)), [myRequests]);
 
-  const openRequests = myRequests.filter(isOpenRequest);
-  const closedRequests = myRequests.filter((request) => !isOpenRequest(request));
-  const sectionOrder: ActivityTab[] =
-    initialTab === "listings" ? ["listings", "requests"] : ["requests", "listings"];
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   function replaceActivityQuery(next: Record<string, string | undefined>) {
     const params = new URLSearchParams();
@@ -362,12 +396,18 @@ function ActivityScreenBody({
     router.replace(query ? `/activity?${query}` : "/activity");
   }
 
+  function handleTabChange(nextTab: ActivityTab) {
+    setActiveTab(nextTab);
+    replaceActivityQuery({ tab: nextTab });
+  }
+
   async function handleWithdraw(requestId: string) {
     setError("");
     setPendingAction({ targetId: requestId, kind: "withdraw" });
 
     try {
       await onWithdraw(requestId);
+      setActiveTab("requests");
       replaceActivityQuery({
         tab: "requests",
         highlight: requestId,
@@ -386,13 +426,14 @@ function ActivityScreenBody({
 
     try {
       await onAccept(requestId);
+      setActiveTab("listings");
       replaceActivityQuery({
         tab: "listings",
         highlight: matchId,
         flash: "accepted",
       });
     } catch (acceptError) {
-      setError(getUserFacingErrorMessage(acceptError, "참여 요청을 승인하지 못했습니다."));
+      setError(getUserFacingErrorMessage(acceptError, "참가 요청을 수락하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }
@@ -404,20 +445,21 @@ function ActivityScreenBody({
 
     try {
       await onReject(requestId);
+      setActiveTab("listings");
       replaceActivityQuery({
         tab: "listings",
         highlight: matchId,
         flash: "rejected",
       });
     } catch (rejectError) {
-      setError(getUserFacingErrorMessage(rejectError, "참여 요청을 거절하지 못했습니다."));
+      setError(getUserFacingErrorMessage(rejectError, "참가 요청을 거절하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }
   }
 
   async function handleDelete(matchId: string) {
-    if (!window.confirm("이 공석을 닫을까요? 대기 중인 요청도 함께 마감 처리됩니다.")) {
+    if (!window.confirm("이 모집을 마감할까요? 대기 중인 요청도 함께 종료됩니다.")) {
       return;
     }
 
@@ -426,159 +468,30 @@ function ActivityScreenBody({
 
     try {
       await onDelete(matchId);
+      setActiveTab("listings");
       replaceActivityQuery({
         tab: "listings",
         flash: "deleted",
       });
     } catch (deleteError) {
-      setError(getUserFacingErrorMessage(deleteError, "공석을 닫지 못했습니다."));
+      setError(getUserFacingErrorMessage(deleteError, "모집을 마감하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }
   }
 
-  const sectionMap = {
-    requests: (
-      <section key="requests" className="space-y-3">
-        <div className="flex items-end justify-between px-1">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">My Joins</p>
-            <h2 className="mt-1 text-[1.35rem] font-bold tracking-[-0.04em] text-[#112317]">내 참여</h2>
-          </div>
-          <span className="rounded-full bg-[#eef2ee] px-3 py-1 text-[11px] font-bold text-[#55625a]">
-            {openRequests.length}
+  return (
+    <div className="space-y-4">
+      <section className="surface-card rounded-[1.55rem] px-4 py-3.5">
+        <div className="flex items-center justify-center">
+          <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#112317]">
+            FOOTLINK
           </span>
         </div>
-
-        {openRequests.length === 0 ? (
-          <section className="surface-card rounded-[1.45rem] p-5">
-            <p className="text-sm text-[#66736a]">아직 진행 중인 참여가 없습니다.</p>
-            <Button asChild className="mt-4" size="sm">
-              <Link href="/home">지금 공석 보러가기</Link>
-            </Button>
-          </section>
-        ) : (
-          openRequests.map((request) => {
-            const match = state.matches.find((item) => item.id === request.match_id);
-
-            if (!match) {
-              return null;
-            }
-
-            return (
-              <MyJoinCard
-                key={request.id}
-                state={state}
-                match={match}
-                request={request}
-                highlighted={highlight === request.id || highlight === match.id}
-                onWithdraw={() => handleWithdraw(request.id)}
-                withdrawPending={
-                  pendingAction?.targetId === request.id && pendingAction.kind === "withdraw"
-                }
-              />
-            );
-          })
-        )}
-
-        {closedRequests.length > 0 ? (
-          <section className="surface-card rounded-[1.45rem] p-4">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">History</p>
-            <div className="mt-3 space-y-2">
-              {closedRequests.map((request) => {
-                const match = state.matches.find((item) => item.id === request.match_id);
-
-                if (!match) {
-                  return null;
-                }
-
-                return (
-                  <div
-                    key={request.id}
-                    className="flex items-center justify-between rounded-[1rem] bg-[#f4f7f3] px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[#112317]">{match.title}</p>
-                      <p className="mt-1 text-xs text-[#66736a]">{formatStartAt(match.start_at)}</p>
-                    </div>
-                    <Badge variant={getParticipationStatusTone(request.status)}>
-                      {getParticipationStatusLabel(request.status)}
-                    </Badge>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
       </section>
-    ),
-    listings: (
-      <section key="listings" className="space-y-3">
-        <div className="flex items-end justify-between px-1">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Host Spots</p>
-            <h2 className="mt-1 text-[1.35rem] font-bold tracking-[-0.04em] text-[#112317]">내 공석</h2>
-          </div>
-          <Button asChild size="sm" variant="secondary">
-            <Link href="/create">
-              <Plus className="mr-1.5 h-4 w-4" />
-              공석 올리기
-            </Link>
-          </Button>
-        </div>
 
-        {hostedMatches.length === 0 ? (
-          <section className="surface-card rounded-[1.45rem] p-5">
-            <p className="text-sm text-[#66736a]">올려둔 공석이 없습니다.</p>
-            <Button asChild className="mt-4" size="sm">
-              <Link href="/create">첫 공석 올리기</Link>
-            </Button>
-          </section>
-        ) : (
-          hostedMatches.map((match) => (
-            <HostSpotCard
-              key={match.id}
-              state={state}
-              match={match}
-              requests={getInboundRequestsForMatch(state, match.id)}
-              highlighted={highlight === match.id}
-              pendingAction={pendingAction}
-              onAccept={(requestId) => handleAccept(requestId, match.id)}
-              onReject={(requestId) => handleReject(requestId, match.id)}
-              onDelete={() => handleDelete(match.id)}
-            />
-          ))
-        )}
-      </section>
-    ),
-  } satisfies Record<ActivityTab, ReactNode>;
-
-  return (
-    <div className="space-y-5">
-      <section className="surface-card rounded-[1.75rem] p-5">
-        <SectionHeading
-          eyebrow="Activity"
-          title="내 참여와 공석"
-          description="요청 상태 확인, 빠른 연락, 공석 승인만 남긴 간단한 화면입니다."
-        />
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <div className="rounded-[1rem] bg-[#f4f7f3] px-3 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">진행 중</p>
-            <p className="mt-1 text-base font-bold text-[#112317]">{openRequests.length}</p>
-          </div>
-          <div className="rounded-[1rem] bg-[#f4f7f3] px-3 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">내 공석</p>
-            <p className="mt-1 text-base font-bold text-[#112317]">{hostedMatches.length}</p>
-          </div>
-          <div className="rounded-[1rem] bg-[#f4f7f3] px-3 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">남은 자리</p>
-            <p className="mt-1 text-base font-bold text-[#112317]">
-              {hostedMatches.reduce((sum, match) => sum + match.remaining_slots, 0)}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 space-y-3">
+      {flash || error ? (
+        <div className="space-y-3">
           <FlashBanner flash={flash} />
           {error ? (
             <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
@@ -586,11 +499,121 @@ function ActivityScreenBody({
             </p>
           ) : null}
         </div>
-      </section>
+      ) : null}
 
       {showDemoIdentitySwitcher ? <DemoIdentitySwitcher /> : null}
 
-      {sectionOrder.map((section) => sectionMap[section])}
+      <section className="surface-card rounded-[1.5rem] p-3">
+        <div className="grid grid-cols-2 gap-2">
+          <ActivityTabButton
+            active={activeTab === "requests"}
+            count={openRequests.length}
+            label="참여"
+            onClick={() => handleTabChange("requests")}
+          />
+          <ActivityTabButton
+            active={activeTab === "listings"}
+            count={hostedMatches.length}
+            label="모집"
+            onClick={() => handleTabChange("listings")}
+          />
+        </div>
+      </section>
+
+      {activeTab === "requests" ? (
+        <section className="space-y-3">
+          {openRequests.length === 0 ? (
+            <section className="surface-card rounded-[1.45rem] p-5">
+              <p className="text-sm text-[#66736a]">참여 중인 매치가 없습니다.</p>
+              <Button asChild className="mt-4" size="sm">
+                <Link href="/home">매치 찾기</Link>
+              </Button>
+            </section>
+          ) : (
+            openRequests.map((request) => {
+              const match = state.matches.find((item) => item.id === request.match_id);
+
+              if (!match) {
+                return null;
+              }
+
+              return (
+                <MyJoinCard
+                  key={request.id}
+                  state={state}
+                  match={match}
+                  request={request}
+                  highlighted={highlight === request.id || highlight === match.id}
+                  onWithdraw={() => handleWithdraw(request.id)}
+                  withdrawPending={
+                    pendingAction?.targetId === request.id && pendingAction.kind === "withdraw"
+                  }
+                />
+              );
+            })
+          )}
+
+          {closedRequests.length > 0 ? (
+            <section className="surface-card rounded-[1.45rem] p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold tracking-[-0.02em] text-[#112317]">지난 활동</h2>
+                <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#55625a]">
+                  {closedRequests.length}
+                </span>
+              </div>
+              <div className="mt-3 space-y-2">
+                {closedRequests.map((request) => {
+                  const match = state.matches.find((item) => item.id === request.match_id);
+
+                  if (!match) {
+                    return null;
+                  }
+
+                  return (
+                    <div
+                      key={request.id}
+                      className="flex items-center justify-between gap-3 rounded-[1rem] bg-[#f4f7f3] px-4 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[#112317]">{match.title}</p>
+                        <p className="mt-1 truncate text-[12px] text-[#66736a]">{formatPrimaryMeta(match)}</p>
+                      </div>
+                      <Badge variant={getParticipationStatusTone(request.status)}>
+                        {getParticipationStatusLabel(request.status)}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+        </section>
+      ) : (
+        <section className="space-y-3">
+          {hostedMatches.length === 0 ? (
+            <section className="surface-card rounded-[1.45rem] p-5">
+              <p className="text-sm text-[#66736a]">진행 중인 모집이 없습니다.</p>
+              <Button asChild className="mt-4" size="sm">
+                <Link href="/create">용병 모집하기</Link>
+              </Button>
+            </section>
+          ) : (
+            hostedMatches.map((match) => (
+              <HostSpotCard
+                key={match.id}
+                state={state}
+                match={match}
+                requests={getInboundRequestsForMatch(state, match.id)}
+                highlighted={highlight === match.id}
+                pendingAction={pendingAction}
+                onAccept={(requestId) => handleAccept(requestId, match.id)}
+                onReject={(requestId) => handleReject(requestId, match.id)}
+                onDelete={() => handleDelete(match.id)}
+              />
+            ))
+          )}
+        </section>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createAppError, isAppError, toUserFacingError } from "@/lib/errors";
+import { normalizeContactValue } from "@/lib/contact";
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
 import { mapMatchRow } from "@/lib/supabase/mappers";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -15,8 +16,9 @@ import type { CreateMatchInput } from "@/lib/types";
 export async function createMatchAction(input: CreateMatchInput) {
   try {
     const currentProfile = await requireCurrentProfile();
+    const normalizedContactValue = normalizeContactValue(input.contact_type, input.contact_link);
 
-    if (!input.contact_link.trim()) {
+    if (!normalizedContactValue) {
       throw createAppError("CONTACT_LINK_REQUIRED");
     }
 
@@ -25,7 +27,7 @@ export async function createMatchAction(input: CreateMatchInput) {
     const payload = {
       ...input,
       creator_profile_id: currentProfile.id,
-      contact_link: input.contact_link.trim(),
+      contact_link: normalizedContactValue,
       note: input.note.trim() || null,
       status: "open" as const,
       created_at: now,

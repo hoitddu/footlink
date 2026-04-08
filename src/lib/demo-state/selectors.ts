@@ -1,4 +1,10 @@
 import { getMatchById } from "@/lib/feed";
+import {
+  buildContactHref,
+  getContactActionLabel,
+  getProfileContactValue,
+  resolveContactType,
+} from "@/lib/contact";
 import { getRegionLabel, getSkillLevelLabel } from "@/lib/constants";
 import type {
   AppNotification,
@@ -131,33 +137,56 @@ export function getParticipationSummary(request: ParticipationRequest) {
 export function getParticipationContactLink(state: DemoAppState, request: ParticipationRequest) {
   const match = getMatch(state, request.match_id);
 
-  if (!match || !["pending", "accepted", "confirmed"].includes(request.status)) {
+  if (!match || !["accepted", "confirmed"].includes(request.status)) {
     return null;
   }
 
+  const baseContactType = request.entry_channel || match.contact_type;
+
   if (request.accepted_contact_link) {
+    const contactType = resolveContactType(baseContactType, request.accepted_contact_link);
+    const href = buildContactHref(contactType, request.accepted_contact_link);
+
+    if (!href) {
+      return null;
+    }
+
     return {
-      href: request.accepted_contact_link,
-      label: "오픈채팅 열기",
+      href,
+      label: getContactActionLabel(contactType),
     };
   }
 
-  if (match.contact_type === "openchat" && match.contact_link) {
+  if (match.contact_link) {
+    const contactType = resolveContactType(baseContactType, match.contact_link);
+    const href = buildContactHref(contactType, match.contact_link);
+
+    if (!href) {
+      return null;
+    }
+
     return {
-      href: match.contact_link,
-      label: "오픈채팅 열기",
+      href,
+      label: getContactActionLabel(contactType),
     };
   }
 
   const host = getProfileById(state, request.host_profile_id);
+  const fallbackContactValue = getProfileContactValue(
+    host,
+    baseContactType === "phone" ? "phone" : "openchat",
+  );
+  const contactType = resolveContactType(baseContactType, fallbackContactValue);
 
-  if (!host?.open_chat_link) {
+  const href = buildContactHref(contactType, fallbackContactValue);
+
+  if (!href) {
     return null;
   }
 
   return {
-    href: host.open_chat_link,
-    label: "오픈채팅 열기",
+    href,
+    label: getContactActionLabel(contactType),
   };
 }
 

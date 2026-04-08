@@ -69,6 +69,8 @@ export function ProfileCompletionSheet({
         preferred_regions: profile?.preferred_regions.length ? profile.preferred_regions : [regionLabel],
         skill_level: skillLevel,
         open_chat_link: profile?.open_chat_link ?? null,
+        phone_number: profile?.phone_number ?? null,
+        default_contact_type: profile?.default_contact_type ?? null,
       });
 
       if (!isProfileComplete(savedProfile)) {

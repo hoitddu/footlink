@@ -121,7 +121,10 @@ export function KakaoPlacePicker({
   const [isMapReady, setIsMapReady] = useState(false);
   const [isSearchingPlaces, setIsSearchingPlaces] = useState(false);
   const [placeSearchError, setPlaceSearchError] = useState("");
-  const missingKakaoKeyError = !KAKAO_MAP_KEY ? "카카오 지도 키가 아직 설정되지 않았습니다." : "";
+  const [manualEntryEnabled, setManualEntryEnabled] = useState(!KAKAO_MAP_KEY);
+  const [manualPlaceName, setManualPlaceName] = useState(initialQuery);
+  const [manualAddress, setManualAddress] = useState("");
+  const missingKakaoKeyError = !KAKAO_MAP_KEY ? "카카오 지도 키가 설정되지 않았습니다." : "";
 
   useEffect(() => {
     if (!KAKAO_MAP_KEY) {
@@ -152,11 +155,27 @@ export function KakaoPlacePicker({
     script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services`;
     script.onload = handleLoad;
     script.onerror = () => {
-      setPlaceSearchError("카카오 지도를 불러오지 못했습니다.");
+      setManualEntryEnabled(true);
+      setPlaceSearchError("카카오 지도를 불러오지 못했습니다. 직접 입력으로 계속할 수 있어요.");
     };
 
     document.head.appendChild(script);
   }, []);
+
+  useEffect(() => {
+    if (!KAKAO_MAP_KEY || isMapReady || manualEntryEnabled) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setManualEntryEnabled(true);
+      setPlaceSearchError("카카오 지도가 준비되지 않았습니다. 직접 입력으로 계속할 수 있어요.");
+    }, 5000);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isMapReady, manualEntryEnabled]);
 
   useEffect(() => {
     if (!isMapReady || !mapContainerRef.current || !window.kakao?.maps) {
@@ -187,6 +206,29 @@ export function KakaoPlacePicker({
     setPlaceSearchError("");
     onSelectPlace(place);
     onOpenChange(false);
+  }
+
+  function handleManualPlaceSubmit() {
+    const name = manualPlaceName.trim();
+    const address = manualAddress.trim();
+
+    if (!name || !address) {
+      setPlaceSearchError("경기장 이름과 수원 주소를 모두 입력해 주세요.");
+      return;
+    }
+
+    if (!address.includes("수원")) {
+      setPlaceSearchError("수원 주소만 직접 입력할 수 있습니다.");
+      return;
+    }
+
+    handleSelectPlace({
+      id: `manual-${Date.now()}`,
+      name,
+      address,
+      lat: SUWON_CENTER.lat,
+      lng: SUWON_CENTER.lng,
+    });
   }
 
   function displayMarkers(results: PlaceSearchResult[]) {
@@ -240,7 +282,8 @@ export function KakaoPlacePicker({
     }
 
     if (!window.kakao?.maps?.services || !placesRef.current) {
-      setPlaceSearchError("카카오 지도가 아직 준비되지 않았습니다.");
+      setManualEntryEnabled(true);
+      setPlaceSearchError("카카오 지도가 아직 준비되지 않았습니다. 직접 입력으로 계속할 수 있어요.");
       return;
     }
 
@@ -280,7 +323,7 @@ export function KakaoPlacePicker({
     <div className="fixed inset-0 z-[80]">
       <button
         type="button"
-        aria-label="지역 검색 닫기"
+        aria-label="장소 검색 닫기"
         className="absolute inset-0 bg-[#09110c]/56 backdrop-blur-[3px]"
         onClick={() => onOpenChange(false)}
       />
@@ -310,8 +353,12 @@ export function KakaoPlacePicker({
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
               <Input
                 value={placeQuery}
-                onChange={(event) => setPlaceQuery(event.target.value)}
+                onChange={(event) => {
+                  setPlaceQuery(event.target.value);
+                  setManualPlaceName(event.target.value);
+                }}
                 className="pl-11"
+                placeholder="경기장이나 주소 검색"
                 onKeyDown={(event) => {
                   if (event.key === "Enter") {
                     event.preventDefault();
@@ -336,6 +383,32 @@ export function KakaoPlacePicker({
             <p className="mt-3 text-sm font-medium text-[#c3342b]">
               {missingKakaoKeyError || placeSearchError}
             </p>
+          ) : null}
+
+          {manualEntryEnabled ? (
+            <div className="mt-4 rounded-[1.2rem] bg-[#f4f7f3] p-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
+                Manual Entry
+              </p>
+              <div className="mt-3 space-y-3">
+                <Input
+                  value={manualPlaceName}
+                  onChange={(event) => setManualPlaceName(event.target.value)}
+                  placeholder="경기장 이름"
+                />
+                <Input
+                  value={manualAddress}
+                  onChange={(event) => setManualAddress(event.target.value)}
+                  placeholder="수원시 영통구 ..."
+                />
+                <p className="text-xs leading-5 text-[#66736a]">
+                  지도 로드가 실패해도 수원 주소를 직접 입력하면 공석 등록을 계속할 수 있습니다.
+                </p>
+                <Button type="button" className="w-full" onClick={handleManualPlaceSubmit}>
+                  직접 입력한 장소 선택
+                </Button>
+              </div>
+            </div>
           ) : null}
 
           <div className="mt-3 max-h-[13rem] space-y-2 overflow-y-auto pr-1 soft-scrollbar">

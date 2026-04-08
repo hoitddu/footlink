@@ -3,13 +3,21 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, MessageCircleMore, UserRound } from "lucide-react";
+import { MapPin, MessageCircleMore, Phone, UserRound } from "lucide-react";
 
+import { ensureAnonymousSessionAction } from "@/app/actions/auth";
 import { submitParticipationAction } from "@/app/actions/requests";
 import { BackButton } from "@/components/app/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import {
+  buildContactHref,
+  getContactActionLabel,
+  getContactBadgeLabel,
+  getContactDescription,
+  resolveContactType,
+} from "@/lib/contact";
 import { buildContextQuery, parseFeedContext } from "@/lib/context";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import {
@@ -18,13 +26,17 @@ import {
   getMatchMetaForState,
 } from "@/lib/demo-state/selectors";
 import { getUserFacingErrorMessage } from "@/lib/errors";
+import { getMatchFormatLabel } from "@/lib/match-format";
 import { isProfileComplete } from "@/lib/profiles";
 import {
+  formatDurationMinutes,
   formatDistanceValue,
   formatFee,
   formatSportType,
   formatStartAt,
+  formatTimeRange,
   formatUrgencyLabel,
+  getMatchEndDate,
 } from "@/lib/utils";
 import type { DemoAppState, Profile } from "@/lib/types";
 
@@ -94,11 +106,17 @@ function MatchDetailBody({
   const activeRequest = match
     ? getActiveParticipationForMatch(state, match.id, resolvedProfile?.id ?? "")
     : undefined;
-  const contactHref =
-    activeRequest?.accepted_contact_link ||
-    match?.contact_link ||
-    match?.organizer?.open_chat_link ||
-    null;
+  const rawContactValue = activeRequest?.accepted_contact_link || null;
+  const rawContactType = activeRequest?.entry_channel || match?.contact_type || "request_only";
+  const contactType = resolveContactType(rawContactType, rawContactValue);
+  const contactHref = buildContactHref(contactType, rawContactValue);
+  const contactActionLabel = getContactActionLabel(contactType);
+  const hasDirectContactMethod = match ? match.contact_type !== "request_only" : false;
+  const contactDescription = contactHref
+    ? getContactDescription(contactType)
+    : hasDirectContactMethod
+      ? `참여 요청이 수락되면 ${getContactBadgeLabel(match?.contact_type ?? "request_only").replace(" 가능", "")}으로 바로 연락할 수 있습니다.`
+      : getContactDescription("request_only");
 
   useEffect(() => {
     if (!hydratePersonalState) {
@@ -199,6 +217,8 @@ function MatchDetailBody({
       ? "1자리 남음"
       : `${match.remaining_slots}자리 남음`;
   const urgencyLabel = formatUrgencyLabel(match.start_at, match.minutesUntilStart);
+  const formatLabel = getMatchFormatLabel(match);
+  const endAt = getMatchEndDate(match.start_at, match.duration_minutes).toISOString();
 
   return (
     <div className="space-y-4 pb-28">
@@ -218,9 +238,14 @@ function MatchDetailBody({
           <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#445149]">
             {formatSportType(match.sport_type ?? "futsal")}
           </span>
-          {contactHref ? (
+          {formatLabel ? (
+            <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#445149]">
+              {formatLabel}
+            </span>
+          ) : null}
+          {hasDirectContactMethod ? (
             <span className="rounded-full bg-[#e7f4da] px-2.5 py-1 text-[11px] font-bold text-[#254712]">
-              오픈채팅 가능
+              {getContactBadgeLabel(match.contact_type)}
             </span>
           ) : null}
         </div>
@@ -236,18 +261,16 @@ function MatchDetailBody({
             <p className="mt-2 text-[14px] font-bold text-[#112317]">{formatStartAt(match.start_at)}</p>
           </div>
           <div className="rounded-[1.15rem] bg-[#f4f7f3] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Distance</p>
-            <p className="mt-2 text-[14px] font-bold text-[#112317]">
-              {formatDistanceValue(match.distanceKm)}
-            </p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">End</p>
+            <p className="mt-2 text-[14px] font-bold text-[#112317]">{formatStartAt(endAt)}</p>
+          </div>
+          <div className="rounded-[1.15rem] bg-[#f4f7f3] px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Duration</p>
+            <p className="mt-2 text-[14px] font-bold text-[#112317]">{formatDurationMinutes(match.duration_minutes)}</p>
           </div>
           <div className="rounded-[1.15rem] bg-[#f4f7f3] px-4 py-3">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Fee</p>
             <p className="mt-2 text-[14px] font-bold text-[#112317]">{formatFee(match.fee)}</p>
-          </div>
-          <div className="rounded-[1.15rem] bg-[#f4f7f3] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Spot</p>
-            <p className="mt-2 text-[14px] font-bold text-[#112317]">{spotLabel}</p>
           </div>
         </div>
 
@@ -256,7 +279,9 @@ function MatchDetailBody({
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#112317]" />
             <div>
               <p className="text-[14px] font-bold text-[#112317]">{match.address}</p>
-              <p className="mt-1 text-[12px] text-[#66736a]">{match.region_label}</p>
+              <p className="mt-1 text-[12px] text-[#66736a]">
+                {match.region_label} · {formatDistanceValue(match.distanceKm)}
+              </p>
             </div>
           </div>
         </div>
@@ -277,9 +302,7 @@ function MatchDetailBody({
           <div className="min-w-0">
             <p className="text-[14px] font-bold text-[#112317]">{match.organizer?.nickname ?? "FootLink Host"}</p>
             <p className="mt-1 text-[13px] leading-5 text-[#66736a]">
-              {contactHref
-                ? "참여 후 바로 연락할 수 있는 링크가 준비되어 있습니다."
-                : "앱에서 요청을 보내면 호스트가 확인한 뒤 상태가 업데이트됩니다."}
+              {contactDescription}
             </p>
           </div>
         </div>
@@ -295,12 +318,12 @@ function MatchDetailBody({
         {contactHref ? (
           <a
             href={contactHref}
-            target="_blank"
-            rel="noreferrer"
+            target={contactType === "openchat" ? "_blank" : undefined}
+            rel={contactType === "openchat" ? "noreferrer" : undefined}
             className="flex h-14 min-w-[9.5rem] items-center justify-center gap-2 rounded-[1.1rem] bg-[#eef2ee] px-4 text-[14px] font-bold text-[#112317] transition active:scale-95"
           >
-            <MessageCircleMore className="h-4 w-4" />
-            연락하기
+            {contactType === "phone" ? <Phone className="h-4 w-4" /> : <MessageCircleMore className="h-4 w-4" />}
+            {contactActionLabel}
           </a>
         ) : null}
 
@@ -333,13 +356,15 @@ function MatchDetailBody({
                 참여 요청을 전송했어요
               </SheetTitle>
               <SheetDescription className="mt-2 text-sm leading-6 text-[#66736a]">
-                내 참여에서 상태를 볼 수 있고, 연락 링크가 있으면 바로 이어서 대화할 수 있습니다.
+                내 참여에서 상태를 볼 수 있고, 연락 정보가 있으면 바로 이어서 연락할 수 있습니다.
               </SheetDescription>
             </div>
 
             <div className="rounded-[1.25rem] bg-[#f4f7f3] px-4 py-4">
               <p className="text-sm font-bold text-[#112317]">{match.title}</p>
-              <p className="mt-1 text-sm text-[#66736a]">{formatStartAt(match.start_at)}</p>
+              <p className="mt-1 text-sm text-[#66736a]">
+                {formatStartAt(match.start_at)} · {formatTimeRange(match.start_at, match.duration_minutes)}
+              </p>
             </div>
 
             <div className="flex gap-2">
@@ -348,8 +373,12 @@ function MatchDetailBody({
               </Button>
               {contactHref ? (
                 <Button asChild className="flex-1" size="lg">
-                  <a href={contactHref} target="_blank" rel="noreferrer">
-                    오픈채팅 열기
+                  <a
+                    href={contactHref}
+                    target={contactType === "openchat" ? "_blank" : undefined}
+                    rel={contactType === "openchat" ? "noreferrer" : undefined}
+                  >
+                    {contactActionLabel}
                   </a>
                 </Button>
               ) : (
@@ -429,8 +458,7 @@ export function MatchDetailScreen({
         profileCompletionEnabled
         hydratePersonalState={hydratePersonalState}
         onSubmitParticipation={async () => {
-          const { ensureAnonymousSession } = await import("@/lib/supabase/client");
-          await ensureAnonymousSession();
+          await ensureAnonymousSessionAction();
           const request = await submitParticipationAction({
             matchId,
             requestedCount: 1,

@@ -176,7 +176,7 @@ export function HostListingCard({
                 {canConfirm ? (
                   <div className="mt-4 space-y-2">
                     <p className="text-sm text-muted">
-                      오픈채팅에서 이야기한 뒤 최종 참가가 맞으면 확정하세요.
+                      연락 후 최종 참가가 맞으면 확정하세요.
                     </p>
                     <Button
                       className="h-9 w-full rounded-[0.95rem] px-3 text-[13px] shadow-[0_12px_24px_rgba(6,21,12,0.14)]"

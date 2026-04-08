@@ -1,5 +1,5 @@
 import { REGION_OPTIONS, getRegionLabel } from "@/lib/constants";
-import type { FeedContext, FeedSort, FeedTimeWindow, SportType } from "@/lib/types";
+import type { FeedContext, FeedSort, FeedSportFilter, FeedTimeWindow } from "@/lib/types";
 
 function parseNumber(value?: string) {
   if (!value) {
@@ -15,19 +15,37 @@ function parseBoolean(value?: string) {
 }
 
 function normalizeWindow(value?: string): FeedTimeWindow {
-  if (value === "now" || value === "today" || value === "tomorrow" || value === "weekend") {
+  if (value === "all" || value === "now" || value === "today" || value === "tomorrow" || value === "weekend") {
     return value;
   }
 
-  return "today";
+  return "all";
 }
 
-function normalizeSport(value?: string): SportType {
-  return value === "soccer" ? "soccer" : "futsal";
+function normalizeSport(value?: string): FeedSportFilter {
+  if (value === "all" || value === "soccer" || value === "futsal") {
+    return value;
+  }
+
+  return "futsal";
 }
 
 function normalizeSort(value?: string): FeedSort {
-  return value === "distance" ? "distance" : "urgent";
+  if (
+    value === "recommended" ||
+    value === "time" ||
+    value === "distance" ||
+    value === "fee" ||
+    value === "closing"
+  ) {
+    return value;
+  }
+
+  if (value === "urgent") {
+    return "recommended";
+  }
+
+  return "recommended";
 }
 
 export function parseFeedContext(searchParams: Record<string, string | undefined>) {
@@ -39,7 +57,7 @@ export function parseFeedContext(searchParams: Record<string, string | undefined
   const context: FeedContext = {
     sport: normalizeSport(searchParams.sport),
     window: normalizeWindow(searchParams.window),
-    radiusKm: parseNumber(searchParams.radiusKm) ?? 5,
+    radiusKm: parseNumber(searchParams.radiusKm),
     onlyLastSpot: parseBoolean(searchParams.onlyLastSpot),
     sort: normalizeSort(searchParams.sort),
     regionSlug,
@@ -65,7 +83,6 @@ export function parseFeedContext(searchParams: Record<string, string | undefined
 export function buildContextQuery(context: FeedContext) {
   const params = new URLSearchParams({
     sport: context.sport,
-    window: context.window,
     sort: context.sort,
   });
 
@@ -73,12 +90,8 @@ export function buildContextQuery(context: FeedContext) {
     params.set("region", context.regionSlug);
   }
 
-  if (typeof context.radiusKm === "number") {
-    params.set("radiusKm", String(context.radiusKm));
-  }
-
-  if (context.onlyLastSpot) {
-    params.set("onlyLastSpot", "1");
+  if (context.selectedDateFrom) {
+    params.set("date", context.selectedDateFrom);
   }
 
   if (typeof context.lat === "number" && typeof context.lng === "number") {

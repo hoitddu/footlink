@@ -1,20 +1,70 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Clock3, MapPin, SlidersHorizontal } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { DateFilterBar } from "@/components/feed/date-filter-bar";
 import { MatchCard } from "@/components/feed/match-card";
-import { Button } from "@/components/ui/button";
 import { buildContextQuery } from "@/lib/context";
-import { RADIUS_OPTIONS, SPORT_OPTIONS, TIME_WINDOW_OPTIONS } from "@/lib/constants";
+import { FEED_SPORT_OPTIONS } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
-import { getFeedMatches, getFeedSections } from "@/lib/feed";
-import type { FeedContext, FeedDataSource, FeedSort } from "@/lib/types";
+import { getFeedMatches } from "@/lib/feed";
+import type {
+  FeedContext,
+  FeedDataSource,
+  FeedDateFilterItem,
+  FeedSort,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function FilterChip({
+const SORT_OPTIONS: Array<{ value: FeedSort; label: string }> = [
+  { value: "recommended", label: "추천" },
+  { value: "time", label: "곧 시작" },
+  { value: "distance", label: "이동시간" },
+  { value: "fee", label: "참가비" },
+  { value: "closing", label: "마감임박" },
+];
+
+function formatDateId(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function buildDateFilterItems(referenceNow: number, selectedDate?: string) {
+  const base = new Date(referenceNow);
+  const items: FeedDateFilterItem[] = [{ id: "all", label: "전체", dayOfWeek: "보기" }];
+
+  for (let offset = 0; offset < 7; offset += 1) {
+    const current = new Date(base);
+    current.setDate(base.getDate() + offset);
+
+    items.push({
+      id: formatDateId(current),
+      label: `${current.getMonth() + 1}.${current.getDate()}`,
+      dayOfWeek: ["일", "월", "화", "수", "목", "금", "토"][current.getDay()] ?? "",
+      fullDate: formatDateId(current),
+    });
+  }
+
+  if (selectedDate && !items.some((item) => item.id === selectedDate)) {
+    const extraDate = new Date(`${selectedDate}T12:00:00+09:00`);
+
+    items.push({
+      id: selectedDate,
+      label: `${extraDate.getMonth() + 1}.${extraDate.getDate()}`,
+      dayOfWeek: ["일", "월", "화", "수", "목", "금", "토"][extraDate.getDay()] ?? "",
+      fullDate: selectedDate,
+    });
+  }
+
+  return items;
+}
+
+function FilterPill({
   active,
   label,
   onClick,
@@ -28,52 +78,14 @@ function FilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-full px-4 py-2 text-[13px] font-bold transition active:scale-95",
-        active ? "kinetic-gradient text-white shadow-[0_10px_24px_rgba(6,21,12,0.14)]" : "bg-[#eef2ee] text-[#334139]",
+        "min-h-10 rounded-full px-3.5 text-[12px] font-bold transition active:scale-[0.985]",
+        active
+          ? "bg-[#06150c] text-white shadow-[0_14px_24px_rgba(6,21,12,0.16)]"
+          : "bg-white/86 text-[#334139] shadow-[0_8px_16px_rgba(10,18,13,0.04)] ring-1 ring-[#e7ece7]",
       )}
     >
       {label}
     </button>
-  );
-}
-
-function SectionBlock({
-  title,
-  description,
-  items,
-  contextQuery,
-  empty,
-}: {
-  title: string;
-  description: string;
-  items: ReturnType<typeof getFeedMatches>;
-  contextQuery: string;
-  empty: string;
-}) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-end justify-between gap-3 px-1">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Open Spots</p>
-          <h2 className="mt-1 text-[1.35rem] font-bold tracking-[-0.04em] text-[#112317]">{title}</h2>
-        </div>
-        <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#55625a]">
-          {items.length}
-        </span>
-      </div>
-      <p className="px-1 text-[13px] leading-5 text-[#66736a]">{description}</p>
-      {items.length > 0 ? (
-        <div className="space-y-3">
-          {items.map((match) => (
-            <MatchCard key={match.id} match={match} detailHref={`/match/${match.id}?${contextQuery}`} />
-          ))}
-        </div>
-      ) : (
-        <div className="surface-card rounded-[1.35rem] px-4 py-5 text-sm font-medium text-[#66736a]">
-          {empty}
-        </div>
-      )}
-    </section>
   );
 }
 
@@ -91,13 +103,15 @@ function FeedScreenView({
   const [sort, setSort] = useState<FeedSort>(initialContext.sort);
   const referenceNow = initialReferenceNow;
   const resolvedContext = useMemo(() => ({ ...context, sort }), [context, sort]);
-  const contextQuery = buildContextQuery(resolvedContext);
-
   const items = useMemo(
     () => getFeedMatches(source, resolvedContext, sort, referenceNow),
     [referenceNow, resolvedContext, sort, source],
   );
-  const sections = useMemo(() => getFeedSections(items, referenceNow), [items, referenceNow]);
+  const selectedDateId = resolvedContext.selectedDateFrom ?? "all";
+  const dateItems = useMemo(
+    () => buildDateFilterItems(referenceNow, resolvedContext.selectedDateFrom),
+    [referenceNow, resolvedContext.selectedDateFrom],
+  );
 
   function applyContext(next: Partial<FeedContext>, nextSort = sort) {
     const resolvedNext = { ...resolvedContext, ...next, sort: nextSort };
@@ -106,138 +120,88 @@ function FeedScreenView({
     router.replace(`/home?${buildContextQuery(resolvedNext)}`, { scroll: false });
   }
 
-  const emptyMessage =
-    resolvedContext.sport === "soccer"
-      ? "지금 조건에 맞는 축구 공석이 없습니다. 풋살로 바꾸거나 시간을 넓혀 보세요."
-      : "지금 조건에 맞는 풋살 공석이 없습니다. 거리나 시간을 조금 넓혀 보세요.";
-
   return (
-    <div className="space-y-4 pb-24">
-      <section className="surface-card rounded-[1.7rem] p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">FootLink</p>
-            <h1 className="mt-1 text-[1.8rem] font-bold tracking-[-0.05em] text-[#112317]">
-              수원 용병 레이더
-            </h1>
+    <div className="pb-24">
+      <div className="-mx-4 sticky top-0 z-30 bg-[linear-gradient(180deg,rgba(250,251,249,0.98)_0%,rgba(250,251,249,0.94)_82%,rgba(250,251,249,0)_100%)] px-4 pb-2.5 pt-1 backdrop-blur-xl">
+        <div className="px-1">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="font-display text-[1.08rem] font-bold tracking-[0.18em] text-[#112317]">
+                FOOTLINK
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/84 px-2.5 py-1 text-[11px] font-semibold text-[#55625a] ring-1 ring-[#e9eeea]">
+                <MapPin className="h-3.5 w-3.5" />
+                수원
+              </span>
+            </div>
           </div>
-          <div className="rounded-full bg-[#eef2ee] px-3 py-1.5 text-[11px] font-bold text-[#55625a]">
-            {resolvedContext.regionLabel}
+
+          <div className="mt-2.5 flex gap-2">
+            {FEED_SPORT_OPTIONS.map((option) => (
+              <FilterPill
+                key={option.value}
+                active={resolvedContext.sport === option.value}
+                label={option.label}
+                onClick={() => applyContext({ sport: option.value })}
+              />
+            ))}
           </div>
-        </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {SPORT_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => applyContext({ sport: option.value })}
-              className={cn(
-                "min-h-12 rounded-[1rem] px-4 py-3 text-[15px] font-bold transition active:scale-[0.98]",
-                resolvedContext.sport === option.value ? "kinetic-gradient text-white" : "bg-[#eef2ee] text-[#223128]",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-4 flex items-center gap-2 text-[13px] font-semibold text-[#66736a]">
-          <MapPin className="h-3.5 w-3.5" />
-          <span>수원 기준</span>
-          <span className="text-[#c8cec9]">·</span>
-          <Clock3 className="h-3.5 w-3.5" />
-          <span>{items.length}개 공석</span>
-        </div>
-      </section>
-
-      <section className="surface-card rounded-[1.55rem] p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Filters</p>
-            <h2 className="mt-1 text-[1.1rem] font-bold tracking-[-0.04em] text-[#112317]">
-              빠른 참여 조건
-            </h2>
+          <div className="-mx-4 mt-1.5 overflow-x-auto px-4 no-scrollbar">
+            <div className="flex min-w-max gap-2">
+              {SORT_OPTIONS.map((option) => (
+                <FilterPill
+                  key={option.value}
+                  active={sort === option.value}
+                  label={option.label}
+                  onClick={() => applyContext({}, option.value)}
+                />
+              ))}
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setSort((current) => (current === "urgent" ? "distance" : "urgent"))}
-            className="flex h-11 items-center gap-2 rounded-full bg-[#eef2ee] px-4 text-[12px] font-bold text-[#112317] transition active:scale-95"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {sort === "urgent" ? "급한 순" : "가까운 순"}
-          </button>
-        </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {TIME_WINDOW_OPTIONS.map((option) => (
-            <FilterChip
-              key={option.value}
-              active={resolvedContext.window === option.value}
-              label={option.label}
-              onClick={() => applyContext({ window: option.value })}
+          <div className="mt-2">
+            <DateFilterBar
+              items={dateItems}
+              selectedId={selectedDateId}
+              onSelect={(item) => {
+                if (item.id === "all") {
+                  applyContext({
+                    selectedDateFrom: undefined,
+                    selectedDateTo: undefined,
+                    selectedDateLabel: undefined,
+                    window: "all",
+                  });
+                  return;
+                }
+
+                applyContext({
+                  selectedDateFrom: item.fullDate,
+                  selectedDateTo: item.fullDate,
+                  selectedDateLabel: `${item.label} ${item.dayOfWeek}`,
+                  window: "all",
+                });
+              }}
             />
-          ))}
+          </div>
         </div>
+      </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {RADIUS_OPTIONS.map((option) => (
-            <FilterChip
-              key={option.value}
-              active={(resolvedContext.radiusKm ?? 5) === option.value}
-              label={option.label}
-              onClick={() => applyContext({ radiusKm: option.value })}
+      <div className="space-y-2">
+        {items.length > 0 ? (
+          items.map((match) => (
+            <MatchCard
+              key={match.id}
+              match={match}
+              showDate={selectedDateId === "all"}
+              detailHref={`/match/${match.id}?${buildContextQuery(resolvedContext)}`}
             />
-          ))}
-          <FilterChip
-            active={resolvedContext.onlyLastSpot}
-            label="1자리만"
-            onClick={() => applyContext({ onlyLastSpot: !resolvedContext.onlyLastSpot })}
-          />
-        </div>
-      </section>
-
-      {resolvedContext.window === "today" || resolvedContext.window === "now" ? (
-        <>
-          <SectionBlock
-            title="지금 급한 공석"
-            description="곧 시작하거나 마지막 자리가 남은 경기부터 보여줍니다."
-            items={sections.immediate}
-            contextQuery={contextQuery}
-            empty={emptyMessage}
-          />
-          <SectionBlock
-            title="오늘 늦은 경기"
-            description="오늘 안에 참여할 수 있는 다음 후보입니다."
-            items={sections.laterToday}
-            contextQuery={contextQuery}
-            empty="오늘 늦은 시간 공석은 아직 없습니다."
-          />
-          <SectionBlock
-            title="이번 주말"
-            description="오늘 조건이 비어 있으면 주말 공석까지 같이 확인해 보세요."
-            items={sections.weekend}
-            contextQuery={contextQuery}
-            empty="이번 주말 조건에 맞는 공석은 아직 없습니다."
-          />
-        </>
-      ) : (
-        <SectionBlock
-          title={resolvedContext.window === "tomorrow" ? "내일 공석" : "주말 공석"}
-          description="선택한 시간대에 맞는 공석만 모아 보여줍니다."
-          items={items}
-          contextQuery={contextQuery}
-          empty={emptyMessage}
-        />
-      )}
-
-      <div className="surface-card rounded-[1.35rem] px-4 py-4">
-        <p className="text-[13px] font-medium leading-6 text-[#66736a]">
-          직접 사람을 구해야 한다면 공석을 올리고 빠르게 연락을 받아보세요.
-        </p>
-        <Button asChild className="mt-3" size="sm">
-          <Link href="/create">공석 올리기</Link>
-        </Button>
+          ))
+        ) : (
+          <div className="surface-card rounded-[1.25rem] px-4 py-5 text-[14px] font-medium leading-6 text-[#66736a]">
+            해당 조건에 맞는 용병 공석이 없어요. 날짜나 종목을 바꿔 다시 확인해보세요.
+          </div>
+        )}
       </div>
     </div>
   );

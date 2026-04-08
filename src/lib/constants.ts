@@ -1,4 +1,4 @@
-import type { FeedTimeWindow, RegionOption, SkillLevel, SportType } from "@/lib/types";
+import type { FeedSportFilter, FeedTimeWindow, RegionOption, SkillLevel, SportType } from "@/lib/types";
 
 export const AGE_BANDS = [
   { value: 10, label: "10대" },
@@ -17,12 +17,19 @@ export const SPORT_OPTIONS: Array<{ value: SportType; label: string }> = [
   { value: "soccer", label: "축구" },
 ];
 
+export const FEED_SPORT_OPTIONS: Array<{ value: FeedSportFilter; label: string }> = [
+  { value: "all", label: "전체" },
+  { value: "futsal", label: "풋살" },
+  { value: "soccer", label: "축구" },
+];
+
 export const SPORT_LABELS: Record<SportType, string> = {
   futsal: "풋살",
   soccer: "축구",
 };
 
 export const TIME_WINDOW_OPTIONS: Array<{ value: FeedTimeWindow; label: string }> = [
+  { value: "all", label: "전체" },
   { value: "now", label: "지금" },
   { value: "today", label: "오늘" },
   { value: "tomorrow", label: "내일" },
@@ -30,6 +37,7 @@ export const TIME_WINDOW_OPTIONS: Array<{ value: FeedTimeWindow; label: string }
 ];
 
 export const TIME_WINDOW_LABELS: Record<FeedTimeWindow, string> = {
+  all: "전체",
   now: "지금",
   today: "오늘",
   tomorrow: "내일",

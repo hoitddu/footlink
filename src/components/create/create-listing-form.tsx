@@ -1,25 +1,41 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { CalendarDays, ChevronRight, MapPin, MessageCircleMore, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CalendarDays, ChevronRight, MapPin, MessageCircleMore, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { ensureAnonymousSessionAction } from "@/app/actions/auth";
+import { createMatchAction } from "@/app/actions/matches";
 import type { PlaceSearchResult } from "@/components/create/kakao-place-picker";
 import { KakaoPlacePicker } from "@/components/create/kakao-place-picker";
 import { BackButton } from "@/components/app/back-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import type { AppDataSource } from "@/lib/app-config";
+import {
+  DIRECT_CONTACT_OPTIONS,
+  getContactFieldLabel,
+  getContactFieldPlaceholder,
+  getProfileContactValue,
+  getProfileDefaultContactType,
+  normalizePhoneNumber,
+} from "@/lib/contact";
 import { SPORT_OPTIONS } from "@/lib/constants";
 import { getUserFacingErrorMessage, requiresProfileSetup } from "@/lib/errors";
 import { useDemoApp } from "@/lib/demo-state/provider";
+import { formatMatchFormatLabel } from "@/lib/match-format";
 import { isProfileComplete } from "@/lib/profiles";
-import { haversineDistance } from "@/lib/utils";
-import type { CreateMatchInput, Profile, SportType } from "@/lib/types";
-import { createMatchAction } from "@/app/actions/matches";
+import { formatDurationMinutes, formatTimeRange, haversineDistance } from "@/lib/utils";
+import type {
+  CreateMatchInput,
+  DirectContactType,
+  FutsalFormatOption,
+  Profile,
+  SportType,
+} from "@/lib/types";
 
 const ProfileCompletionSheet = dynamic(
   () =>
@@ -30,6 +46,11 @@ const ProfileCompletionSheet = dynamic(
 );
 
 const SUWON_CENTER = { lat: 37.2636, lng: 127.0286 };
+const QUICK_DURATION_OPTIONS = [60, 120, 180] as const;
+const DURATION_HOUR_OPTIONS = [0, 1, 2, 3, 4, 5] as const;
+const DURATION_MINUTE_OPTIONS = [0, 30] as const;
+const FUTSAL_FORMAT_OPTIONS: FutsalFormatOption[] = ["4vs4", "5vs5", "6vs6"];
+const WHEEL_ITEM_HEIGHT = 44;
 
 function getDefaultDate() {
   return new Date().toISOString().slice(0, 10);
@@ -41,6 +62,126 @@ function isPlaceInSuwon(place: PlaceSearchResult) {
   }
 
   return haversineDistance(SUWON_CENTER.lat, SUWON_CENTER.lng, place.lat, place.lng) <= 18;
+}
+
+function splitDuration(durationMinutes: number) {
+  return {
+    hours: Math.floor(durationMinutes / 60),
+    minutes: durationMinutes % 60,
+  };
+}
+
+function snapDurationMinutes(minutes: number) {
+  if (DURATION_MINUTE_OPTIONS.includes(minutes as (typeof DURATION_MINUTE_OPTIONS)[number])) {
+    return minutes;
+  }
+
+  return DURATION_MINUTE_OPTIONS.reduce((closest, option) =>
+    Math.abs(option - minutes) < Math.abs(closest - minutes) ? option : closest,
+  );
+}
+
+function formatFeeLabel(value: number) {
+  return `${value.toLocaleString("ko-KR")}원`;
+}
+
+function DurationWheelColumn({
+  label,
+  options,
+  value,
+  onChange,
+  formatValue,
+}: {
+  label: string;
+  options: readonly number[];
+  value: number;
+  onChange: (value: number) => void;
+  formatValue: (value: number) => string;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const scrollTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const container = containerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const selectedIndex = options.indexOf(value);
+
+    if (selectedIndex === -1) {
+      return;
+    }
+
+    container.scrollTo({
+      top: selectedIndex * WHEEL_ITEM_HEIGHT,
+      behavior: "auto",
+    });
+  }, [options, value]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimerRef.current) {
+        window.clearTimeout(scrollTimerRef.current);
+      }
+    };
+  }, []);
+
+  function commitScrollSelection() {
+    const container = containerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const index = Math.max(0, Math.min(options.length - 1, Math.round(container.scrollTop / WHEEL_ITEM_HEIGHT)));
+    const nextValue = options[index];
+
+    container.scrollTo({
+      top: index * WHEEL_ITEM_HEIGHT,
+      behavior: "smooth",
+    });
+
+    if (nextValue !== value) {
+      onChange(nextValue);
+    }
+  }
+
+  return (
+    <div className="relative flex-1">
+      <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">{label}</p>
+      <div className="pointer-events-none absolute inset-x-2 top-[4.15rem] h-11 rounded-[0.95rem] bg-[#eef2ee] ring-1 ring-[#dfe5df]" />
+      <div
+        ref={containerRef}
+        className="no-scrollbar h-[13.2rem] overflow-y-auto py-[4.4rem] [scroll-snap-type:y_mandatory]"
+        onScroll={() => {
+          if (scrollTimerRef.current) {
+            window.clearTimeout(scrollTimerRef.current);
+          }
+
+          scrollTimerRef.current = window.setTimeout(commitScrollSelection, 90);
+        }}
+      >
+        {options.map((option) => {
+          const active = option === value;
+
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => onChange(option)}
+              className={`flex h-11 w-full snap-center items-center justify-center text-center text-[1rem] font-bold transition ${
+                active ? "text-[#112317]" : "text-[#9aa39c]"
+              }`}
+            >
+              {formatValue(option)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function CreateListingFormBody({
@@ -60,11 +201,18 @@ function CreateListingFormBody({
   const [neededCount, setNeededCount] = useState(1);
   const [date, setDate] = useState(getDefaultDate);
   const [time, setTime] = useState("20:00");
+  const [durationMinutes, setDurationMinutes] = useState(120);
+  const [isCustomDuration, setIsCustomDuration] = useState(false);
+  const [durationPickerOpen, setDurationPickerOpen] = useState(false);
+  const [durationPickerHours, setDurationPickerHours] = useState(2);
+  const [durationPickerMinutes, setDurationPickerMinutes] = useState(0);
+  const [futsalFormat, setFutsalFormat] = useState<FutsalFormatOption>("5vs5");
   const [placeQuery, setPlaceQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceSearchResult | null>(null);
   const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
-  const [fee, setFee] = useState("10000");
-  const [contactLink, setContactLink] = useState("");
+  const [fee, setFee] = useState(10000);
+  const [contactType, setContactType] = useState<DirectContactType>("openchat");
+  const [contactValue, setContactValue] = useState("");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -94,6 +242,48 @@ function CreateListingFormBody({
     };
   }, [currentProfile, shouldLoadCurrentProfile]);
 
+  useEffect(() => {
+    if (!durationPickerOpen) {
+      return;
+    }
+
+    const { hours, minutes } = splitDuration(durationMinutes);
+    setDurationPickerHours(hours);
+    setDurationPickerMinutes(snapDurationMinutes(minutes));
+  }, [durationMinutes, durationPickerOpen]);
+
+  useEffect(() => {
+    const nextType = getProfileDefaultContactType(resolvedProfile);
+    setContactType(nextType);
+    setContactValue(getProfileContactValue(resolvedProfile, nextType));
+  }, [resolvedProfile]);
+
+  function applyQuickDuration(duration: (typeof QUICK_DURATION_OPTIONS)[number]) {
+    setDurationMinutes(duration);
+    setIsCustomDuration(false);
+  }
+
+  function applyCustomDuration() {
+    const nextDuration = durationPickerHours * 60 + durationPickerMinutes;
+
+    if (nextDuration <= 0) {
+      return;
+    }
+
+    setDurationMinutes(nextDuration);
+    setIsCustomDuration(!QUICK_DURATION_OPTIONS.includes(nextDuration as (typeof QUICK_DURATION_OPTIONS)[number]));
+    setDurationPickerOpen(false);
+  }
+
+  function adjustFee(delta: number) {
+    setFee((currentFee) => Math.max(0, currentFee + delta));
+  }
+
+  function handleContactTypeChange(nextType: DirectContactType) {
+    setContactType(nextType);
+    setContactValue(getProfileContactValue(resolvedProfile, nextType));
+  }
+
   async function submitListing() {
     setError("");
 
@@ -107,8 +297,11 @@ function CreateListingFormBody({
       return;
     }
 
-    if (!contactLink.trim()) {
-      setError("오픈채팅 또는 연락 링크를 입력해 주세요.");
+    const normalizedContactValue =
+      contactType === "phone" ? normalizePhoneNumber(contactValue) : contactValue.trim();
+
+    if (!normalizedContactValue) {
+      setError("연락 정보를 입력해 주세요.");
       return;
     }
 
@@ -123,6 +316,7 @@ function CreateListingFormBody({
     try {
       const createdMatch = await onCreateListing({
         sport_type: sport,
+        futsal_format: sport === "futsal" ? futsalFormat : null,
         mode: "solo",
         listing_type: "mercenary",
         title: selectedPlace.name,
@@ -131,14 +325,15 @@ function CreateListingFormBody({
         lat: selectedPlace.lat,
         lng: selectedPlace.lng,
         start_at: `${date}T${time}:00`,
-        fee: Number(fee || 0),
+        duration_minutes: durationMinutes,
+        fee,
         total_slots: neededCount,
         remaining_slots: neededCount,
         min_group_size: 1,
         max_group_size: 1,
         skill_level: resolvedProfile?.skill_level ?? "mid",
-        contact_type: "openchat",
-        contact_link: contactLink.trim(),
+        contact_type: contactType,
+        contact_link: normalizedContactValue,
         note: note.trim(),
       });
 
@@ -160,34 +355,23 @@ function CreateListingFormBody({
   }
 
   return (
-    <div className="space-y-4 pb-28">
-      <section className="surface-card rounded-[1.7rem] p-4">
+    <div className="space-y-3.5 pb-28">
+      <section className="surface-card rounded-[1.55rem] px-4 py-3.5">
         <div className="flex items-center justify-between">
           <BackButton href="/home" ariaLabel="홈으로 돌아가기" />
           <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
-          <span className="rounded-full bg-[#eef2ee] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#66736a]">
-            Host
-          </span>
-        </div>
-
-        <div className="mt-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Open Spot</p>
-          <h1 className="mt-2 text-[1.8rem] font-bold tracking-[-0.05em] text-[#112317]">부족 인원 바로 채우기</h1>
-          <p className="mt-2 text-[13px] leading-6 text-[#66736a]">
-            지금 비는 자리를 빠르게 채우기 위한 최소 정보만 입력하세요.
-          </p>
+          <span className="block h-11 w-11" aria-hidden="true" />
         </div>
       </section>
 
-      <section className="surface-card rounded-[1.55rem] p-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Sport</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
+      <section className="surface-card rounded-[1.55rem] p-3.5">
+        <div className="grid grid-cols-2 gap-2">
           {SPORT_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => setSport(option.value)}
-              className={`min-h-12 rounded-[1rem] px-4 py-3 text-[15px] font-bold transition active:scale-[0.98] ${
+              className={`min-h-11 rounded-[0.95rem] px-4 py-2.5 text-[15px] font-bold transition active:scale-[0.98] ${
                 sport === option.value ? "kinetic-gradient text-white" : "bg-[#eef2ee] text-[#223128]"
               }`}
             >
@@ -196,13 +380,31 @@ function CreateListingFormBody({
           ))}
         </div>
 
-        <div className="mt-4 rounded-[1.2rem] bg-[#f4f7f3] px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-[13px] font-semibold text-[#445149]">
-              <Users className="h-4 w-4 text-[#112317]" />
-              <span>부족 인원</span>
+        {sport === "futsal" ? (
+          <div className="mt-2.5 rounded-[1.1rem] bg-[#f4f7f3] px-2.5 py-2.5">
+            <div className="flex items-center justify-center gap-2.5">
+              {FUTSAL_FORMAT_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setFutsalFormat(option)}
+                  className={`min-w-[4.7rem] rounded-full px-3 py-2.5 text-[14px] font-bold transition active:scale-95 ${
+                    futsalFormat === option
+                      ? "kinetic-gradient text-white"
+                      : "bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]"
+                  }`}
+                >
+                  {formatMatchFormatLabel(option)}
+                </button>
+              ))}
             </div>
-            <div className="flex items-center gap-2">
+          </div>
+        ) : null}
+
+        <div className="mt-2.5">
+          <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">모집 인원</p>
+          <div className="rounded-[1.1rem] bg-[#f4f7f3] px-4 py-2.5">
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
               <button
                 type="button"
                 onClick={() => setNeededCount((count) => Math.max(1, count - 1))}
@@ -210,8 +412,9 @@ function CreateListingFormBody({
               >
                 -
               </button>
-              <div className="min-w-[4rem] text-center text-[1.75rem] font-bold tracking-[-0.06em] text-[#112317]">
-                {neededCount}
+              <div className="flex items-center justify-center gap-0.5 text-center">
+                <span className="text-[1.5rem] font-bold tracking-[-0.05em] text-[#112317]">{neededCount}</span>
+                <span className="text-[1.5rem] font-bold tracking-[-0.05em] text-[#112317]">명</span>
               </div>
               <button
                 type="button"
@@ -223,94 +426,161 @@ function CreateListingFormBody({
             </div>
           </div>
         </div>
+
+        <div className="mt-2">
+          <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">1인 참가비</p>
+          <div className="rounded-[1.1rem] bg-[#f4f7f3] px-4 py-2.5">
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+              <button
+                type="button"
+                onClick={() => adjustFee(-1000)}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)] transition active:scale-95"
+              >
+                -
+              </button>
+              <div className="flex items-center justify-center text-center">
+                <span className="text-[1.5rem] font-bold tracking-[-0.05em] text-[#112317]">{formatFeeLabel(fee)}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => adjustFee(1000)}
+                className="kinetic-gradient flex h-10 w-10 items-center justify-center rounded-full text-white transition active:scale-95"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section className="surface-card rounded-[1.55rem] p-4">
-        <div className="grid gap-4">
-          <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">시간</span>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
-                <Input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="pl-10" />
-              </div>
-              <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} />
+      <section className="surface-card rounded-[1.55rem] p-3.5">
+        <div className="grid gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative">
+              <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+              <Input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                className="h-11 rounded-[1rem] pl-10"
+              />
             </div>
-          </label>
+            <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} className="h-11 rounded-[1rem]" />
+          </div>
 
           <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">경기시간</span>
+              <p className="text-[11px] font-semibold text-[#66736a]">
+                {formatTimeRange(`${date}T${time}:00`, durationMinutes)}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {QUICK_DURATION_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => applyQuickDuration(option)}
+                  className={`rounded-full px-3.5 py-2 text-[12px] font-bold transition active:scale-95 ${
+                    durationMinutes === option && !isCustomDuration
+                      ? "kinetic-gradient text-white"
+                      : "bg-[#eef2ee] text-[#223128]"
+                  }`}
+                >
+                  {formatDurationMinutes(option)}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setDurationPickerOpen(true)}
+                className={`rounded-full px-3.5 py-2 text-[12px] font-bold transition active:scale-95 ${
+                  isCustomDuration
+                    ? "kinetic-gradient text-white"
+                    : "bg-[#eef2ee] text-[#223128]"
+                }`}
+              >
+                {isCustomDuration ? formatDurationMinutes(durationMinutes) : "직접입력"}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">경기장</span>
             <button
               type="button"
               onClick={() => setIsPlacePickerOpen(true)}
-              className="flex min-h-14 w-full items-center justify-between rounded-[1rem] bg-[#eef2ee] px-4 py-3 text-left transition active:scale-[0.985]"
+              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-[1rem] bg-[#eef2ee] px-4 py-2.5 text-left transition active:scale-[0.985]"
             >
-              <div className="min-w-0">
-                <p className="truncate text-[14px] font-bold text-[#112317]">
-                  {selectedPlace?.name ?? "카카오 지도에서 경기장 찾기"}
-                </p>
-                <p className="mt-1 truncate text-[12px] text-[#66736a]">
-                  {(selectedPlace?.address ?? placeQuery) || "수원 내 경기장을 검색해 선택해 주세요."}
+              <div className="min-w-0 flex-1">
+                <p
+                  className={`truncate ${
+                    selectedPlace
+                      ? "text-[13px] font-semibold text-[#112317]"
+                      : "text-[12.5px] font-medium text-[#526058]"
+                  }`}
+                >
+                  {selectedPlace?.name ?? "지도에서 경기장 찾기"}
                 </p>
               </div>
-              <MapPin className="h-4 w-4 shrink-0 text-[#112317]" />
+              <MapPin className={`h-4 w-4 shrink-0 ${selectedPlace ? "text-[#112317]" : "text-[#66736a]"}`} />
             </button>
           </div>
 
-          <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">참가비</span>
-            <Input value={fee} onChange={(event) => setFee(event.target.value.replace(/[^\d]/g, ""))} inputMode="numeric" />
-          </label>
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">연락 방식</span>
+            <div className="grid grid-cols-2 gap-2">
+              {DIRECT_CONTACT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleContactTypeChange(option.value)}
+                  className={`rounded-[1rem] px-4 py-2.5 text-[13px] font-bold transition ${
+                    contactType === option.value
+                      ? "kinetic-gradient text-white"
+                      : "bg-[#eef2ee] text-[#223128]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
 
-          <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">연락 링크</span>
             <div className="relative">
-              <MessageCircleMore className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+              {contactType === "phone" ? (
+                <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+              ) : (
+                <MessageCircleMore className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+              )}
               <Input
-                value={contactLink}
-                onChange={(event) => setContactLink(event.target.value)}
-                placeholder="오픈채팅 링크"
-                className="pl-10"
+                value={contactType === "phone" ? normalizePhoneNumber(contactValue) : contactValue}
+                onChange={(event) =>
+                  setContactValue(
+                    contactType === "phone"
+                      ? normalizePhoneNumber(event.target.value)
+                      : event.target.value,
+                  )
+                }
+                placeholder={getContactFieldPlaceholder(contactType)}
+                inputMode={contactType === "phone" ? "tel" : "url"}
+                className="h-11 rounded-[1rem] pl-10"
               />
             </div>
-          </label>
 
-          <label className="space-y-2">
+            <p className="text-[11px] leading-5 text-[#66736a]">
+              {getContactFieldLabel(contactType)}는 프로필에 저장한 기본값을 불러와 바로 쓸 수 있습니다.
+            </p>
+          </div>
+
+          <label className="space-y-1.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">메모</span>
             <Textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="예: 검정 상의 착용 / 10분 전 도착 부탁"
+              className="min-h-24 rounded-[1rem]"
             />
           </label>
         </div>
-      </section>
-
-      <section className="surface-card rounded-[1.55rem] p-4">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Preview</p>
-        <div className="mt-3 rounded-[1.25rem] bg-[#f4f7f3] px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[15px] font-bold text-[#112317]">{selectedPlace?.name ?? "경기장 선택 전"}</p>
-              <p className="mt-1 text-[13px] font-semibold text-[#4f5d55]">{neededCount}자리 남음</p>
-            </div>
-            <span className="rounded-full bg-[#e7f4da] px-2.5 py-1 text-[11px] font-bold text-[#254712]">
-              {sport === "futsal" ? "풋살" : "축구"}
-            </span>
-          </div>
-          <p className="mt-3 text-[13px] leading-6 text-[#66736a]">
-            {date} {time} · 수원 · {Number(fee || 0).toLocaleString("ko-KR")}원
-          </p>
-        </div>
-      </section>
-
-      <section className="surface-card rounded-[1.35rem] px-4 py-4">
-        <p className="text-[13px] font-medium leading-6 text-[#66736a]">
-          참가자 화면을 먼저 보고 싶다면
-          <Link href="/home" className="ml-2 inline-block border-b border-[#112317]/25 font-bold text-[#112317]">
-            홈으로 이동
-          </Link>
-        </p>
       </section>
 
       {error ? (
@@ -321,7 +591,7 @@ function CreateListingFormBody({
 
       <div className="glass-panel safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] rounded-t-[1.75rem] px-4 pb-5 pt-3 shadow-[0_-18px_42px_rgba(10,18,13,0.06)]">
         <Button className="w-full gap-2" size="lg" type="button" disabled={isSubmitting} onClick={submitListing}>
-          <span>{isSubmitting ? "등록 중..." : "공석 등록하기"}</span>
+          <span>{isSubmitting ? "등록 중..." : "용병 모집하기"}</span>
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
@@ -337,6 +607,70 @@ function CreateListingFormBody({
           }}
         />
       ) : null}
+
+      <Sheet open={durationPickerOpen} onOpenChange={setDurationPickerOpen}>
+        <SheetContent>
+          <div className="space-y-5">
+            <div>
+              <SheetTitle className="text-[1.35rem] font-bold tracking-[-0.04em] text-[#112317]">
+                경기 시간을 직접 고르세요
+              </SheetTitle>
+              <SheetDescription className="mt-2 text-sm leading-6 text-[#66736a]">
+                시간과 분을 스크롤해서 선택하면 종료 예정 시각까지 바로 계산됩니다.
+              </SheetDescription>
+            </div>
+
+            <div className="rounded-[1.35rem] bg-[#f4f7f3] px-4 py-4">
+              <div className="flex gap-3">
+                <DurationWheelColumn
+                  label="시간"
+                  options={DURATION_HOUR_OPTIONS}
+                  value={durationPickerHours}
+                  onChange={setDurationPickerHours}
+                  formatValue={(value) => `${value}시간`}
+                />
+                <DurationWheelColumn
+                  label="분"
+                  options={DURATION_MINUTE_OPTIONS}
+                  value={durationPickerMinutes}
+                  onChange={setDurationPickerMinutes}
+                  formatValue={(value) => `${String(value).padStart(2, "0")}분`}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-[1.25rem] bg-[#eef2ee] px-4 py-4">
+              <p className="text-[13px] font-bold text-[#112317]">
+                총 {formatDurationMinutes(durationPickerHours * 60 + durationPickerMinutes)}
+              </p>
+              <p className="mt-1 text-[13px] text-[#66736a]">
+                {formatTimeRange(`${date}T${time}:00`, durationPickerHours * 60 + durationPickerMinutes)}
+              </p>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="lg"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setDurationPickerOpen(false)}
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                size="lg"
+                className="flex-1"
+                disabled={durationPickerHours === 0 && durationPickerMinutes === 0}
+                onClick={applyCustomDuration}
+              >
+                적용
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <ProfileCompletionSheet
         open={profileSheetOpen}
@@ -387,9 +721,7 @@ export function CreateListingForm({
         profileCompletionEnabled
         shouldLoadCurrentProfile={shouldLoadCurrentProfile}
         onCreateListing={async (input) => {
-          const { ensureAnonymousSession } = await import("@/lib/supabase/client");
-          await ensureAnonymousSession();
-
+          await ensureAnonymousSessionAction();
           return createMatchAction(input);
         }}
       />

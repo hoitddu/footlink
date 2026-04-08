@@ -1,4 +1,5 @@
 import { createDemoSeed } from "@/lib/demo-state/seed";
+import { getProfileContactValue, normalizeContactValue } from "@/lib/contact";
 import type {
   AppNotification,
   CreateMatchInput,
@@ -169,6 +170,8 @@ export function updateCurrentProfile(
       | "skill_level"
       | "age"
       | "open_chat_link"
+      | "phone_number"
+      | "default_contact_type"
     >
   >,
 ) {
@@ -181,8 +184,10 @@ export function updateCurrentProfile(
 }
 
 export function createMatch(state: DemoAppState, input: CreateMatchInput) {
-  if (!input.contact_link.trim()) {
-    throw new Error("연결용 오픈채팅 링크를 입력해주세요.");
+  const normalizedContactValue = normalizeContactValue(input.contact_type, input.contact_link);
+
+  if (!normalizedContactValue) {
+    throw new Error("연락 정보를 입력해 주세요.");
   }
 
   const next = cloneState(state);
@@ -190,6 +195,7 @@ export function createMatch(state: DemoAppState, input: CreateMatchInput) {
   const createdAt = new Date().toISOString();
   const createdMatch: Match = {
     ...input,
+    contact_link: normalizedContactValue,
     id: createId("match"),
     creator_profile_id: currentProfile.id,
     status: "open",
@@ -317,9 +323,19 @@ export function acceptParticipation(state: DemoAppState, requestId: string, host
   }
 
   const match = getMatch(next, request.match_id);
+  const host = getProfile(next, request.host_profile_id);
   const requester = getProfile(next, request.requester_profile_id);
 
-  if (!match.contact_link?.trim()) {
+  let acceptedContactValue = normalizeContactValue(match.contact_type, match.contact_link);
+
+  if (!acceptedContactValue) {
+    acceptedContactValue = normalizeContactValue(
+      match.contact_type,
+      getProfileContactValue(host, match.contact_type === "phone" ? "phone" : "openchat"),
+    );
+  }
+
+  if (!acceptedContactValue) {
     throw new Error("CONTACT_LINK_REQUIRED");
   }
 
@@ -343,7 +359,7 @@ export function acceptParticipation(state: DemoAppState, requestId: string, host
   request.decided_at = new Date().toISOString();
   request.updated_at = request.decided_at;
   request.host_note = hostNote?.trim() || request.host_note;
-  request.accepted_contact_link = match.contact_link || null;
+  request.accepted_contact_link = acceptedContactValue;
 
   if (match.status === "matched") {
     closePendingRequests(next, match.id, request.id);

@@ -1,20 +1,38 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, MapPin, ShieldCheck } from "lucide-react";
+import { MapPin } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import { BackButton } from "@/components/app/back-button";
-import { MatchIntentStep } from "@/components/entry/match-intent-step";
 import { REGION_OPTIONS } from "@/lib/constants";
-import type { SportType } from "@/lib/types";
 
-type Step = "landing" | "location" | "intent";
+type LocationStatus = "idle" | "loading" | "granted" | "fallback";
 
 const LOCATION_DECISION_KEY = "footlink-location-decision-v1";
 
-function LandingScreen({ onStart }: { onStart: () => void }) {
+function LandingScreen({
+  onStart,
+  locationPromptOpen,
+  locationStatus,
+  onLocationAllow,
+  onLocationSkip,
+  onLocationPromptOpenChange,
+}: {
+  onStart: () => void;
+  locationPromptOpen: boolean;
+  locationStatus: LocationStatus;
+  onLocationAllow: () => void;
+  onLocationSkip: () => void;
+  onLocationPromptOpenChange: (open: boolean) => void;
+}) {
+  const statusCopy = {
+    idle: "위치를 허용하면 더 가까운 경기부터 정렬됩니다.",
+    loading: "현재 위치를 확인하고 있어요.",
+    granted: "현재 위치 기준으로 더 가까운 경기부터 정렬해드릴게요.",
+    fallback: "위치 없이도 수원 전체 공석을 바로 볼 수 있어요.",
+  } as const;
+
   return (
     <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-[#04070d]">
       <Image
@@ -66,74 +84,44 @@ function LandingScreen({ onStart }: { onStart: () => void }) {
           <div className="flex-1" />
         </div>
       </main>
-    </div>
-  );
-}
 
-function LocationPermissionStep({
-  status,
-  onRequest,
-  onSkip,
-}: {
-  status: "idle" | "loading" | "granted" | "fallback";
-  onRequest: () => void;
-  onSkip: () => void;
-}) {
-  const statusCopy = {
-    idle: "수원에서 가까운 공석을 먼저 보여드릴게요. 위치를 허용하면 거리 정렬이 더 정확해집니다.",
-    loading: "현재 위치를 확인하고 있어요.",
-    granted: "현재 위치 기준으로 가까운 경기부터 보여드릴게요.",
-    fallback: "위치 없이도 수원 전체 공석을 바로 볼 수 있어요.",
-  } as const;
-
-  return (
-    <div className="flex flex-1 flex-col px-4 pt-1">
-      <div className="mb-3">
-        <h1 className="text-[1.68rem] font-bold tracking-[-0.04em] text-[#0c140f]">수원 공석을 더 빨리 찾을게요</h1>
-        <p className="mt-1 text-[13px] leading-5 text-muted">{statusCopy[status]}</p>
-      </div>
-
-      <div className="surface-card flex flex-1 flex-col justify-between rounded-[1.75rem] p-4">
-        <div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-[#112317] text-[#b8ff5a]">
-            <MapPin className="h-5 w-5" />
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <h2 className="text-[1.28rem] font-bold tracking-[-0.04em] text-[#112317]">서비스 지역은 수원입니다</h2>
-            <p className="text-[13px] leading-5 text-muted">
-              위치를 허용하면 가까운 경기장부터 보여주고, 허용하지 않아도 수원 전체 공석 목록으로 바로 이동합니다.
-            </p>
-          </div>
-
-          <div className="mt-5 grid gap-2.5">
-            {["수원 공석 우선 노출", "가까운 경기장 우선 정렬", "처음부터 빠른 탐색"].map((item) => (
-              <div key={item} className="flex items-center gap-2.5 rounded-[1rem] bg-[#eef2ee] px-3.5 py-2.5">
-                <ShieldCheck className="h-3.5 w-3.5 text-[#112317]" />
-                <span className="text-[13px] font-medium leading-5 text-[#39443d]">{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-6 space-y-2.5">
+      {locationPromptOpen ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center px-4">
           <button
             type="button"
-            onClick={onRequest}
-            disabled={status === "loading"}
-            className="kinetic-gradient lime-glow flex h-12 w-full items-center justify-center rounded-[1.1rem] text-[15px] font-bold text-white transition active:scale-95 disabled:opacity-60"
-          >
-            {status === "loading" ? "위치 확인 중..." : "위치 허용"}
-          </button>
-          <button
-            type="button"
-            onClick={onSkip}
-            className="flex h-11 w-full items-center justify-center rounded-[1.1rem] bg-[#eef2ee] text-[13px] font-bold text-[#112317] transition active:scale-95"
-          >
-            수원 전체로 바로 보기
-          </button>
+            aria-label="위치 안내 닫기"
+            className="absolute inset-0 bg-[#09110c]/52 backdrop-blur-[2px]"
+            onClick={() => onLocationPromptOpenChange(false)}
+          />
+          <div className="surface-card relative w-full max-w-[22rem] rounded-[1.7rem] p-5 shadow-[0_20px_50px_rgba(6,21,12,0.16)]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-[#112317] text-[#b8ff5a]">
+              <MapPin className="h-5 w-5" />
+            </div>
+            <h2 className="mt-4 text-[1.3rem] font-bold tracking-[-0.04em] text-[#112317]">
+              위치를 허용할까요?
+            </h2>
+            <p className="mt-2 text-[13px] leading-6 text-[#66736a]">{statusCopy[locationStatus]}</p>
+
+            <div className="mt-5 space-y-2.5">
+              <button
+                type="button"
+                onClick={onLocationAllow}
+                disabled={locationStatus === "loading"}
+                className="kinetic-gradient lime-glow flex h-12 w-full items-center justify-center rounded-[1.1rem] text-[15px] font-bold text-white transition active:scale-95 disabled:opacity-60"
+              >
+                {locationStatus === "loading" ? "위치 확인 중..." : "위치 허용"}
+              </button>
+              <button
+                type="button"
+                onClick={onLocationSkip}
+                className="flex h-11 w-full items-center justify-center rounded-[1.1rem] bg-[#eef2ee] text-[13px] font-bold text-[#112317] transition active:scale-95"
+              >
+                나중에 할게요
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
@@ -141,34 +129,20 @@ function LocationPermissionStep({
 export function EntryFlow() {
   const router = useRouter();
   const shouldPrefetchHome = process.env.NODE_ENV === "production";
-  const [step, setStep] = useState<Step>("landing");
-  const [sport, setSport] = useState<SportType>("futsal");
-  const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "granted" | "fallback">("idle");
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
+  const [locationPromptOpen, setLocationPromptOpen] = useState(false);
   const [locationState, setLocationState] = useState<{
     lat?: number;
     lng?: number;
     regionSlug: string;
-    regionLabel: string;
   }>({
     regionSlug: "suwon",
-    regionLabel: REGION_OPTIONS[0].label,
   });
-
-  const stepMeta = useMemo(
-    () =>
-      ({
-        location: { index: 1, label: "위치" },
-        intent: { index: 2, label: "종목" },
-      }) as const,
-    [],
-  );
 
   const homeHref = useMemo(() => {
     const params = new URLSearchParams({
-      sport,
-      window: "today",
-      radiusKm: "5",
-      sort: "urgent",
+      sport: "futsal",
+      sort: "recommended",
       region: locationState.regionSlug,
     });
 
@@ -178,7 +152,7 @@ export function EntryFlow() {
     }
 
     return `/home?${params.toString()}`;
-  }, [locationState.lat, locationState.lng, locationState.regionSlug, sport]);
+  }, [locationState.lat, locationState.lng, locationState.regionSlug]);
 
   function saveLocationDecision(value: "granted") {
     if (typeof window === "undefined") {
@@ -188,18 +162,16 @@ export function EntryFlow() {
     window.localStorage.setItem(LOCATION_DECISION_KEY, value);
   }
 
-  function goToIntentStepWithFallback() {
+  function moveToHomeWithFallback() {
     setLocationStatus("fallback");
-    setLocationState({
-      regionSlug: "suwon",
-      regionLabel: REGION_OPTIONS[0].label,
-    });
-    setStep("intent");
+    setLocationState({ regionSlug: REGION_OPTIONS[0].slug });
+    setLocationPromptOpen(false);
+    router.push("/home?sport=futsal&sort=recommended&region=suwon");
   }
 
   function handleLocationRequest() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      goToIntentStepWithFallback();
+      moveToHomeWithFallback();
       return;
     }
 
@@ -210,37 +182,38 @@ export function EntryFlow() {
         setLocationState({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-          regionSlug: "suwon",
-          regionLabel: REGION_OPTIONS[0].label,
+          regionSlug: REGION_OPTIONS[0].slug,
         });
         saveLocationDecision("granted");
         setLocationStatus("granted");
-        setStep("intent");
+        setLocationPromptOpen(false);
+        router.push(
+          `/home?sport=futsal&sort=recommended&region=suwon&lat=${position.coords.latitude.toFixed(6)}&lng=${position.coords.longitude.toFixed(6)}`,
+        );
       },
       () => {
         if (typeof window !== "undefined") {
           window.localStorage.removeItem(LOCATION_DECISION_KEY);
         }
-        goToIntentStepWithFallback();
+        moveToHomeWithFallback();
       },
       { enableHighAccuracy: true, timeout: 5000 },
     );
   }
 
   function handleLocationSkip() {
-    goToIntentStepWithFallback();
+    moveToHomeWithFallback();
   }
 
   async function handleStart() {
     if (typeof window === "undefined") {
-      setStep("location");
+      setLocationPromptOpen(true);
       return;
     }
 
     const savedDecision = window.localStorage.getItem(LOCATION_DECISION_KEY);
 
     if (savedDecision === "granted") {
-      setStep("location");
       handleLocationRequest();
       return;
     }
@@ -253,103 +226,38 @@ export function EntryFlow() {
 
         if (permissionStatus.state === "granted") {
           saveLocationDecision("granted");
-          setStep("location");
           handleLocationRequest();
           return;
         }
 
         if (permissionStatus.state === "denied") {
-          goToIntentStepWithFallback();
+          moveToHomeWithFallback();
           return;
         }
       } catch {
-        // Use the explicit prompt screen when permission query is unavailable.
+        // Fall through to the custom overlay when permission query is unavailable.
       }
     }
 
-    setStep("location");
+    setLocationPromptOpen(true);
   }
 
   useEffect(() => {
-    if (!shouldPrefetchHome || step !== "intent") {
+    if (!shouldPrefetchHome) {
       return;
     }
 
     router.prefetch(homeHref);
-  }, [homeHref, router, shouldPrefetchHome, step]);
-
-  function handleIntentConfirm() {
-    router.push(homeHref);
-  }
-
-  function handleBack() {
-    if (step === "location") {
-      setStep("landing");
-      return;
-    }
-
-    setStep("location");
-  }
-
-  if (step === "landing") {
-    return <LandingScreen onStart={handleStart} />;
-  }
-
-  const currentMeta = stepMeta[step];
+  }, [homeHref, router, shouldPrefetchHome]);
 
   return (
-    <div className="mx-auto flex h-[100dvh] max-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden">
-      <header className="px-4 pb-3 pt-3">
-        <div className="flex min-h-10 items-center justify-between">
-          <BackButton onClick={handleBack} />
-          <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
-          <div className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.18em] text-[#66736a] shadow-[0_10px_24px_rgba(6,21,12,0.04)]">
-            Step {currentMeta.index}/2
-          </div>
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {Object.values(stepMeta).map((item) => (
-            <div key={item.label} className="space-y-1">
-              <div
-                className={`h-1.5 rounded-full transition ${item.index <= currentMeta.index ? "bg-[#112317]" : "bg-[#dde3dc]"}`}
-              />
-              <p
-                className={`text-center text-[9px] font-bold ${
-                  item.index === currentMeta.index ? "text-[#112317]" : "text-[#a0a8a2]"
-                }`}
-              >
-                {item.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </header>
-
-      <div className="min-h-0 flex flex-1 flex-col pb-24">
-        {step === "location" ? (
-          <LocationPermissionStep
-            status={locationStatus}
-            onRequest={handleLocationRequest}
-            onSkip={handleLocationSkip}
-          />
-        ) : (
-          <MatchIntentStep sport={sport} onSportChange={setSport} />
-        )}
-      </div>
-
-      {step === "intent" ? (
-        <footer className="glass-panel safe-bottom fixed inset-x-0 bottom-0 z-50 mx-auto w-full max-w-[430px] rounded-t-[1.75rem] px-4 pb-5 pt-3 shadow-[0_-18px_42px_rgba(10,18,13,0.06)]">
-          <button
-            type="button"
-            onClick={handleIntentConfirm}
-            className="kinetic-gradient lime-glow group flex h-12 w-full items-center justify-center gap-2 rounded-[1.1rem] text-[15px] font-bold tracking-[-0.02em] text-white transition active:scale-95"
-          >
-            <span>가까운 공석 보기</span>
-            <ChevronRight className="h-5 w-5 transition-transform group-active:translate-x-0.5" />
-          </button>
-        </footer>
-      ) : null}
-    </div>
+    <LandingScreen
+      onStart={handleStart}
+      locationPromptOpen={locationPromptOpen}
+      locationStatus={locationStatus}
+      onLocationAllow={handleLocationRequest}
+      onLocationSkip={handleLocationSkip}
+      onLocationPromptOpenChange={setLocationPromptOpen}
+    />
   );
 }

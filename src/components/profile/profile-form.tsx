@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { saveProfile } from "@/components/profile/profile-save";
+import { BackButton } from "@/components/app/back-button";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
-import { SectionHeading } from "@/components/app/section-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,8 +16,9 @@ import {
   getSkillLevelLabel,
 } from "@/lib/constants";
 import { getUserFacingErrorMessage } from "@/lib/errors";
+import { DIRECT_CONTACT_OPTIONS } from "@/lib/contact";
 import { useDemoApp } from "@/lib/demo-state/provider";
-import type { Profile, SportType } from "@/lib/types";
+import type { DirectContactType, Profile, SportType } from "@/lib/types";
 
 type SaveProfileInput = {
   nickname: string;
@@ -26,6 +27,8 @@ type SaveProfileInput = {
   preferred_sport: SportType | null;
   preferred_regions: string[];
   open_chat_link: string;
+  phone_number: string;
+  default_contact_type: DirectContactType;
 };
 
 function ProfileEditor({
@@ -45,6 +48,10 @@ function ProfileEditor({
   const [skillLevel, setSkillLevel] = useState<Profile["skill_level"]>(profile?.skill_level ?? "mid");
   const [preferredSport, setPreferredSport] = useState<SportType | null>(profile?.preferred_sport ?? "futsal");
   const [openChatLink, setOpenChatLink] = useState(profile?.open_chat_link ?? "");
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number ?? "");
+  const [defaultContactType, setDefaultContactType] = useState<DirectContactType>(
+    profile?.default_contact_type ?? (profile?.open_chat_link ? "openchat" : profile?.phone_number ? "phone" : "openchat"),
+  );
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
@@ -60,6 +67,8 @@ function ProfileEditor({
         preferred_sport: preferredSport,
         preferred_regions: [REGION_OPTIONS[0].label],
         open_chat_link: openChatLink.trim(),
+        phone_number: phoneNumber.replace(/[^\d]/g, ""),
+        default_contact_type: defaultContactType,
       });
 
       setSaved(true);
@@ -77,23 +86,24 @@ function ProfileEditor({
 
   return (
     <div className="space-y-5">
-      <section className="surface-card rounded-[1.75rem] p-5">
-        <SectionHeading
-          eyebrow="Profile"
-          title="프로필 설정"
-          description="홈에서는 빠르게 보고, 세부 취향은 여기에서 정리합니다."
-        />
-        {saved ? (
-          <p className="mt-4 rounded-[1.2rem] bg-[#eef2ee] px-4 py-3 text-sm font-semibold text-[#112317]">
-            프로필을 저장했습니다.
-          </p>
-        ) : null}
-        {error ? (
-          <p className="mt-4 rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
-            {error}
-          </p>
-        ) : null}
+      <section className="surface-card rounded-[1.55rem] px-4 py-3.5">
+        <div className="flex items-center justify-between">
+          <BackButton href={returnTo ?? "/home"} ariaLabel="홈으로 돌아가기" />
+          <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
+          <span className="block h-11 w-11" aria-hidden="true" />
+        </div>
       </section>
+
+      {saved ? (
+        <p className="rounded-[1.2rem] bg-[#eef2ee] px-4 py-3 text-sm font-semibold text-[#112317]">
+          프로필을 저장했습니다.
+        </p>
+      ) : null}
+      {error ? (
+        <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
+          {error}
+        </p>
+      ) : null}
 
       {onReset ? <DemoIdentitySwitcher /> : null}
 
@@ -144,7 +154,7 @@ function ProfileEditor({
             </div>
 
             <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">실력</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">SKILL LEVEL</span>
               <div className="grid grid-cols-4 gap-2">
                 {SKILL_LEVELS.map((skill) => (
                   <button
@@ -162,21 +172,44 @@ function ProfileEditor({
             </div>
           </div>
 
+          <div className="space-y-2">
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">기본 연락 방식</span>
+            <div className="grid grid-cols-2 gap-2">
+              {DIRECT_CONTACT_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setDefaultContactType(option.value)}
+                  className={`rounded-[1rem] px-4 py-3 text-sm font-bold transition ${
+                    defaultContactType === option.value
+                      ? "bg-[#112317] text-white"
+                      : "bg-[#eef2ee] text-[#223128]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">연락 링크</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">오픈채팅 링크</span>
             <Input
               value={openChatLink}
               onChange={(event) => setOpenChatLink(event.target.value)}
               placeholder="https://open.kakao.com/..."
             />
-            <p className="text-xs leading-5 text-[#66736a]">
-              공석을 올릴 때 바로 연락받고 싶다면 오픈채팅 링크를 넣어두세요.
-            </p>
           </label>
 
-          <div className="rounded-[1.15rem] bg-[#f4f7f3] px-4 py-3 text-sm text-[#536157]">
-            현재 서비스 지역은 수원으로 고정되어 있습니다.
-          </div>
+          <label className="space-y-2">
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">휴대폰 번호</span>
+            <Input
+              value={phoneNumber}
+              onChange={(event) => setPhoneNumber(event.target.value.replace(/[^\d]/g, ""))}
+              inputMode="tel"
+              placeholder="01012345678"
+            />
+          </label>
 
           <div className="flex gap-2">
             <Button className="flex-1" type="button" onClick={handleSave}>
@@ -230,6 +263,8 @@ export function ProfileForm({
             preferred_regions: input.preferred_regions,
             skill_level: input.skill_level,
             open_chat_link: input.open_chat_link || null,
+            phone_number: input.phone_number || null,
+            default_contact_type: input.default_contact_type,
           });
         }}
       />

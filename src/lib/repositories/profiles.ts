@@ -1,6 +1,7 @@
 import { cache } from "react";
 
 import { createServerSupabaseClient, getServerAuthUser } from "@/lib/supabase/server";
+import { normalizePhoneNumber } from "@/lib/contact";
 import { mapProfileRow } from "@/lib/supabase/mappers";
 import type { Profile, UpdateProfileInput } from "@/lib/types";
 import { PROFILE_APP_SELECT, type AppProfileRow } from "@/lib/supabase/selects";
@@ -53,6 +54,8 @@ export async function upsertCurrentProfile(input: UpdateProfileInput) {
     preferred_regions: input.preferred_regions,
     skill_level: input.skill_level,
     open_chat_link: input.open_chat_link?.trim() || null,
+    phone_number: normalizePhoneNumber(input.phone_number ?? "") || null,
+    default_contact_type: input.default_contact_type ?? null,
     updated_at: now,
     ...(input.preferred_sport !== undefined ? { preferred_sport: input.preferred_sport } : {}),
   };

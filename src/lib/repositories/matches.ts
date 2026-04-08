@@ -37,7 +37,22 @@ function addDays(date: Date, days: number) {
 }
 
 function getWindowBounds(context: FeedContext) {
+  if (context.selectedDateFrom) {
+    const selectedDate = new Date(`${context.selectedDateFrom}T12:00:00+09:00`);
+    return {
+      start: startOfDayKst(selectedDate).toISOString(),
+      end: endOfDayKst(selectedDate).toISOString(),
+    };
+  }
+
   const now = new Date();
+
+  if (context.window === "all") {
+    return {
+      start: now.toISOString(),
+      end: endOfDayKst(addDays(now, 6)).toISOString(),
+    };
+  }
 
   if (context.window === "now") {
     return {
@@ -76,7 +91,8 @@ function serializeFeedContext(context: FeedContext) {
     sport: context.sport,
     window: context.window,
     regionSlug: context.regionSlug ?? "suwon",
-    onlyLastSpot: context.onlyLastSpot,
+    selectedDateFrom: context.selectedDateFrom,
+    selectedDateTo: context.selectedDateTo,
   });
 }
 
@@ -92,15 +108,14 @@ const getCachedFeedRows = unstable_cache(
       .eq("status", "open")
       .eq("listing_type", "mercenary")
       .eq("region_slug", context.regionSlug ?? "suwon")
-      .eq("sport_type", context.sport)
       .gt("remaining_slots", 0)
       .gte("start_at", bounds.start)
       .lte("start_at", bounds.end)
       .order("start_at", { ascending: true })
       .limit(80);
 
-    if (context.onlyLastSpot) {
-      query = query.eq("remaining_slots", 1);
+    if (context.sport !== "all") {
+      query = query.eq("sport_type", context.sport);
     }
 
     const { data, error } = await query.returns<FeedMatchRow[]>();
