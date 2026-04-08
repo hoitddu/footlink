@@ -38,9 +38,11 @@ export function getInboundRequestsForMatch(state: DemoAppState, matchId: string)
 }
 
 export function getHostedMatches(state: DemoAppState) {
-  return state.matches.filter(
-    (match) => match.creator_profile_id === state.currentProfileId && match.status !== "cancelled",
-  );
+  return state.matches
+    .filter(
+      (match) => match.creator_profile_id === state.currentProfileId && match.status !== "cancelled",
+    )
+    .sort((left, right) => left.start_at.localeCompare(right.start_at));
 }
 
 export function getNotificationsForCurrentProfile(state: DemoAppState) {
@@ -96,35 +98,23 @@ export function getActiveParticipationForMatch(
 
 export function getParticipationStatusLabel(status: ParticipationStatus) {
   if (status === "pending") {
-    return "호스트 확인 대기";
+    return "요청됨";
   }
 
-  if (status === "accepted") {
-    return "오픈채팅 조율 중";
+  if (status === "accepted" || status === "confirmed") {
+    return "연락 가능";
   }
 
-  if (status === "confirmed") {
-    return "최종 확정";
+  if (status === "withdrawn") {
+    return "취소됨";
   }
 
-  if (status === "rejected") {
-    return "거절됨";
-  }
-
-  if (status === "expired") {
-    return "마감됨";
-  }
-
-  return "취소됨";
+  return "마감됨";
 }
 
 export function getParticipationStatusTone(status: ParticipationStatus) {
-  if (status === "confirmed") {
+  if (status === "accepted" || status === "confirmed") {
     return "success" as const;
-  }
-
-  if (status === "accepted") {
-    return "team" as const;
   }
 
   if (status === "pending") {
@@ -134,35 +124,28 @@ export function getParticipationStatusTone(status: ParticipationStatus) {
   return "outline" as const;
 }
 
-export function getParticipationSummary(request: ParticipationRequest, match: Match) {
-  if (match.mode === "team") {
-    return "팀 1개 요청";
-  }
-
+export function getParticipationSummary(request: ParticipationRequest) {
   return `${request.requested_count}명 요청`;
 }
 
-export function getParticipationContactLink(
-  state: DemoAppState,
-  request: ParticipationRequest,
-) {
+export function getParticipationContactLink(state: DemoAppState, request: ParticipationRequest) {
   const match = getMatch(state, request.match_id);
 
-  if (!match || !["accepted", "confirmed"].includes(request.status)) {
+  if (!match || !["pending", "accepted", "confirmed"].includes(request.status)) {
     return null;
   }
 
   if (request.accepted_contact_link) {
     return {
       href: request.accepted_contact_link,
-      label: "오픈채팅방 접속",
+      label: "오픈채팅 열기",
     };
   }
 
   if (match.contact_type === "openchat" && match.contact_link) {
     return {
       href: match.contact_link,
-      label: "오픈채팅방 접속",
+      label: "오픈채팅 열기",
     };
   }
 
@@ -174,27 +157,19 @@ export function getParticipationContactLink(
 
   return {
     href: host.open_chat_link,
-    label: "오픈채팅방 접속",
+    label: "오픈채팅 열기",
   };
 }
 
 export function getDefaultRequestedCount(match: Match, context?: FeedContext) {
-  if (match.mode === "team") {
-    return 1;
-  }
-
-  const requested = context?.groupSize ?? match.min_group_size;
+  const requested = context?.groupSize ?? 1;
   return Math.min(
-    Math.max(requested, match.min_group_size),
-    Math.min(match.max_group_size, match.remaining_slots),
+    Math.max(requested, 1),
+    Math.min(Math.max(match.max_group_size, 1), Math.max(match.remaining_slots, 1)),
   );
 }
 
-export function getMatchMetaForState(
-  state: DemoAppState,
-  matchId: string,
-  referenceNow: number,
-) {
+export function getMatchMetaForState(state: DemoAppState, matchId: string, referenceNow: number) {
   return getMatchById(state, matchId, referenceNow);
 }
 

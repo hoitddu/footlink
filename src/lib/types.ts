@@ -15,7 +15,10 @@ export type DemoNotificationKind =
   | "request_confirmed"
   | "request_rejected";
 export type SkillLevel = "beginner" | "low" | "mid" | "high";
-export type FeedPreset = "recommended" | "time" | "distance" | "urgent" | "price";
+export type SportType = "futsal" | "soccer";
+export type FeedTimeWindow = "now" | "today" | "tomorrow" | "weekend";
+export type FeedSort = "urgent" | "distance";
+export type FeedPreset = FeedSort;
 export type RegionSlug = "suwon";
 export type UserRole = "player" | "captain";
 
@@ -25,6 +28,7 @@ export interface Profile {
   nickname: string;
   role: UserRole;
   preferred_mode?: EntryMode | null;
+  preferred_sport?: SportType | null;
   preferred_regions: string[];
   skill_level: SkillLevel;
   age: number;
@@ -38,6 +42,7 @@ export interface Match {
   creator_profile_id: string;
   mode: EntryMode;
   listing_type: ListingType;
+  sport_type?: SportType;
   title: string;
   region_slug: RegionSlug;
   address: string;
@@ -98,16 +103,21 @@ export interface RegionOption {
 }
 
 export interface FeedContext {
-  mode: EntryMode;
-  groupSize: number;
+  sport: SportType;
+  window: FeedTimeWindow;
+  radiusKm?: number;
+  onlyLastSpot: boolean;
+  sort: FeedSort;
   regionSlug?: string;
   regionLabel: string;
+  lat?: number;
+  lng?: number;
+  mode?: EntryMode;
+  groupSize?: number;
   selectedDateFrom?: string;
   selectedDateTo?: string;
   selectedDateLabel?: string;
   skillLevel?: SkillLevel;
-  lat?: number;
-  lng?: number;
 }
 
 export interface FeedDataSource {
@@ -132,12 +142,28 @@ export interface MatchWithMeta extends Match {
   statusTone: "urgent" | "soon" | "team" | "calm";
   compatibilityScore: number;
   organizer?: Profile;
+  contactAvailable: boolean;
+  urgencyLevel: "last_spot" | "starting_soon" | "today" | "weekend" | "closed";
+}
+
+export interface OpenSpotCardVM {
+  id: string;
+  sportType: SportType;
+  startAt: string;
+  venueName: string;
+  distanceKm: number;
+  remainingSlots: number;
+  fee: number;
+  contactAvailable: boolean;
+  urgencyLevel: MatchWithMeta["urgencyLevel"];
 }
 
 export type CreateMatchInput = Omit<
   Match,
-  "id" | "creator_profile_id" | "status" | "created_at" | "updated_at"
->;
+  "id" | "creator_profile_id" | "status" | "created_at" | "updated_at" | "sport_type"
+> & {
+  sport_type: SportType;
+};
 
 export interface SubmitParticipationInput {
   matchId: string;
@@ -149,6 +175,7 @@ export interface UpdateProfileInput {
   nickname: string;
   age: number;
   preferred_mode?: EntryMode | null;
+  preferred_sport?: SportType | null;
   preferred_regions: string[];
   skill_level: SkillLevel;
   open_chat_link?: string | null;

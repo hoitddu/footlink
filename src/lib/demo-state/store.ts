@@ -162,7 +162,13 @@ export function updateCurrentProfile(
   updates: Partial<
     Pick<
       Profile,
-      "nickname" | "preferred_mode" | "preferred_regions" | "skill_level" | "age" | "open_chat_link"
+      | "nickname"
+      | "preferred_mode"
+      | "preferred_regions"
+      | "preferred_sport"
+      | "skill_level"
+      | "age"
+      | "open_chat_link"
     >
   >,
 ) {

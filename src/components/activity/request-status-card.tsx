@@ -53,7 +53,7 @@ export function RequestStatusCard({
         <div>
           <h3 className="text-lg font-bold tracking-[-0.03em] text-[#112317]">{match.title}</h3>
           <p className="mt-1 text-sm text-muted">
-            {getParticipationSummary(request, match)} · {formatCreatedAt(request.created_at)}
+            {getParticipationSummary(request)} · {formatCreatedAt(request.created_at)}
           </p>
         </div>
         <Badge variant={getParticipationStatusTone(request.status)}>

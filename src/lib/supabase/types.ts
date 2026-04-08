@@ -6,6 +6,7 @@ import type {
   ParticipationStatus,
   RegionSlug,
   SkillLevel,
+  SportType,
   UserRole,
 } from "@/lib/types";
 
@@ -15,6 +16,7 @@ export interface ProfileRow {
   nickname: string;
   role: UserRole;
   preferred_mode: EntryMode | null;
+  preferred_sport: SportType | null;
   preferred_regions: string[] | null;
   skill_level: SkillLevel;
   age: number;
@@ -28,6 +30,7 @@ export interface MatchRow {
   creator_profile_id: string;
   mode: EntryMode;
   listing_type: ListingType;
+  sport_type: SportType | null;
   title: string;
   region_slug: RegionSlug;
   address: string;

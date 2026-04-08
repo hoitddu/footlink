@@ -26,6 +26,7 @@ function minutesAgo(baseDate: Date, minutes: number) {
 function match(values: Omit<Match, "status"> & { status?: Match["status"] }): Match {
   return {
     status: "open",
+    sport_type: values.sport_type ?? "futsal",
     ...values,
   };
 }
@@ -38,6 +39,7 @@ export const profiles: Profile[] = [
     nickname: "준서팀장",
     role: "captain",
     preferred_mode: "small_group",
+    preferred_sport: "futsal",
     preferred_regions: ["수원"],
     skill_level: "mid",
     age: 31,
@@ -48,6 +50,7 @@ export const profiles: Profile[] = [
     nickname: "민호FC",
     role: "player",
     preferred_mode: "solo",
+    preferred_sport: "futsal",
     preferred_regions: ["수원"],
     skill_level: "low",
     age: 29,
@@ -58,6 +61,7 @@ export const profiles: Profile[] = [
     nickname: "도현캡틴",
     role: "captain",
     preferred_mode: "team",
+    preferred_sport: "soccer",
     preferred_regions: ["수원"],
     skill_level: "high",
     age: 34,
@@ -68,6 +72,7 @@ export const profiles: Profile[] = [
     nickname: "유나메이트",
     role: "player",
     preferred_mode: "small_group",
+    preferred_sport: "futsal",
     preferred_regions: ["수원"],
     skill_level: "mid",
     age: 29,
@@ -103,6 +108,7 @@ export function createMatches(referenceNow?: number): Match[] {
     match({
       id: "match-suwon-yeongtong-solo",
       creator_profile_id: "profile-minho",
+      sport_type: "soccer",
       mode: "solo",
       listing_type: "mercenary",
       title: "영통 실내구장",

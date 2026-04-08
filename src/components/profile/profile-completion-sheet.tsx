@@ -29,8 +29,8 @@ export function ProfileCompletionSheet({
   open,
   onOpenChange,
   profile,
-  title = "프로필 먼저 입력해 주세요",
-  description = "닉네임, 연령대, 실력만 입력하면 바로 다음 단계로 이어집니다.",
+  title = "참여 전에 기본 정보를 입력해 주세요",
+  description = "닉네임, 연령대, 실력만 입력하면 바로 요청을 보낼 수 있습니다.",
   confirmLabel = "저장하고 계속하기",
   preferredMode,
   regionLabel = REGION_OPTIONS[0].label,
@@ -65,8 +65,8 @@ export function ProfileCompletionSheet({
         nickname: nickname.trim() || profile?.nickname || "플레이어",
         age: ageBand,
         preferred_mode: preferredMode ?? profile?.preferred_mode ?? "solo",
-        preferred_regions:
-          profile?.preferred_regions.length ? profile.preferred_regions : [regionLabel],
+        preferred_sport: profile?.preferred_sport,
+        preferred_regions: profile?.preferred_regions.length ? profile.preferred_regions : [regionLabel],
         skill_level: skillLevel,
         open_chat_link: profile?.open_chat_link ?? null,
       });
@@ -145,10 +145,6 @@ export function ProfileCompletionSheet({
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="rounded-[1.2rem] bg-[#f1f4f1] px-4 py-3 text-sm text-[#536157]">
-              오픈채팅 링크는 매치 생성할 때만 필요합니다.
             </div>
 
             {error ? (

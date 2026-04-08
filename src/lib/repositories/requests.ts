@@ -173,7 +173,7 @@ function applyNotificationReads(
   }));
 }
 
-export async function getActivitySnapshot(tab: ActivitySnapshotTab = "requests") {
+export async function getActivitySnapshot() {
   const currentProfile = await getCurrentProfile();
 
   if (!currentProfile) {
@@ -183,8 +183,8 @@ export async function getActivitySnapshot(tab: ActivitySnapshotTab = "requests")
   const supabase = await createServerSupabaseClient();
 
   const [hostedMatches, primaryRequests] = await Promise.all([
-    tab === "listings" ? listHostedMatches(supabase, currentProfile.id) : Promise.resolve([]),
-    tab === "requests" ? listMyRequests(supabase, currentProfile.id) : Promise.resolve([]),
+    listHostedMatches(supabase, currentProfile.id),
+    listMyRequests(supabase, currentProfile.id),
   ]);
 
   const hostedMatchIds = hostedMatches.map((match) => match.id);
@@ -206,7 +206,7 @@ export async function getActivitySnapshot(tab: ActivitySnapshotTab = "requests")
   );
 
   const [inboundRequests, externalMatches, earlyProfiles] = await Promise.all([
-    tab === "listings" ? listInboundRequests(supabase, hostedMatchIds) : Promise.resolve([]),
+    listInboundRequests(supabase, hostedMatchIds),
     listMatchesByIds(supabase, externalMatchIdsFromRequests),
     listProfilesByIds(Array.from(earlyProfileIds)),
   ]);

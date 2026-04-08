@@ -54,6 +54,7 @@ export async function upsertCurrentProfile(input: UpdateProfileInput) {
     skill_level: input.skill_level,
     open_chat_link: input.open_chat_link?.trim() || null,
     updated_at: now,
+    ...(input.preferred_sport !== undefined ? { preferred_sport: input.preferred_sport } : {}),
   };
 
   const { data, error } = await supabase

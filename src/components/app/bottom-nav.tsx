@@ -1,29 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ClipboardList, House, Plus, UserRound } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/home", label: "홈", icon: House },
-  { href: "/create", label: "매치생성", icon: Plus },
-  { href: "/activity", label: "활동", icon: ClipboardList },
+  { href: "/activity", label: "내 참여", icon: ClipboardList },
+  { href: "/create", label: "공석 올리기", icon: Plus },
   { href: "/profile", label: "프로필", icon: UserRound },
 ];
 
 function BottomNavFrame() {
   const pathname = usePathname();
-  const router = useRouter();
   const hideOnFocusedFlow = pathname.startsWith("/match/") || pathname.startsWith("/create");
-
-  useEffect(() => {
-    items.forEach((item) => {
-      router.prefetch(item.href);
-    });
-  }, [router]);
 
   if (hideOnFocusedFlow) {
     return null;

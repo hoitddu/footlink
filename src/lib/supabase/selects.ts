@@ -11,6 +11,7 @@ export const MATCH_FEED_SELECT = joinColumns([
   "creator_profile_id",
   "mode",
   "listing_type",
+  "sport_type",
   "title",
   "region_slug",
   "lat",
@@ -18,6 +19,8 @@ export const MATCH_FEED_SELECT = joinColumns([
   "start_at",
   "fee",
   "remaining_slots",
+  "contact_type",
+  "contact_link",
   "min_group_size",
   "max_group_size",
   "skill_level",
@@ -29,6 +32,7 @@ export const MATCH_DETAIL_SELECT = joinColumns([
   "creator_profile_id",
   "mode",
   "listing_type",
+  "sport_type",
   "title",
   "region_slug",
   "address",
@@ -37,6 +41,8 @@ export const MATCH_DETAIL_SELECT = joinColumns([
   "start_at",
   "fee",
   "remaining_slots",
+  "contact_type",
+  "contact_link",
   "min_group_size",
   "max_group_size",
   "skill_level",
@@ -48,9 +54,13 @@ export const MATCH_ACTIVITY_SELECT = joinColumns([
   "id",
   "creator_profile_id",
   "mode",
+  "listing_type",
+  "sport_type",
   "title",
   "region_slug",
+  "address",
   "start_at",
+  "fee",
   "remaining_slots",
   "contact_type",
   "contact_link",
@@ -62,6 +72,7 @@ export const MATCH_CREATE_RETURN_SELECT = joinColumns([
   "creator_profile_id",
   "mode",
   "listing_type",
+  "sport_type",
   "title",
   "region_slug",
   "address",
@@ -70,11 +81,11 @@ export const MATCH_CREATE_RETURN_SELECT = joinColumns([
   "start_at",
   "fee",
   "remaining_slots",
+  "contact_type",
+  "contact_link",
   "min_group_size",
   "max_group_size",
   "skill_level",
-  "contact_type",
-  "contact_link",
   "note",
   "status",
 ]);
@@ -89,20 +100,26 @@ export const MATCH_REQUEST_VALIDATION_SELECT = joinColumns([
 
 export const PROFILE_APP_SELECT = joinColumns([
   "id",
+  "auth_user_id",
   "nickname",
   "role",
   "preferred_mode",
+  "preferred_sport",
   "preferred_regions",
   "skill_level",
   "age",
   "open_chat_link",
+  "created_at",
+  "updated_at",
 ]);
 
 export const PROFILE_DETAIL_SELECT = joinColumns([
   "id",
   "nickname",
+  "preferred_sport",
   "preferred_regions",
   "age",
+  "open_chat_link",
 ]);
 
 export const MATCH_REQUEST_ACTIVITY_SELECT = joinColumns([
@@ -112,6 +129,7 @@ export const MATCH_REQUEST_ACTIVITY_SELECT = joinColumns([
   "host_profile_id",
   "requested_count",
   "message",
+  "entry_channel",
   "status",
   "host_note",
   "accepted_contact_link",
@@ -151,9 +169,6 @@ export type FeedMatchRow = PartialRow<
   | "start_at"
   | "fee"
   | "remaining_slots"
-  | "min_group_size"
-  | "max_group_size"
-  | "skill_level"
   | "status"
 >;
 
@@ -171,9 +186,6 @@ export type DetailMatchRow = PartialRow<
   | "start_at"
   | "fee"
   | "remaining_slots"
-  | "min_group_size"
-  | "max_group_size"
-  | "skill_level"
   | "status"
 >;
 
@@ -182,11 +194,15 @@ export type ActivityMatchRow = PartialRow<
   | "id"
   | "creator_profile_id"
   | "mode"
+  | "listing_type"
   | "title"
   | "region_slug"
+  | "address"
   | "start_at"
+  | "fee"
   | "remaining_slots"
   | "contact_type"
+  | "contact_link"
   | "status"
 >;
 
@@ -204,10 +220,8 @@ export type CreateMatchReturnRow = PartialRow<
   | "start_at"
   | "fee"
   | "remaining_slots"
-  | "min_group_size"
-  | "max_group_size"
-  | "skill_level"
   | "contact_type"
+  | "contact_link"
   | "status"
 >;
 

@@ -12,9 +12,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
   const highlight = Array.isArray(resolved.highlight) ? resolved.highlight[0] : resolved.highlight;
   const flash = Array.isArray(resolved.flash) ? resolved.flash[0] : resolved.flash;
   const stateSnapshot =
-    getAppDataSource() === "supabase"
-      ? await getActivitySnapshot(tab === "listings" ? "listings" : "requests")
-      : undefined;
+    getAppDataSource() === "supabase" ? await getActivitySnapshot() : undefined;
 
   return (
     <ActivityScreen

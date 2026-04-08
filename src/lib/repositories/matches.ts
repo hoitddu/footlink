@@ -3,10 +3,9 @@ import { unstable_cache } from "next/cache";
 import { REGION_OPTIONS } from "@/lib/constants";
 import { getFeedMatches } from "@/lib/feed";
 import { getCurrentProfile } from "@/lib/repositories/profiles";
+import { createAppStateSnapshot } from "@/lib/repositories/snapshots";
 import { createPublicServerSupabaseClient, createServerSupabaseClient } from "@/lib/supabase/server";
 import { mapMatchRequestRow, mapMatchRow, mapProfileRow } from "@/lib/supabase/mappers";
-import type { FeedContext, FeedDataSource } from "@/lib/types";
-import { createAppStateSnapshot } from "@/lib/repositories/snapshots";
 import {
   MATCH_DETAIL_SELECT,
   MATCH_FEED_SELECT,
@@ -17,27 +16,67 @@ import {
   type DetailProfileRow,
   type FeedMatchRow,
 } from "@/lib/supabase/selects";
+import type { FeedContext, FeedDataSource } from "@/lib/types";
 
-function getDateRangeBounds(context: FeedContext) {
-  if (!context.selectedDateFrom) {
-    return null;
+function startOfDayKst(date: Date) {
+  return new Date(
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T00:00:00+09:00`,
+  );
+}
+
+function endOfDayKst(date: Date) {
+  return new Date(
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T23:59:59+09:00`,
+  );
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function getWindowBounds(context: FeedContext) {
+  const now = new Date();
+
+  if (context.window === "now") {
+    return {
+      start: now.toISOString(),
+      end: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(),
+    };
   }
 
-  const start = new Date(`${context.selectedDateFrom}T00:00:00+09:00`).toISOString();
-  const endKey = context.selectedDateTo ?? context.selectedDateFrom;
-  const end = new Date(`${endKey}T23:59:59+09:00`).toISOString();
+  if (context.window === "tomorrow") {
+    const tomorrow = addDays(now, 1);
+    return {
+      start: startOfDayKst(tomorrow).toISOString(),
+      end: endOfDayKst(tomorrow).toISOString(),
+    };
+  }
 
-  return { start, end };
+  if (context.window === "weekend") {
+    const day = now.getDay();
+    const saturday = day === 0 ? addDays(now, -1) : addDays(now, (6 - day + 7) % 7);
+    const sunday = addDays(saturday, 1);
+
+    return {
+      start: startOfDayKst(saturday).toISOString(),
+      end: endOfDayKst(sunday).toISOString(),
+    };
+  }
+
+  return {
+    start: now.toISOString(),
+    end: endOfDayKst(now).toISOString(),
+  };
 }
 
 function serializeFeedContext(context: FeedContext) {
   return JSON.stringify({
-    mode: context.mode,
-    groupSize: context.groupSize,
-    regionSlug: context.regionSlug ?? null,
-    selectedDateFrom: context.selectedDateFrom ?? null,
-    selectedDateTo: context.selectedDateTo ?? null,
-    skillLevel: context.skillLevel ?? null,
+    sport: context.sport,
+    window: context.window,
+    regionSlug: context.regionSlug ?? "suwon",
+    onlyLastSpot: context.onlyLastSpot,
   });
 }
 
@@ -45,37 +84,23 @@ const getCachedFeedRows = unstable_cache(
   async (serializedContext: string) => {
     const context = JSON.parse(serializedContext) as FeedContext;
     const supabase = createPublicServerSupabaseClient();
+    const bounds = getWindowBounds(context);
+
     let query = supabase
       .from("matches")
       .select(MATCH_FEED_SELECT)
       .eq("status", "open")
+      .eq("listing_type", "mercenary")
+      .eq("region_slug", context.regionSlug ?? "suwon")
+      .eq("sport_type", context.sport)
       .gt("remaining_slots", 0)
-      .gte("start_at", new Date().toISOString())
+      .gte("start_at", bounds.start)
+      .lte("start_at", bounds.end)
       .order("start_at", { ascending: true })
-      .limit(50);
+      .limit(80);
 
-    if (context.regionSlug) {
-      query = query.eq("region_slug", context.regionSlug);
-    }
-
-    const dateBounds = getDateRangeBounds(context);
-    if (dateBounds) {
-      query = query.gte("start_at", dateBounds.start).lte("start_at", dateBounds.end);
-    }
-
-    if (context.mode === "solo") {
-      query = query.in("listing_type", ["mercenary", "partial_join"]);
-    } else if (context.mode === "small_group") {
-      query = query
-        .eq("listing_type", "partial_join")
-        .lte("min_group_size", context.groupSize)
-        .gte("max_group_size", context.groupSize);
-    } else {
-      query = query.eq("listing_type", "team_match");
-    }
-
-    if (context.skillLevel) {
-      query = query.eq("skill_level", context.skillLevel);
+    if (context.onlyLastSpot) {
+      query = query.eq("remaining_slots", 1);
     }
 
     const { data, error } = await query.returns<FeedMatchRow[]>();
@@ -86,8 +111,8 @@ const getCachedFeedRows = unstable_cache(
 
     return data ?? [];
   },
-  ["feed-rows"],
-  { revalidate: 30 },
+  ["feed-rows-v2"],
+  { revalidate: 20 },
 );
 
 const getCachedPublicMatchRow = unstable_cache(
@@ -105,8 +130,8 @@ const getCachedPublicMatchRow = unstable_cache(
 
     return (data as unknown as DetailMatchRow | null) ?? null;
   },
-  ["public-match-row"],
-  { revalidate: 30 },
+  ["public-match-row-v2"],
+  { revalidate: 20 },
 );
 
 const getCachedPublicProfiles = unstable_cache(
@@ -130,7 +155,7 @@ const getCachedPublicProfiles = unstable_cache(
 
     return data ?? [];
   },
-  ["public-profiles"],
+  ["public-profiles-v2"],
   { revalidate: 60 },
 );
 

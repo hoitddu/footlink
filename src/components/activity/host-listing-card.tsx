@@ -119,7 +119,7 @@ export function HostListingCard({
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-semibold text-[#112317]">
-                      {requester?.nickname ?? "알 수 없는 유저"} · {getParticipationSummary(request, match)}
+                      {requester?.nickname ?? "알 수 없는 유저"} · {getParticipationSummary(request)}
                     </p>
                     <p className="mt-1 text-sm text-muted">{formatCreatedAt(request.created_at)}</p>
                     {requester ? (

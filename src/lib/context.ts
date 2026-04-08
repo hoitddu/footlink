@@ -1,5 +1,5 @@
-import { REGION_OPTIONS } from "@/lib/constants";
-import type { EntryMode, FeedContext, SkillLevel } from "@/lib/types";
+import { REGION_OPTIONS, getRegionLabel } from "@/lib/constants";
+import type { FeedContext, FeedSort, FeedTimeWindow, SportType } from "@/lib/types";
 
 function parseNumber(value?: string) {
   if (!value) {
@@ -10,75 +10,75 @@ function parseNumber(value?: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function formatDate(date: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "numeric",
-    day: "numeric",
-    weekday: "short",
-  }).format(new Date(date));
+function parseBoolean(value?: string) {
+  return value === "1" || value === "true";
 }
 
-function formatSelectedDateRange(selectedDateFrom?: string, selectedDateTo?: string) {
-  if (!selectedDateFrom) {
-    return "오늘";
+function normalizeWindow(value?: string): FeedTimeWindow {
+  if (value === "now" || value === "today" || value === "tomorrow" || value === "weekend") {
+    return value;
   }
 
-  if (!selectedDateTo || selectedDateFrom === selectedDateTo) {
-    return formatDate(selectedDateFrom);
-  }
+  return "today";
+}
 
-  return `${formatDate(selectedDateFrom)} - ${formatDate(selectedDateTo)}`;
+function normalizeSport(value?: string): SportType {
+  return value === "soccer" ? "soccer" : "futsal";
+}
+
+function normalizeSort(value?: string): FeedSort {
+  return value === "distance" ? "distance" : "urgent";
 }
 
 export function parseFeedContext(searchParams: Record<string, string | undefined>) {
-  const mode = (searchParams.mode as EntryMode | undefined) ?? "solo";
-  const groupSize =
-    parseNumber(searchParams.groupSize) ?? (mode === "small_group" ? 2 : mode === "team" ? 5 : 1);
   const regionSlug = searchParams.region ?? "suwon";
-  const selectedDateFrom = searchParams.dateFrom ?? searchParams.date;
-  const selectedDateTo = searchParams.dateTo ?? searchParams.dateFrom ?? searchParams.date;
-  const skillLevel = searchParams.skill as SkillLevel | undefined;
+  const regionLabel = getRegionLabel(regionSlug);
   const lat = parseNumber(searchParams.lat);
   const lng = parseNumber(searchParams.lng);
-  const fallbackRegion =
-    REGION_OPTIONS.find((region) => region.slug === regionSlug) ?? REGION_OPTIONS[0];
 
   const context: FeedContext = {
-    mode,
-    groupSize,
+    sport: normalizeSport(searchParams.sport),
+    window: normalizeWindow(searchParams.window),
+    radiusKm: parseNumber(searchParams.radiusKm) ?? 5,
+    onlyLastSpot: parseBoolean(searchParams.onlyLastSpot),
+    sort: normalizeSort(searchParams.sort),
     regionSlug,
-    regionLabel: fallbackRegion.label,
-    selectedDateFrom,
-    selectedDateTo,
-    selectedDateLabel: formatSelectedDateRange(selectedDateFrom, selectedDateTo),
-    skillLevel,
+    regionLabel,
     lat,
     lng,
+    mode: (searchParams.mode as FeedContext["mode"]) ?? "solo",
+    groupSize: parseNumber(searchParams.groupSize) ?? 1,
+    skillLevel: searchParams.skill as FeedContext["skillLevel"],
+    selectedDateFrom: searchParams.dateFrom ?? searchParams.date,
+    selectedDateTo: searchParams.dateTo ?? searchParams.dateFrom ?? searchParams.date,
+    selectedDateLabel: searchParams.dateLabel,
   };
+
+  if (!context.regionSlug) {
+    context.regionSlug = REGION_OPTIONS[0].slug;
+    context.regionLabel = REGION_OPTIONS[0].label;
+  }
 
   return context;
 }
 
 export function buildContextQuery(context: FeedContext) {
   const params = new URLSearchParams({
-    mode: context.mode,
-    groupSize: String(context.groupSize),
+    sport: context.sport,
+    window: context.window,
+    sort: context.sort,
   });
 
   if (context.regionSlug) {
     params.set("region", context.regionSlug);
   }
 
-  if (context.selectedDateFrom) {
-    params.set("dateFrom", context.selectedDateFrom);
+  if (typeof context.radiusKm === "number") {
+    params.set("radiusKm", String(context.radiusKm));
   }
 
-  if (context.selectedDateTo) {
-    params.set("dateTo", context.selectedDateTo);
-  }
-
-  if (context.skillLevel) {
-    params.set("skill", context.skillLevel);
+  if (context.onlyLastSpot) {
+    params.set("onlyLastSpot", "1");
   }
 
   if (typeof context.lat === "number" && typeof context.lng === "number") {

@@ -1,8 +1,8 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-import { getAgeBandLabel, getSkillLevelLabel } from "@/lib/constants";
-import type { SkillLevel } from "@/lib/types";
+import { getAgeBandLabel, getSkillLevelLabel, getSportLabel } from "@/lib/constants";
+import type { SkillLevel, SportType } from "@/lib/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -70,7 +70,7 @@ export function getTravelEstimates(distanceKm: number): TravelEstimate[] {
   const carMinutes = estimateCarMinutes(distanceKm);
   estimates.push({
     mode: "car",
-    label: `자차 ${carMinutes}분`,
+    label: `차량 ${carMinutes}분`,
     minutes: carMinutes,
   });
 
@@ -94,8 +94,20 @@ export function formatStartAt(date: string) {
   return `${month}월 ${day}일 ${hour}:${minute}`;
 }
 
+export function formatTimeOnly(date: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(date));
+}
+
 export function formatSkillLevel(level: SkillLevel) {
   return getSkillLevelLabel(level);
+}
+
+export function formatSportType(sport: SportType) {
+  return getSportLabel(sport);
 }
 
 export function formatAgeBand(age: number) {
@@ -119,6 +131,26 @@ export function formatRelativeStart(minutesUntilStart: number) {
   }
 
   return `${hours}시간 ${minutes}분 후`;
+}
+
+export function formatUrgencyLabel(date: string, minutesUntilStart: number) {
+  if (minutesUntilStart <= 60) {
+    return `${Math.max(1, minutesUntilStart)}분 후 시작`;
+  }
+
+  if (minutesUntilStart <= 120) {
+    return `${Math.round(minutesUntilStart / 60)}시간 내 시작`;
+  }
+
+  const target = new Date(date);
+  const now = new Date();
+  const sameDay = target.toDateString() === now.toDateString();
+
+  if (sameDay) {
+    return `오늘 ${formatTimeOnly(date)}`;
+  }
+
+  return formatStartAt(date);
 }
 
 export function haversineDistance(
