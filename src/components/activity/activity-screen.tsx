@@ -12,6 +12,7 @@ import {
 } from "@/app/actions/requests";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
 import { FlashBanner } from "@/components/app/flash-banner";
+import { ScreenHeader } from "@/components/app/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn, formatAgeBand, formatFee, formatSkillLevel, formatSportType, formatStartAt, formatTimeRange } from "@/lib/utils";
@@ -274,7 +275,14 @@ function HostSpotCard({
           </h3>
           <p className="mt-1 text-[13px] text-[#66736a]">{formatStartAt(match.start_at)}</p>
         </div>
-        <Button size="sm" type="button" variant="secondary" onClick={onDelete} disabled={!canDelete || deletePending}>
+        <Button
+          className="h-9 rounded-[1rem] px-3.5 text-[13px] font-semibold"
+          size="sm"
+          type="button"
+          variant="secondary"
+          onClick={onDelete}
+          disabled={!canDelete || deletePending}
+        >
           {deletePending ? "마감 중..." : "모집 마감"}
         </Button>
       </div>
@@ -482,13 +490,7 @@ function ActivityScreenBody({
 
   return (
     <div className="space-y-4">
-      <section className="surface-card rounded-[1.55rem] px-4 py-3.5">
-        <div className="flex items-center justify-center">
-          <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#112317]">
-            FOOTLINK
-          </span>
-        </div>
-      </section>
+      <ScreenHeader href="/home" ariaLabel="홈으로 돌아가기" />
 
       {flash || error ? (
         <div className="space-y-3">
@@ -524,7 +526,7 @@ function ActivityScreenBody({
         <section className="space-y-3">
           {openRequests.length === 0 ? (
             <section className="surface-card rounded-[1.45rem] p-5">
-              <p className="text-sm text-[#66736a]">참여 중인 매치가 없습니다.</p>
+              <p className="text-sm text-[#66736a]">참여 요청한 매치가 없습니다.</p>
               <Button asChild className="mt-4" size="sm">
                 <Link href="/home">매치 찾기</Link>
               </Button>

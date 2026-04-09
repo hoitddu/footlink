@@ -4,6 +4,7 @@ import type {
   EntryMode,
   FutsalFormatOption,
   ListingType,
+  MatchPosition,
   MatchStatus,
   ParticipationStatus,
   RegionSlug,
@@ -36,6 +37,7 @@ export interface MatchRow {
   listing_type: ListingType;
   sport_type: SportType | null;
   futsal_format: FutsalFormatOption | null;
+  position_targets: MatchPosition[] | null;
   title: string;
   region_slug: RegionSlug;
   address: string;

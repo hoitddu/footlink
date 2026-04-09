@@ -1,4 +1,4 @@
-import type { FeedSportFilter, FeedTimeWindow, RegionOption, SkillLevel, SportType } from "@/lib/types";
+import type { FeedSportFilter, FeedTimeWindow, MatchPosition, RegionOption, SkillLevel, SportType } from "@/lib/types";
 
 export const AGE_BANDS = [
   { value: 10, label: "10대" },
@@ -27,6 +27,28 @@ export const SPORT_LABELS: Record<SportType, string> = {
   futsal: "풋살",
   soccer: "축구",
 };
+
+export const MATCH_POSITION_OPTIONS: Array<{ value: MatchPosition; label: string }> = [
+  { value: "attack", label: "공격" },
+  { value: "midfielder", label: "미드필더" },
+  { value: "defense", label: "수비" },
+  { value: "goalkeeper", label: "골키퍼" },
+];
+
+export const MATCH_POSITION_LABELS: Record<MatchPosition, string> = {
+  attack: "공격",
+  midfielder: "미드필더",
+  defense: "수비",
+  goalkeeper: "골키퍼",
+};
+
+export function getMatchPositionOptions(sport: SportType) {
+  if (sport === "futsal") {
+    return MATCH_POSITION_OPTIONS.filter((option) => option.value === "goalkeeper");
+  }
+
+  return MATCH_POSITION_OPTIONS;
+}
 
 export const TIME_WINDOW_OPTIONS: Array<{ value: FeedTimeWindow; label: string }> = [
   { value: "all", label: "전체" },
@@ -69,6 +91,10 @@ export function getTimeWindowLabel(window: FeedTimeWindow) {
 
 export function getSkillLevelLabel(level: SkillLevel) {
   return SKILL_LEVEL_LABELS[level];
+}
+
+export function getMatchPositionLabel(position: MatchPosition) {
+  return MATCH_POSITION_LABELS[position];
 }
 
 export function getAgeBandLabel(age: number) {

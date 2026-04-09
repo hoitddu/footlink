@@ -46,6 +46,7 @@ export function mapMatchRow(row: MatchRowLike): Match {
     listing_type: row.listing_type ?? defaultListingType,
     sport_type: row.sport_type ?? "futsal",
     futsal_format: row.futsal_format ?? ((row.sport_type ?? "futsal") === "futsal" ? "5vs5" : null),
+    position_targets: row.position_targets ?? [],
     title: row.title,
     region_slug: row.region_slug,
     address: row.address ?? "",

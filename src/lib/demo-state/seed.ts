@@ -1,6 +1,8 @@
 import { createMatches, createParticipationRequests, profiles, regions } from "@/lib/mock-data";
 import type { DemoAppState, DemoNotification, Profile } from "@/lib/types";
 
+const VALID_MATCH_POSITIONS = new Set(["attack", "midfielder", "defense", "goalkeeper"]);
+
 export const DEMO_STORAGE_KEY = "footlink-demo-state-v1";
 export const DEFAULT_DEMO_PROFILE_ID = "profile-minho";
 
@@ -85,6 +87,12 @@ export function normalizeDemoState(candidate: DemoAppState): DemoAppState {
               : 120,
           futsal_format:
             sportType === "futsal" ? (match.futsal_format ?? "5vs5") : null,
+          position_targets: Array.isArray(match.position_targets)
+            ? match.position_targets.filter(
+                (position): position is (typeof match.position_targets)[number] =>
+                  typeof position === "string" && VALID_MATCH_POSITIONS.has(position),
+              )
+            : [],
         };
       })
     : seed.matches;

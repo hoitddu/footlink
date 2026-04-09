@@ -2,14 +2,14 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, ChevronRight, MapPin, MessageCircleMore, Phone } from "lucide-react";
+import { CalendarDays, ChevronRight, Clock3, MapPin, MessageCircleMore, Phone } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { ensureAnonymousSessionAction } from "@/app/actions/auth";
 import { createMatchAction } from "@/app/actions/matches";
 import type { PlaceSearchResult } from "@/components/create/kakao-place-picker";
 import { KakaoPlacePicker } from "@/components/create/kakao-place-picker";
-import { BackButton } from "@/components/app/back-button";
+import { ScreenHeader } from "@/components/app/screen-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
@@ -23,7 +23,7 @@ import {
   getProfileDefaultContactType,
   normalizePhoneNumber,
 } from "@/lib/contact";
-import { SPORT_OPTIONS } from "@/lib/constants";
+import { getMatchPositionLabel, getMatchPositionOptions, SPORT_OPTIONS } from "@/lib/constants";
 import { getUserFacingErrorMessage, requiresProfileSetup } from "@/lib/errors";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { formatMatchFormatLabel } from "@/lib/match-format";
@@ -33,6 +33,7 @@ import type {
   CreateMatchInput,
   DirectContactType,
   FutsalFormatOption,
+  MatchPosition,
   Profile,
   SportType,
 } from "@/lib/types";
@@ -83,6 +84,65 @@ function snapDurationMinutes(minutes: number) {
 
 function formatFeeLabel(value: number) {
   return `${value.toLocaleString("ko-KR")}원`;
+}
+
+function formatDisplayDate(value: string) {
+  return value || "날짜 선택";
+}
+
+function formatDisplayTime(value: string) {
+  if (!value) {
+    return "시간 선택";
+  }
+
+  const [hour, minute] = value.split(":").map((part) => Number(part));
+
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+    return value;
+  }
+
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+function StepperField({
+  label,
+  value,
+  onDecrease,
+  onIncrease,
+}: {
+  label: string;
+  value: string;
+  onDecrease: () => void;
+  onIncrease: () => void;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">
+        {label}
+      </p>
+      <div className="rounded-[1.1rem] bg-[#f4f7f3] px-3.5 py-2.5">
+        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5">
+          <button
+            type="button"
+            onClick={onDecrease}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)] transition active:scale-95"
+          >
+            -
+          </button>
+          <div className="flex items-center justify-center text-center">
+            <span className="truncate text-[1.32rem] font-bold tracking-[-0.05em] text-[#112317]">{value}</span>
+          </div>
+          <button
+            type="button"
+            onClick={onIncrease}
+            className="kinetic-gradient flex h-9 w-9 items-center justify-center rounded-full text-white transition active:scale-95"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DurationWheelColumn({
@@ -207,6 +267,7 @@ function CreateListingFormBody({
   const [durationPickerHours, setDurationPickerHours] = useState(2);
   const [durationPickerMinutes, setDurationPickerMinutes] = useState(0);
   const [futsalFormat, setFutsalFormat] = useState<FutsalFormatOption>("5vs5");
+  const [positionTargets, setPositionTargets] = useState<MatchPosition[]>([]);
   const [placeQuery, setPlaceQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceSearchResult | null>(null);
   const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
@@ -258,6 +319,14 @@ function CreateListingFormBody({
     setContactValue(getProfileContactValue(resolvedProfile, nextType));
   }, [resolvedProfile]);
 
+  useEffect(() => {
+    if (sport !== "futsal") {
+      return;
+    }
+
+    setPositionTargets((current) => current.filter((position) => position === "goalkeeper"));
+  }, [sport]);
+
   function applyQuickDuration(duration: (typeof QUICK_DURATION_OPTIONS)[number]) {
     setDurationMinutes(duration);
     setIsCustomDuration(false);
@@ -282,6 +351,18 @@ function CreateListingFormBody({
   function handleContactTypeChange(nextType: DirectContactType) {
     setContactType(nextType);
     setContactValue(getProfileContactValue(resolvedProfile, nextType));
+  }
+
+  function togglePositionTarget(position: MatchPosition) {
+    setPositionTargets((current) => {
+      if (sport === "futsal") {
+        return current.includes("goalkeeper") ? [] : ["goalkeeper"];
+      }
+
+      return current.includes(position)
+        ? current.filter((item) => item !== position)
+        : [...current, position];
+    });
   }
 
   async function submitListing() {
@@ -332,6 +413,7 @@ function CreateListingFormBody({
         min_group_size: 1,
         max_group_size: 1,
         skill_level: resolvedProfile?.skill_level ?? "mid",
+        position_targets: positionTargets,
         contact_type: contactType,
         contact_link: normalizedContactValue,
         note: note.trim(),
@@ -356,13 +438,7 @@ function CreateListingFormBody({
 
   return (
     <div className="space-y-3.5 pb-28">
-      <section className="surface-card rounded-[1.55rem] px-4 py-3.5">
-        <div className="flex items-center justify-between">
-          <BackButton href="/home" ariaLabel="홈으로 돌아가기" />
-          <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
-          <span className="block h-11 w-11" aria-hidden="true" />
-        </div>
-      </section>
+      <ScreenHeader href="/home" ariaLabel="홈으로 돌아가기" />
 
       <section className="surface-card rounded-[1.55rem] p-3.5">
         <div className="grid grid-cols-2 gap-2">
@@ -401,72 +477,92 @@ function CreateListingFormBody({
           </div>
         ) : null}
 
-        <div className="mt-2.5">
-          <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">모집 인원</p>
-          <div className="rounded-[1.1rem] bg-[#f4f7f3] px-4 py-2.5">
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setNeededCount((count) => Math.max(1, count - 1))}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)] transition active:scale-95"
-              >
-                -
-              </button>
-              <div className="flex items-center justify-center gap-0.5 text-center">
-                <span className="text-[1.5rem] font-bold tracking-[-0.05em] text-[#112317]">{neededCount}</span>
-                <span className="text-[1.5rem] font-bold tracking-[-0.05em] text-[#112317]">명</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNeededCount((count) => Math.min(9, count + 1))}
-                className="kinetic-gradient flex h-10 w-10 items-center justify-center rounded-full text-white transition active:scale-95"
-              >
-                +
-              </button>
-            </div>
-          </div>
+        <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+          <StepperField
+            label="모집 인원"
+            value={`${neededCount}명`}
+            onDecrease={() => setNeededCount((count) => Math.max(1, count - 1))}
+            onIncrease={() => setNeededCount((count) => Math.min(9, count + 1))}
+          />
+          <StepperField
+            label="1인 참가비"
+            value={formatFeeLabel(fee)}
+            onDecrease={() => adjustFee(-1000)}
+            onIncrease={() => adjustFee(1000)}
+          />
         </div>
 
-        <div className="mt-2">
-          <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">1인 참가비</p>
-          <div className="rounded-[1.1rem] bg-[#f4f7f3] px-4 py-2.5">
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-              <button
-                type="button"
-                onClick={() => adjustFee(-1000)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)] transition active:scale-95"
-              >
-                -
-              </button>
-              <div className="flex items-center justify-center text-center">
-                <span className="text-[1.5rem] font-bold tracking-[-0.05em] text-[#112317]">{formatFeeLabel(fee)}</span>
+        <div className="mt-2.5">
+          <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">모집 포지션</p>
+          <div className="rounded-[1.1rem] bg-[#f4f7f3] px-2.5 py-2.5">
+            {sport === "futsal" ? (
+              <div className="flex items-center justify-between gap-3 rounded-[0.9rem] px-1 py-0.5">
+                <p className="text-[12px] font-medium text-[#66736a]">골키퍼를 모집할 경우에 선택해 주세요.</p>
+                <button
+                  type="button"
+                  onClick={() => togglePositionTarget("goalkeeper")}
+                  className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-bold transition active:scale-95 ${
+                    positionTargets.includes("goalkeeper")
+                      ? "kinetic-gradient text-white"
+                      : "bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]"
+                  }`}
+                >
+                  골키퍼
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => adjustFee(1000)}
-                className="kinetic-gradient flex h-10 w-10 items-center justify-center rounded-full text-white transition active:scale-95"
-              >
-                +
-              </button>
-            </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-1.5 pl-0.5">
+                {getMatchPositionOptions(sport).map((option) => {
+                  const active = positionTargets.includes(option.value);
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => togglePositionTarget(option.value)}
+                      className={`min-w-[4.65rem] rounded-full px-3 py-2 text-[13px] font-bold transition active:scale-95 ${
+                        active
+                          ? "kinetic-gradient text-white"
+                          : "bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]"
+                      }`}
+                    >
+                      {getMatchPositionLabel(option.value)}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>
 
       <section className="surface-card rounded-[1.55rem] p-3.5">
-        <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative">
-              <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
-              <Input
-                type="date"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-                className="h-11 rounded-[1rem] pl-10"
-              />
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-2">
+              <label className="group relative flex h-11 min-w-0 cursor-pointer items-center rounded-[1rem] bg-[#eef2ee] pl-10 pr-10 text-[13px] font-medium text-[#112317] transition focus-within:bg-white focus-within:ring-4 focus-within:ring-[#b8ff5a]/25">
+                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+                <span className="truncate">{formatDisplayDate(date)}</span>
+                <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(event) => setDate(event.target.value)}
+                  aria-label="경기 날짜 선택"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </label>
+              <label className="group relative flex h-11 min-w-0 cursor-pointer items-center rounded-[1rem] bg-[#eef2ee] px-4 pr-10 text-[13px] font-medium text-[#112317] transition focus-within:bg-white focus-within:ring-4 focus-within:ring-[#b8ff5a]/25">
+                <span className="truncate">{formatDisplayTime(time)}</span>
+                <Clock3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(event) => setTime(event.target.value)}
+                  aria-label="경기 시작 시간 선택"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                />
+              </label>
             </div>
-            <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} className="h-11 rounded-[1rem]" />
-          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">

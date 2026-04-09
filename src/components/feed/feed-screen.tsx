@@ -80,8 +80,8 @@ function FilterPill({
       className={cn(
         "min-h-10 rounded-full px-3.5 text-[12px] font-bold transition active:scale-[0.985]",
         active
-          ? "bg-[#06150c] text-white shadow-[0_14px_24px_rgba(6,21,12,0.16)]"
-          : "bg-white/86 text-[#334139] shadow-[0_8px_16px_rgba(10,18,13,0.04)] ring-1 ring-[#e7ece7]",
+          ? "bg-[#06150c] text-white shadow-[0_10px_18px_rgba(6,21,12,0.11)]"
+          : "bg-white/86 text-[#334139] shadow-[0_6px_12px_rgba(10,18,13,0.025)] ring-1 ring-[#e7ece7]",
       )}
     >
       {label}
@@ -160,7 +160,7 @@ function FeedScreenView({
             </div>
           </div>
 
-          <div className="mt-2">
+          <div className="mt-[1.15rem]">
             <DateFilterBar
               items={dateItems}
               selectedId={selectedDateId}

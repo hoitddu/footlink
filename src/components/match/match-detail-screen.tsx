@@ -19,6 +19,7 @@ import {
   resolveContactType,
 } from "@/lib/contact";
 import { buildContextQuery, parseFeedContext } from "@/lib/context";
+import { getMatchPositionLabel } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import {
   getActiveParticipationForMatch,
@@ -283,6 +284,26 @@ function MatchDetailBody({
                 {match.region_label} · {formatDistanceValue(match.distanceKm)}
               </p>
             </div>
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-[1.2rem] bg-[#f4f7f3] px-4 py-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">모집 포지션</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {match.position_targets.length > 0 ? (
+              match.position_targets.map((position) => (
+                <span
+                  key={position}
+                  className="rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-[#112317] shadow-[0_8px_16px_rgba(10,18,13,0.04)]"
+                >
+                  {getMatchPositionLabel(position)}
+                </span>
+              ))
+            ) : (
+              <span className="rounded-full bg-white px-3 py-1.5 text-[12px] font-medium text-[#55625a] shadow-[0_8px_16px_rgba(10,18,13,0.04)]">
+                포지션 무관
+              </span>
+            )}
           </div>
         </div>
       </section>

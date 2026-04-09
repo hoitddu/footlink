@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { saveProfile } from "@/components/profile/profile-save";
-import { BackButton } from "@/components/app/back-button";
+import { ScreenHeader } from "@/components/app/screen-header";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,13 +86,7 @@ function ProfileEditor({
 
   return (
     <div className="space-y-5">
-      <section className="surface-card rounded-[1.55rem] px-4 py-3.5">
-        <div className="flex items-center justify-between">
-          <BackButton href={returnTo ?? "/home"} ariaLabel="홈으로 돌아가기" />
-          <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#112317]">FOOTLINK</span>
-          <span className="block h-11 w-11" aria-hidden="true" />
-        </div>
-      </section>
+      <ScreenHeader href={returnTo ?? "/home"} ariaLabel="홈으로 돌아가기" />
 
       {saved ? (
         <p className="rounded-[1.2rem] bg-[#eef2ee] px-4 py-3 text-sm font-semibold text-[#112317]">

@@ -18,6 +18,7 @@ export type DemoNotificationKind =
 export type SkillLevel = "beginner" | "low" | "mid" | "high";
 export type SportType = "futsal" | "soccer";
 export type FutsalFormatOption = "4vs4" | "5vs5" | "6vs6";
+export type MatchPosition = "attack" | "midfielder" | "defense" | "goalkeeper";
 export type FeedSportFilter = "all" | SportType;
 export type FeedTimeWindow = "all" | "now" | "today" | "tomorrow" | "weekend";
 export type FeedSort = "recommended" | "time" | "distance" | "fee" | "closing";
@@ -56,6 +57,7 @@ export interface Match {
   listing_type: ListingType;
   sport_type?: SportType;
   futsal_format?: FutsalFormatOption | null;
+  position_targets: MatchPosition[];
   title: string;
   region_slug: RegionSlug;
   address: string;

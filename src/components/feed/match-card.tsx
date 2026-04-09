@@ -50,6 +50,7 @@ export function MatchCard({
         ? "1자리"
         : `${match.remaining_slots}자리`;
   const formatLabel = getMatchFormatLabel(match);
+  const showGoalkeeperBadge = match.position_targets.includes("goalkeeper");
 
   return (
     <Link href={detailHref} className="block">
@@ -74,9 +75,16 @@ export function MatchCard({
             </span>
           </div>
 
-          <h3 className="mt-1.5 truncate text-[1rem] font-semibold tracking-[-0.03em] text-[#112317]">
-            {match.title}
-          </h3>
+          <div className="mt-1.5 flex items-center gap-2">
+            <h3 className="min-w-0 flex-1 truncate text-[1rem] font-semibold tracking-[-0.03em] text-[#112317]">
+              {match.title}
+            </h3>
+            {showGoalkeeperBadge ? (
+              <span className="shrink-0 rounded-full bg-[#e7f4da] px-2 py-0.5 text-[10px] font-bold text-[#254712]">
+                GK
+              </span>
+            ) : null}
+          </div>
 
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-[#66736a]">
             {travelEstimate ? (
