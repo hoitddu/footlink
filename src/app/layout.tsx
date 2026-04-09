@@ -31,8 +31,11 @@ export const metadata: Metadata = {
     images: ["/opengraph-image"],
   },
   icons: {
-    icon: [{ url: "/footlink_logo.png", sizes: "1536x1024", type: "image/png" }],
-    apple: [{ url: "/footlink_logo.png", sizes: "1536x1024", type: "image/png" }],
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   other: { viewport: "width=device-width, initial-scale=1, viewport-fit=cover" },
 };
