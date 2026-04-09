@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList, House, Plus, UserRound } from "lucide-react";
 
+import { warmActivitySnapshot } from "@/lib/activity-snapshot-client";
+import { warmCurrentProfile } from "@/lib/current-profile-client";
 import { cn } from "@/lib/utils";
 
 const items = [
@@ -16,6 +18,20 @@ const items = [
 function BottomNavFrame() {
   const pathname = usePathname();
   const hideOnFocusedFlow = pathname.startsWith("/match/") || pathname.startsWith("/create");
+
+  function prefetchLinkedState(href: string) {
+    if (href === "/activity" || href === "/create" || href === "/profile") {
+      void warmCurrentProfile();
+    }
+
+    if (href !== "/activity") {
+      return;
+    }
+
+    void warmActivitySnapshot().catch(() => {
+      // Best-effort prefetch only.
+    });
+  }
 
   if (hideOnFocusedFlow) {
     return null;
@@ -32,6 +48,9 @@ function BottomNavFrame() {
             <Link
               key={item.href}
               href={item.href}
+              onMouseEnter={() => prefetchLinkedState(item.href)}
+              onFocus={() => prefetchLinkedState(item.href)}
+              onTouchStart={() => prefetchLinkedState(item.href)}
               className={cn(
                 "relative z-10 flex min-h-[3.4rem] flex-col items-center justify-center gap-1 rounded-[1rem] px-1.5 py-1.5 transition-all",
                 active

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { invalidateActivitySnapshotServerCache } from "@/lib/activity-snapshot-server-cache";
 import { isAppError, toUserFacingError } from "@/lib/errors";
 import { upsertCurrentProfile } from "@/lib/repositories/profiles";
 import type { UpdateProfileInput } from "@/lib/types";
@@ -9,6 +10,8 @@ import type { UpdateProfileInput } from "@/lib/types";
 export async function upsertProfileAction(input: UpdateProfileInput) {
   try {
     const profile = await upsertCurrentProfile(input);
+
+    invalidateActivitySnapshotServerCache(profile.id);
 
     revalidatePath("/profile");
     revalidatePath("/create");

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { invalidateActivitySnapshotServerCache } from "@/lib/activity-snapshot-server-cache";
 import { createAppError, isAppError, toUserFacingError } from "@/lib/errors";
 import { normalizeContactValue } from "@/lib/contact";
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
@@ -60,6 +61,7 @@ export async function createMatchAction(input: CreateMatchInput) {
     const duplicateRow = duplicateRows?.[0];
 
     if (duplicateRow) {
+      invalidateActivitySnapshotServerCache(currentProfile.id);
       return mapMatchRow(duplicateRow);
     }
 
@@ -85,6 +87,8 @@ export async function createMatchAction(input: CreateMatchInput) {
 
     const match = mapMatchRow(data as unknown as CreateMatchReturnRow);
 
+    invalidateActivitySnapshotServerCache(currentProfile.id);
+
     // /home reads the feed through unstable_cache (20s revalidate) and /create
     // has no match-dependent server data, so only bust the pages that
     // immediately display the new listing.
@@ -103,7 +107,7 @@ export async function createMatchAction(input: CreateMatchInput) {
 
 export async function cancelMatchAction(matchId: string) {
   try {
-    await requireCurrentProfile();
+    const currentProfile = await requireCurrentProfile();
     const supabase = await createServerSupabaseClient();
     const { error } = await supabase.rpc("cancel_host_match", {
       p_match_id: matchId,
@@ -116,6 +120,8 @@ export async function cancelMatchAction(matchId: string) {
 
       throw error;
     }
+
+    invalidateActivitySnapshotServerCache(currentProfile.id);
 
     revalidatePath("/activity");
     revalidatePath(`/match/${matchId}`);

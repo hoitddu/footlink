@@ -17,10 +17,10 @@ import {
   SPORT_OPTIONS,
   getSkillLevelLabel,
 } from "@/lib/constants";
-import { useCurrentProfile } from "@/lib/current-profile-context";
-import { getUserFacingErrorMessage } from "@/lib/errors";
 import { DIRECT_CONTACT_OPTIONS } from "@/lib/contact";
+import { useCurrentProfile } from "@/lib/current-profile-context";
 import { useDemoApp } from "@/lib/demo-state/provider";
+import { getUserFacingErrorMessage } from "@/lib/errors";
 import type { DirectContactType, Profile, SportType } from "@/lib/types";
 
 type SaveProfileInput = {
@@ -40,14 +40,12 @@ function ProfileEditor({
   flash,
   onSaveProfile,
   onReset,
-  shouldLoadCurrentProfile = false,
 }: {
   profile: Profile | null;
   returnTo?: string;
   flash?: "saved";
-  onSaveProfile: (input: SaveProfileInput) => Promise<void>;
+  onSaveProfile: (input: SaveProfileInput) => Promise<Profile | void>;
   onReset?: () => void;
-  shouldLoadCurrentProfile?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -55,16 +53,19 @@ function ProfileEditor({
   const [nickname, setNickname] = useState(profile?.nickname ?? "");
   const [ageBand, setAgeBand] = useState<number>(profile?.age ?? 20);
   const [skillLevel, setSkillLevel] = useState<Profile["skill_level"]>(profile?.skill_level ?? "mid");
-  const [preferredSport, setPreferredSport] = useState<SportType | null>(profile?.preferred_sport ?? "futsal");
+  const [preferredSport, setPreferredSport] = useState<SportType | null>(
+    profile?.preferred_sport ?? "futsal",
+  );
   const [openChatLink, setOpenChatLink] = useState(profile?.open_chat_link ?? "");
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number ?? "");
   const [defaultContactType, setDefaultContactType] = useState<DirectContactType>(
-    profile?.default_contact_type ?? (profile?.open_chat_link ? "openchat" : profile?.phone_number ? "phone" : "openchat"),
+    profile?.default_contact_type ??
+      (profile?.open_chat_link ? "openchat" : profile?.phone_number ? "phone" : "openchat"),
   );
   const [isSaving, setIsSaving] = useState(false);
   const [localFlash, setLocalFlash] = useState<"saved" | undefined>(undefined);
-  const saveLockRef = useRef(false);
   const [error, setError] = useState("");
+  const saveLockRef = useRef(false);
   const flashParam = searchParams.get("flash");
   const flashAt = searchParams.get("flashAt");
   const resolvedFlash = flashParam === "saved" ? "saved" : localFlash ?? flash;
@@ -83,43 +84,6 @@ function ProfileEditor({
     );
   }, [profile]);
 
-  useEffect(() => {
-    if (!shouldLoadCurrentProfile) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void import("@/lib/supabase/browser")
-      .then(({ getBrowserCurrentProfile }) => getBrowserCurrentProfile())
-      .then((liveProfile) => {
-        if (!cancelled && liveProfile) {
-          setResolvedProfile(liveProfile);
-          setNickname(liveProfile.nickname ?? "");
-          setAgeBand(liveProfile.age ?? 20);
-          setSkillLevel(liveProfile.skill_level ?? "mid");
-          setPreferredSport(liveProfile.preferred_sport ?? "futsal");
-          setOpenChatLink(liveProfile.open_chat_link ?? "");
-          setPhoneNumber(liveProfile.phone_number ?? "");
-          setDefaultContactType(
-            liveProfile.default_contact_type ??
-              (liveProfile.open_chat_link
-                ? "openchat"
-                : liveProfile.phone_number
-                  ? "phone"
-                  : "openchat"),
-          );
-        }
-      })
-      .catch(() => {
-        // Keep the editor usable even if browser profile hydration fails.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [shouldLoadCurrentProfile]);
-
   async function handleSave() {
     if (saveLockRef.current) {
       return;
@@ -130,7 +94,7 @@ function ProfileEditor({
     setIsSaving(true);
 
     try {
-      await onSaveProfile({
+      const savedProfile = await onSaveProfile({
         nickname: nickname.trim() || resolvedProfile?.nickname || "플레이어",
         age: ageBand,
         skill_level: skillLevel,
@@ -141,6 +105,10 @@ function ProfileEditor({
         default_contact_type: defaultContactType,
       });
 
+      if (savedProfile) {
+        setResolvedProfile(savedProfile);
+      }
+
       if (returnTo) {
         router.push(returnTo);
         return;
@@ -148,7 +116,10 @@ function ProfileEditor({
 
       const nextFlashAt = Date.now();
       setLocalFlash("saved");
-      router.replace(`/profile?flash=saved&flashAt=${nextFlashAt}`, { scroll: false });
+
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", `/profile?flash=saved&flashAt=${nextFlashAt}`);
+      }
     } catch (saveError) {
       setError(getUserFacingErrorMessage(saveError, "프로필을 저장하지 못했습니다."));
     } finally {
@@ -173,12 +144,16 @@ function ProfileEditor({
       <section className="surface-card rounded-[1.75rem] p-5">
         <div className="grid gap-5">
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">닉네임</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              닉네임
+            </span>
             <Input value={nickname} onChange={(event) => setNickname(event.target.value)} />
           </label>
 
           <div className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">선호 종목</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              선호 종목
+            </span>
             <div className="grid grid-cols-2 gap-2">
               {SPORT_OPTIONS.map((sport) => (
                 <button
@@ -199,7 +174,9 @@ function ProfileEditor({
 
           <div className="grid gap-3">
             <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">연령대</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+                연령대
+              </span>
               <div className="grid grid-cols-3 gap-2">
                 {AGE_BANDS.map((band) => (
                   <button
@@ -207,7 +184,9 @@ function ProfileEditor({
                     type="button"
                     onClick={() => setAgeBand(band.value)}
                     className={`rounded-[1rem] px-3 py-3 text-sm font-bold transition ${
-                      ageBand === band.value ? "bg-[#112317] text-white" : "bg-[#eef2ee] text-foreground"
+                      ageBand === band.value
+                        ? "bg-[#112317] text-white"
+                        : "bg-[#eef2ee] text-foreground"
                     }`}
                   >
                     {band.label}
@@ -217,7 +196,9 @@ function ProfileEditor({
             </div>
 
             <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">SKILL LEVEL</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+                SKILL LEVEL
+              </span>
               <div className="grid grid-cols-4 gap-2">
                 {SKILL_LEVELS.map((skill) => (
                   <button
@@ -225,7 +206,9 @@ function ProfileEditor({
                     type="button"
                     onClick={() => setSkillLevel(skill)}
                     className={`rounded-[1rem] px-3 py-3 text-sm font-bold transition ${
-                      skillLevel === skill ? "bg-[#112317] text-white" : "bg-[#eef2ee] text-foreground"
+                      skillLevel === skill
+                        ? "bg-[#112317] text-white"
+                        : "bg-[#eef2ee] text-foreground"
                     }`}
                   >
                     {getSkillLevelLabel(skill)}
@@ -236,7 +219,9 @@ function ProfileEditor({
           </div>
 
           <div className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">기본 연락 방식</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              기본 연락 방식
+            </span>
             <div className="grid grid-cols-2 gap-2">
               {DIRECT_CONTACT_OPTIONS.map((option) => (
                 <button
@@ -256,7 +241,9 @@ function ProfileEditor({
           </div>
 
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">오픈채팅 링크</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              오픈채팅 링크
+            </span>
             <Input
               value={openChatLink}
               onChange={(event) => setOpenChatLink(event.target.value)}
@@ -265,7 +252,9 @@ function ProfileEditor({
           </label>
 
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">휴대폰 번호</span>
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              휴대폰 번호
+            </span>
             <Input
               value={phoneNumber}
               onChange={(event) => setPhoneNumber(event.target.value.replace(/[^\d]/g, ""))}
@@ -326,9 +315,8 @@ export function ProfileForm({
         profile={initialProfile ?? null}
         returnTo={returnTo}
         flash={flash}
-        shouldLoadCurrentProfile={profile === undefined}
         onSaveProfile={async (input) => {
-          await saveProfile({
+          return saveProfile({
             nickname: input.nickname.trim(),
             age: input.age,
             preferred_mode: (initialProfile ?? shellProfile)?.preferred_mode ?? "solo",

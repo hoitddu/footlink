@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 import { cancelMatchAction } from "@/app/actions/matches";
 import {
@@ -17,6 +17,12 @@ import { FlashBanner } from "@/components/app/flash-banner";
 import { ScreenHeader } from "@/components/app/screen-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { AppDataSource } from "@/lib/app-config";
+import {
+  fetchActivitySnapshot,
+  getCachedActivitySnapshot,
+  primeActivitySnapshot,
+} from "@/lib/activity-snapshot-client";
 import { cn, formatAgeBand, formatFee, formatSkillLevel, formatSportType, formatStartAt, formatTimeRange } from "@/lib/utils";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import {
@@ -55,11 +61,11 @@ function isDismissibleRequest(request: ParticipationRequest) {
 }
 
 function formatPrimaryMeta(match: Match) {
-  return `${formatStartAt(match.start_at)} · ${formatFee(match.fee)}`;
+  return `${formatStartAt(match.start_at)} / ${formatFee(match.fee)}`;
 }
 
 function formatSecondaryMeta(match: Match) {
-  return `${formatTimeRange(match.start_at, match.duration_minutes)} · ${match.address}`;
+  return `${formatTimeRange(match.start_at, match.duration_minutes)} / ${match.address}`;
 }
 
 function ActivityTabButton({
@@ -92,6 +98,58 @@ function ActivityTabButton({
         {count}
       </span>
     </button>
+  );
+}
+
+function ActivityLoadingState({
+  flash,
+  initialTab,
+  loadError,
+}: {
+  flash?: ActivityFlash;
+  initialTab: ActivityTab;
+  loadError: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <ScreenHeader href="/home" ariaLabel="Go home" />
+
+      {flash || loadError ? (
+        <div className="space-y-3">
+          <FlashBanner flash={flash} />
+          {loadError ? (
+            <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
+              {loadError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <section className="surface-card rounded-[1.5rem] p-3">
+        <div className="grid grid-cols-2 gap-2">
+          <ActivityTabButton
+            active={initialTab === "requests"}
+            count={0}
+            label="\uCC38\uC5EC"
+            onClick={() => {}}
+          />
+          <ActivityTabButton
+            active={initialTab === "listings"}
+            count={0}
+            label="\uBAA8\uC9D1"
+            onClick={() => {}}
+          />
+        </div>
+      </section>
+
+      <section className="surface-card rounded-[1.45rem] p-5">
+        <div className="space-y-3">
+          <div className="h-4 w-32 rounded-full bg-[#eef2ee]" />
+          <div className="h-4 w-48 rounded-full bg-[#f4f7f3]" />
+          <div className="h-4 w-40 rounded-full bg-[#f4f7f3]" />
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -137,7 +195,7 @@ function MyJoinCard({
           <p className="mt-1 text-[13px] text-[#66736a]">{formatPrimaryMeta(match)}</p>
           <p className="mt-1 truncate text-[13px] text-[#66736a]">{formatSecondaryMeta(match)}</p>
           <p className="mt-1 text-[12px] font-medium text-[#55625a]">
-            {host?.nickname ?? "FootLink Host"} · {getParticipationSummary(request)}
+            {host?.nickname ?? "FootLink Host"} / {getParticipationSummary(request)}
           </p>
         </div>
       </div>
@@ -170,7 +228,7 @@ function MyJoinCard({
               onClick={onWithdraw}
               disabled={withdrawPending}
             >
-              {withdrawPending ? "요청 취소 중..." : "요청 취소"}
+              {withdrawPending ? "\uC694\uCCAD \uCDE8\uC18C \uC911..." : "\uC694\uCCAD \uCDE8\uC18C"}
             </Button>
           ) : null}
         </div>
@@ -213,7 +271,7 @@ function ClosedRequestRow({
           ) : null}
         </div>
         <Button size="sm" type="button" variant="secondary" onClick={onDismiss} disabled={dismissPending}>
-          {dismissPending ? "삭제 중..." : "삭제"}
+          {dismissPending ? "\uC0AD\uC81C \uC911..." : "\uC0AD\uC81C"}
         </Button>
       </div>
     </article>
@@ -242,19 +300,19 @@ function PendingRequestRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[#112317]">
-            {requesterName} · {getParticipationSummary(request)}
+            {requesterName} / {getParticipationSummary(request)}
           </p>
           {requesterMeta ? <p className="mt-1 text-[12px] text-[#66736a]">{requesterMeta}</p> : null}
           {request.message ? (
             <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[#55625a]">{request.message}</p>
           ) : null}
         </div>
-        <Badge variant="soon">요청됨</Badge>
+        <Badge variant="soon">{"\uC694\uCCAD"}</Badge>
       </div>
 
       <div className="mt-3 flex gap-2">
         <Button className="flex-1" size="sm" type="button" onClick={onAccept} disabled={disabled}>
-          {pendingAction?.targetId === request.id && pendingAction.kind === "accept" ? "수락 중..." : "수락"}
+          {pendingAction?.targetId === request.id && pendingAction.kind === "accept" ? "\uC218\uB77D \uC911..." : "\uC218\uB77D"}
         </Button>
         <Button
           className="flex-1"
@@ -264,7 +322,7 @@ function PendingRequestRow({
           onClick={onReject}
           disabled={disabled}
         >
-          {pendingAction?.targetId === request.id && pendingAction.kind === "reject" ? "거절 중..." : "거절"}
+          {pendingAction?.targetId === request.id && pendingAction.kind === "reject" ? "\uAC70\uC808 \uC911..." : "\uAC70\uC808"}
         </Button>
       </div>
     </div>
@@ -286,7 +344,7 @@ function ConnectedRequestRow({
   onConfirm: () => void;
   onReject: () => void;
 }) {
-  const statusLabel = request.status === "confirmed" ? "확정됨" : "수락됨";
+  const statusLabel = request.status === "confirmed" ? "\uD655\uC815\uB428" : "\uC5F0\uB77D \uC911";
   const confirmPending = pendingAction?.targetId === request.id && pendingAction.kind === "confirm";
   const rejectPending = pendingAction?.targetId === request.id && pendingAction.kind === "reject";
   const actionDisabled = Boolean(pendingAction);
@@ -296,7 +354,7 @@ function ConnectedRequestRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[#112317]">
-            {requesterName} · {getParticipationSummary(request)}
+            {requesterName} / {getParticipationSummary(request)}
           </p>
           {requesterMeta ? <p className="mt-1 text-[12px] text-[#66736a]">{requesterMeta}</p> : null}
         </div>
@@ -306,7 +364,7 @@ function ConnectedRequestRow({
       {request.status === "accepted" ? (
         <div className="mt-3 flex gap-2">
           <Button className="flex-1" size="sm" type="button" onClick={onConfirm} disabled={actionDisabled}>
-            {confirmPending ? "확정 중..." : "확정"}
+            {confirmPending ? "\uD655\uC815 \uC911..." : "\uD655\uC815"}
           </Button>
           <Button
             className="flex-1"
@@ -316,7 +374,7 @@ function ConnectedRequestRow({
             onClick={onReject}
             disabled={actionDisabled}
           >
-            {rejectPending ? "거절 중..." : "거절"}
+            {rejectPending ? "\uAC70\uC808 \uC911..." : "\uAC70\uC808"}
           </Button>
         </div>
       ) : null}
@@ -365,11 +423,11 @@ function HostSpotCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={match.remaining_slots <= 1 ? "urgent" : "soon"}>
-              {match.remaining_slots <= 1 ? "1자리" : `${match.remaining_slots}자리`}
+              {match.remaining_slots <= 1 ? "1\uC790\uB9AC" : `${match.remaining_slots}\uC790\uB9AC`}
             </Badge>
             {pendingRequests.length > 0 ? (
               <span className="rounded-full bg-[#f4f7f3] px-2.5 py-1 text-[11px] font-bold text-[#55625a]">
-                새 요청 {pendingRequests.length}
+                {"\uC0C8 \uC694\uCCAD"} {pendingRequests.length}
               </span>
             ) : null}
           </div>
@@ -386,19 +444,19 @@ function HostSpotCard({
           onClick={onDelete}
           disabled={!canDelete || deletePending}
         >
-          {deletePending ? "마감 중..." : "모집 마감"}
+          {deletePending ? "\uB9C8\uAC10 \uC911..." : "\uBAA8\uC9D1 \uB9C8\uAC10"}
         </Button>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
         <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
-          요청 {pendingRequests.length}
+          {"\uC694\uCCAD"} {pendingRequests.length}
         </span>
         <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
-          연락 {connectedRequests.length}
+          {"\uC5F0\uB77D"} {connectedRequests.length}
         </span>
         <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
-          종료 {closedRequests.length}
+          {"\uC885\uB8CC"} {closedRequests.length}
         </span>
       </div>
 
@@ -407,7 +465,7 @@ function HostSpotCard({
           {pendingRequests.map((request) => {
             const requester = getProfileById(state, request.requester_profile_id);
             const requesterMeta = requester
-              ? `${formatSkillLevel(requester.skill_level)} · ${formatAgeBand(requester.age)}`
+              ? `${formatSkillLevel(requester.skill_level)} / ${formatAgeBand(requester.age)}`
               : null;
             const requestActionPending =
               pendingAction?.targetId === request.id &&
@@ -417,7 +475,7 @@ function HostSpotCard({
               <PendingRequestRow
                 key={request.id}
                 request={request}
-                requesterName={requester?.nickname ?? "참여자"}
+                requesterName={requester?.nickname ?? "\uCC38\uC5EC\uC790"}
                 requesterMeta={requesterMeta}
                 pendingAction={pendingAction}
                 disabled={
@@ -433,24 +491,24 @@ function HostSpotCard({
         </div>
       ) : requests.length === 0 ? (
         <div className="mt-3 rounded-[1rem] bg-[#f4f7f3] px-4 py-3 text-sm text-[#66736a]">
-          아직 들어온 요청이 없습니다.
+          {"\uC544\uC9C1 \uB4E4\uC5B4\uC628 \uC694\uCCAD\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}
         </div>
       ) : null}
 
       {connectedRequests.length > 0 ? (
         <div className="mt-3 space-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">연락 및 확정</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">{"\uC5F0\uB77D \uBC0F \uD655\uC815"}</p>
           {connectedRequests.map((request) => {
             const requester = getProfileById(state, request.requester_profile_id);
             const requesterMeta = requester
-              ? `${formatSkillLevel(requester.skill_level)} · ${formatAgeBand(requester.age)}`
+              ? `${formatSkillLevel(requester.skill_level)} / ${formatAgeBand(requester.age)}`
               : null;
 
             return (
               <ConnectedRequestRow
                 key={request.id}
                 request={request}
-                requesterName={requester?.nickname ?? "참여자"}
+                requesterName={requester?.nickname ?? "\uCC38\uC5EC\uC790"}
                 requesterMeta={requesterMeta}
                 pendingAction={pendingAction}
                 onConfirm={() => onConfirm(request.id)}
@@ -489,21 +547,26 @@ function ActivityScreenBody({
   onDelete: (matchId: string) => Promise<void>;
   showDemoIdentitySwitcher: boolean;
 }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<ActivityTab>(initialTab);
   const [error, setError] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingActivityAction>(null);
+  const [localFlash, setLocalFlash] = useState<ActivityFlash | undefined>(undefined);
+  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(undefined);
+  const [localHighlight, setLocalHighlight] = useState<string | undefined>(highlight);
   const flashParam = searchParams.get("flash");
   const flashAt = searchParams.get("flashAt");
-  const resolvedFlash = (
-    flashParam &&
-    ["created", "requested", "accepted", "confirmed", "rejected", "withdrawn", "cleared", "deleted"].includes(
-      flashParam,
-    )
-      ? flashParam
-      : flash
-  ) as ActivityFlash | undefined;
+  const resolvedFlash =
+    localFlash ??
+    ((
+      flashParam &&
+      ["created", "requested", "accepted", "confirmed", "rejected", "withdrawn", "cleared", "deleted"].includes(
+        flashParam,
+      )
+        ? flashParam
+        : flash
+    ) as ActivityFlash | undefined);
+  const resolvedHighlight = localHighlight ?? highlight;
 
   const myRequests = useMemo(() => getMyParticipationRequests(state), [state]);
   const hostedMatches = useMemo(() => getHostedMatches(state), [state]);
@@ -530,7 +593,14 @@ function ActivityScreenBody({
     });
 
     const query = params.toString();
-    router.replace(query ? `/activity?${query}` : "/activity");
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", query ? `/activity?${query}` : "/activity");
+    }
+
+    setLocalFlash(next.flash as ActivityFlash | undefined);
+    setLocalFlashAt(String(Date.now()));
+    setLocalHighlight(next.highlight);
   }
 
   function handleTabChange(nextTab: ActivityTab) {
@@ -554,7 +624,7 @@ function ActivityScreenBody({
         flash: "withdrawn",
       });
     } catch (withdrawError) {
-      setError(getUserFacingErrorMessage(withdrawError, "요청을 취소하지 못했습니다."));
+      setError(getUserFacingErrorMessage(withdrawError, "\uC694\uCCAD\uC744 \uCDE8\uC18C\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
     } finally {
       setPendingAction(null);
     }
@@ -573,7 +643,7 @@ function ActivityScreenBody({
         flash: "accepted",
       });
     } catch (acceptError) {
-      setError(getUserFacingErrorMessage(acceptError, "참가 요청을 수락하지 못했습니다."));
+      setError(getUserFacingErrorMessage(acceptError, "\uCC38\uC5EC \uC694\uCCAD\uC744 \uC218\uB77D\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
     } finally {
       setPendingAction(null);
     }
@@ -592,7 +662,7 @@ function ActivityScreenBody({
         flash: "confirmed",
       });
     } catch (confirmError) {
-      setError(getUserFacingErrorMessage(confirmError, "최종 확정을 처리하지 못했습니다."));
+      setError(getUserFacingErrorMessage(confirmError, "\uCD5C\uC885 \uD655\uC815\uC744 \uCC98\uB9AC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
     } finally {
       setPendingAction(null);
     }
@@ -611,14 +681,14 @@ function ActivityScreenBody({
         flash: "rejected",
       });
     } catch (rejectError) {
-      setError(getUserFacingErrorMessage(rejectError, "참가 요청을 거절하지 못했습니다."));
+      setError(getUserFacingErrorMessage(rejectError, "\uCC38\uC5EC \uC694\uCCAD\uC744 \uAC70\uC808\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
     } finally {
       setPendingAction(null);
     }
   }
 
   async function handleDelete(matchId: string) {
-    if (!window.confirm("이 모집을 마감할까요? 대기 중인 요청도 함께 종료됩니다.")) {
+    if (!window.confirm("\uC774 \uBAA8\uC9D1\uC744 \uB9C8\uAC10\uD560\uAE4C\uC694? \uB300\uAE30 \uC911\uC778 \uC694\uCCAD\uB3C4 \uD568\uAED8 \uC885\uB8CC\uB429\uB2C8\uB2E4.")) {
       return;
     }
 
@@ -633,7 +703,7 @@ function ActivityScreenBody({
         flash: "deleted",
       });
     } catch (deleteError) {
-      setError(getUserFacingErrorMessage(deleteError, "모집을 마감하지 못했습니다."));
+      setError(getUserFacingErrorMessage(deleteError, "\uBAA8\uC9D1\uC744 \uB9C8\uAC10\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
     } finally {
       setPendingAction(null);
     }
@@ -651,7 +721,7 @@ function ActivityScreenBody({
         flash: "cleared",
       });
     } catch (dismissError) {
-      setError(getUserFacingErrorMessage(dismissError, "참여 요청 기록을 삭제하지 못했습니다."));
+      setError(getUserFacingErrorMessage(dismissError, "\uCC38\uC5EC \uC694\uCCAD \uAE30\uB85D\uC744 \uC0AD\uC81C\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
     } finally {
       setPendingAction(null);
     }
@@ -659,11 +729,14 @@ function ActivityScreenBody({
 
   return (
     <div className="space-y-4">
-      <ScreenHeader href="/home" ariaLabel="홈으로 돌아가기" />
+      <ScreenHeader href="/home" ariaLabel="Go home" />
 
       {resolvedFlash || error ? (
         <div className="space-y-3">
-          <FlashBanner key={flashAt ?? resolvedFlash ?? "activity-flash"} flash={resolvedFlash} />
+          <FlashBanner
+            key={localFlashAt ?? flashAt ?? resolvedFlash ?? "activity-flash"}
+            flash={resolvedFlash}
+          />
           {error ? (
             <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
               {error}
@@ -679,13 +752,13 @@ function ActivityScreenBody({
           <ActivityTabButton
             active={activeTab === "requests"}
             count={myRequests.length}
-            label="참여"
+            label="\uCC38\uC5EC"
             onClick={() => handleTabChange("requests")}
           />
           <ActivityTabButton
             active={activeTab === "listings"}
             count={hostedMatches.length}
-            label="모집"
+            label="\uBAA8\uC9D1"
             onClick={() => handleTabChange("listings")}
           />
         </div>
@@ -695,9 +768,9 @@ function ActivityScreenBody({
         <section className="space-y-3">
           {openRequests.length === 0 && dismissibleClosedRequests.length === 0 ? (
             <section className="surface-card rounded-[1.45rem] p-5">
-              <p className="text-sm text-[#66736a]">참여 요청한 매치가 없습니다.</p>
+              <p className="text-sm text-[#66736a]">{"\uCC38\uC5EC \uC694\uCCAD\uD55C \uB9E4\uCE58\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."}</p>
               <Button asChild className="mt-4" size="sm">
-                <Link href="/home">매치 찾기</Link>
+                <Link href="/home">{"\uB9E4\uCE58 \uCC3E\uAE30"}</Link>
               </Button>
             </section>
           ) : (
@@ -714,7 +787,7 @@ function ActivityScreenBody({
                   state={state}
                   match={match}
                   request={request}
-                  highlighted={highlight === request.id || highlight === match.id}
+                  highlighted={resolvedHighlight === request.id || resolvedHighlight === match.id}
                   onWithdraw={() => handleWithdraw(request.id)}
                   withdrawPending={
                     pendingAction?.targetId === request.id && pendingAction.kind === "withdraw"
@@ -727,7 +800,7 @@ function ActivityScreenBody({
           {dismissibleClosedRequests.length > 0 ? (
             <section className="surface-card rounded-[1.45rem] p-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold tracking-[-0.02em] text-[#112317]">종료된 요청</h2>
+                <h2 className="text-sm font-bold tracking-[-0.02em] text-[#112317]">{"\uC885\uB8CC\uB41C \uC694\uCCAD"}</h2>
                 <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#55625a]">
                   {dismissibleClosedRequests.length}
                 </span>
@@ -745,7 +818,7 @@ function ActivityScreenBody({
                       key={request.id}
                       match={match}
                       request={request}
-                      highlighted={highlight === request.id || highlight === match.id}
+                      highlighted={resolvedHighlight === request.id || resolvedHighlight === match.id}
                       dismissPending={
                         pendingAction?.targetId === request.id && pendingAction.kind === "dismiss"
                       }
@@ -761,9 +834,9 @@ function ActivityScreenBody({
         <section className="space-y-3">
           {hostedMatches.length === 0 ? (
             <section className="surface-card rounded-[1.45rem] p-5">
-              <p className="text-sm text-[#66736a]">진행 중인 모집이 없습니다.</p>
+              <p className="text-sm text-[#66736a]">{"\uC9C4\uD589 \uC911\uC778 \uBAA8\uC9D1\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}</p>
               <Button asChild className="mt-4" size="sm">
-                <Link href="/create">용병 모집하기</Link>
+                <Link href="/create">{"\uC6A9\uBCD1 \uBAA8\uC9D1\uD558\uAE30"}</Link>
               </Button>
             </section>
           ) : (
@@ -773,7 +846,7 @@ function ActivityScreenBody({
                 state={state}
                 match={match}
                 requests={getInboundRequestsForMatch(state, match.id)}
-                highlighted={highlight === match.id}
+                highlighted={resolvedHighlight === match.id}
                 pendingAction={pendingAction}
                 onAccept={(requestId) => handleAccept(requestId, match.id)}
                 onConfirm={(requestId) => handleConfirm(requestId, match.id)}
@@ -785,6 +858,97 @@ function ActivityScreenBody({
         </section>
       )}
     </div>
+  );
+}
+
+function SupabaseActivityScreen({
+  flash,
+  initialTab = "requests",
+  highlight,
+  refreshKey,
+}: {
+  flash?: ActivityFlash;
+  initialTab?: ActivityTab;
+  highlight?: string;
+  refreshKey?: string;
+}) {
+  const [stateSnapshot, setStateSnapshot] = useState<DemoAppState | null>(() => getCachedActivitySnapshot());
+  const [loadError, setLoadError] = useState("");
+  const [bootstrapping, setBootstrapping] = useState(() => !getCachedActivitySnapshot());
+
+  async function loadSnapshot({
+    keepExisting = true,
+    force = false,
+  }: {
+    keepExisting?: boolean;
+    force?: boolean;
+  } = {}) {
+    if (!keepExisting || !stateSnapshot) {
+      setBootstrapping(true);
+    }
+
+    setLoadError("");
+
+    try {
+      const nextState = await fetchActivitySnapshot({ force });
+      setStateSnapshot(nextState);
+    } catch (error) {
+      setLoadError(getUserFacingErrorMessage(error, "\uD65C\uB3D9 \uC0C1\uD0DC\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
+    } finally {
+      setBootstrapping(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadSnapshot({
+      keepExisting: Boolean(stateSnapshot),
+      force: Boolean(stateSnapshot),
+    });
+    // refreshKey comes from the server page render, so router.refresh() remounts
+    // the client fetch path without forcing the initial route transition to wait.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
+
+  if (!stateSnapshot && bootstrapping) {
+    return <ActivityLoadingState flash={flash} initialTab={initialTab} loadError={loadError} />;
+  }
+
+  if (!stateSnapshot) {
+    return <ActivityLoadingState flash={flash} initialTab={initialTab} loadError={loadError} />;
+  }
+
+  return (
+    <ActivityScreenBody
+      flash={flash}
+      initialTab={initialTab}
+      highlight={highlight}
+      state={stateSnapshot}
+      onWithdraw={async (requestId) => {
+        await withdrawParticipationAction(requestId);
+        await loadSnapshot();
+      }}
+      onAccept={async (requestId) => {
+        await acceptParticipationAction(requestId);
+        await loadSnapshot();
+      }}
+      onConfirm={async (requestId) => {
+        await confirmParticipationAction(requestId);
+        await loadSnapshot();
+      }}
+      onReject={async (requestId) => {
+        await rejectParticipationAction(requestId);
+        await loadSnapshot();
+      }}
+      onDismiss={async (requestId) => {
+        await dismissParticipationRequestAction(requestId);
+        await loadSnapshot();
+      }}
+      onDelete={async (matchId) => {
+        await cancelMatchAction(matchId);
+        await loadSnapshot();
+      }}
+      showDemoIdentitySwitcher={false}
+    />
   );
 }
 
@@ -823,17 +987,25 @@ function DemoActivityScreen(props: {
 }
 
 export function ActivityScreen({
+  dataSource,
   flash,
   initialTab = "requests",
   highlight,
   stateSnapshot,
+  refreshKey,
 }: {
+  dataSource?: AppDataSource;
   flash?: ActivityFlash;
   initialTab?: ActivityTab;
   highlight?: string;
   stateSnapshot?: DemoAppState;
+  refreshKey?: string;
 }) {
+  const resolvedDataSource = dataSource ?? (stateSnapshot ? "supabase" : "demo");
+
   if (stateSnapshot) {
+    primeActivitySnapshot(stateSnapshot);
+
     return (
       <ActivityScreenBody
         flash={flash}
@@ -859,6 +1031,17 @@ export function ActivityScreen({
           await cancelMatchAction(matchId);
         }}
         showDemoIdentitySwitcher={false}
+      />
+    );
+  }
+
+  if (resolvedDataSource === "supabase") {
+    return (
+      <SupabaseActivityScreen
+        flash={flash}
+        initialTab={initialTab}
+        highlight={highlight}
+        refreshKey={refreshKey}
       />
     );
   }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { invalidateActivitySnapshotServerCache } from "@/lib/activity-snapshot-server-cache";
 import { createAppError, isAppError, toUserFacingError } from "@/lib/errors";
 import { ensureMatchLifecycleMaintenance } from "@/lib/repositories/lifecycle";
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
@@ -19,7 +20,7 @@ async function getRequestRow(requestId: string) {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("match_requests")
-    .select(MATCH_REQUEST_PATH_SELECT)
+    .select("id, match_id, requester_profile_id, host_profile_id")
     .eq("id", requestId)
     .single();
 
@@ -27,7 +28,10 @@ async function getRequestRow(requestId: string) {
     throw error;
   }
 
-  return data as unknown as RequestPathRow;
+  return data as unknown as RequestPathRow & {
+    requester_profile_id: string;
+    host_profile_id: string;
+  };
 }
 
 async function runMatchLifecycleMaintenance() {
@@ -89,6 +93,7 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
     }
 
     const request = data as unknown as RequestPathRow;
+    invalidateActivitySnapshotServerCache([currentProfile.id, match.creator_profile_id]);
 
     revalidatePath("/activity");
     revalidatePath(`/match/${input.matchId}`);
@@ -99,7 +104,7 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
       throw error;
     }
 
-    throw toUserFacingError(error, "참가 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "筌〓㈇? ?遺욧퍕??筌ｌ꼶???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
   }
 }
 
@@ -124,6 +129,7 @@ export async function acceptParticipationAction(requestId: string, hostNote?: st
     }
 
     const request = await getRequestRow(requestId);
+    invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
@@ -134,7 +140,7 @@ export async function acceptParticipationAction(requestId: string, hostNote?: st
       throw error;
     }
 
-    throw toUserFacingError(error, "요청을 수락하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "?遺욧퍕????롮뵭??? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
   }
 }
 
@@ -159,6 +165,7 @@ export async function confirmParticipationAction(requestId: string, hostNote?: s
     }
 
     const request = await getRequestRow(requestId);
+    invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
@@ -169,7 +176,7 @@ export async function confirmParticipationAction(requestId: string, hostNote?: s
       throw error;
     }
 
-    throw toUserFacingError(error, "최종 확정을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "筌ㅼ뮇伊??類ㅼ젟??筌ｌ꼶???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
   }
 }
 
@@ -186,6 +193,7 @@ export async function cancelParticipationConfirmationAction(requestId: string, h
     }
 
     const request = await getRequestRow(requestId);
+    invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
@@ -196,7 +204,7 @@ export async function cancelParticipationConfirmationAction(requestId: string, h
       throw error;
     }
 
-    throw toUserFacingError(error, "확정 취소를 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "?類ㅼ젟 ?띯뫁?쇘몴?筌ｌ꼶???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
   }
 }
 
@@ -213,6 +221,7 @@ export async function rejectParticipationAction(requestId: string, hostNote?: st
     }
 
     const request = await getRequestRow(requestId);
+    invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
@@ -223,7 +232,7 @@ export async function rejectParticipationAction(requestId: string, hostNote?: st
       throw error;
     }
 
-    throw toUserFacingError(error, "요청을 거절하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "?遺욧퍕??椰꾧퀣???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
   }
 }
 
@@ -239,6 +248,7 @@ export async function withdrawParticipationAction(requestId: string) {
     }
 
     const request = await getRequestRow(requestId);
+    invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
@@ -249,7 +259,7 @@ export async function withdrawParticipationAction(requestId: string) {
       throw error;
     }
 
-    throw toUserFacingError(error, "요청을 취소하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "?遺욧퍕???띯뫁???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
   }
 }
 
@@ -269,11 +279,11 @@ export async function dismissParticipationRequestAction(requestId: string) {
     }
 
     if (request.requester_profile_id !== currentProfile.id) {
-      throw new Error("요청자만 참여 요청 기록을 삭제할 수 있습니다.");
+      throw new Error("?遺욧퍕?癒?춸 筌〓챷肉??遺욧퍕 疫꿸퀡以???????????됰뮸??덈뼄.");
     }
 
     if (!["rejected", "withdrawn", "expired"].includes(request.status)) {
-      throw new Error("이미 진행 중인 요청은 삭제할 수 없습니다.");
+      throw new Error("??? 筌욊쑵六?餓λ쵐???遺욧퍕?? ?????????곷뮸??덈뼄.");
     }
 
     const { error: dismissError } = await supabase.from("request_activity_dismissals").upsert(
@@ -289,6 +299,7 @@ export async function dismissParticipationRequestAction(requestId: string) {
       throw dismissError;
     }
 
+    invalidateActivitySnapshotServerCache(currentProfile.id);
     revalidatePath("/activity");
 
     return request.id;
@@ -297,7 +308,7 @@ export async function dismissParticipationRequestAction(requestId: string) {
       throw error;
     }
 
-    throw toUserFacingError(error, "참여 요청 기록을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "筌〓챷肉??遺욧퍕 疫꿸퀡以???????? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
   }
 }
 
@@ -311,6 +322,6 @@ export async function markNotificationsReadAction(notificationIds: string[]) {
       throw error;
     }
 
-    throw toUserFacingError(error, "알림 읽음 상태를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "???뵝 ??뚯벉 ?怨밴묶?????館釉?쭪? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
   }
 }

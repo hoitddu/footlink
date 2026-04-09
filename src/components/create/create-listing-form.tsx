@@ -310,12 +310,10 @@ function CreateListingFormBody({
   currentProfile,
   onCreateListing,
   profileCompletionEnabled = false,
-  shouldLoadCurrentProfile = false,
 }: {
   currentProfile?: Profile | null;
   onCreateListing: (input: CreateMatchInput) => Promise<{ id: string }>;
   profileCompletionEnabled?: boolean;
-  shouldLoadCurrentProfile?: boolean;
 }) {
   const router = useRouter();
   const [defaultSchedule] = useState(getDefaultSchedule);
@@ -348,29 +346,6 @@ function CreateListingFormBody({
   const submitLockRef = useRef(false);
   const minimumDate = getMinimumSelectableDate();
   const minimumTime = getMinimumSelectableTime(date);
-
-  useEffect(() => {
-    if (!shouldLoadCurrentProfile) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void import("@/lib/supabase/browser")
-      .then(({ getBrowserCurrentProfile }) => getBrowserCurrentProfile())
-      .then((profile) => {
-        if (!cancelled && profile) {
-          setResolvedProfile(profile);
-        }
-      })
-      .catch(() => {
-        // Keep the create flow interactive even if profile hydration fails.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [shouldLoadCurrentProfile]);
 
   useEffect(() => {
     if (!currentProfile) {
@@ -617,7 +592,7 @@ function CreateListingFormBody({
                 </button>
               </div>
             ) : (
-              <div className="flex flex-wrap items-center gap-1.5 pl-0.5">
+              <div className="grid grid-cols-4 gap-1.5">
                 {getMatchPositionOptions(sport).map((option) => {
                   const active = positionTargets.includes(option.value);
 
@@ -626,7 +601,7 @@ function CreateListingFormBody({
                       key={option.value}
                       type="button"
                       onClick={() => togglePositionTarget(option.value)}
-                      className={`min-w-[4.65rem] rounded-full px-3 py-2 text-[13px] font-bold transition active:scale-95 ${
+                      className={`min-w-0 rounded-full px-2.5 py-2 text-[12px] font-bold transition active:scale-95 ${
                         active
                           ? "kinetic-gradient text-white"
                           : "bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]"
@@ -924,7 +899,6 @@ export function CreateListingForm({
       <CreateListingFormBody
         currentProfile={initialProfile ?? null}
         profileCompletionEnabled
-        shouldLoadCurrentProfile={currentProfile === undefined}
         onCreateListing={async (input) => {
           await ensureAnonymousSessionAction();
           return createMatchAction(input);

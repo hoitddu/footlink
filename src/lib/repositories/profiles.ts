@@ -6,6 +6,25 @@ import { mapProfileRow } from "@/lib/supabase/mappers";
 import type { Profile, UpdateProfileInput } from "@/lib/types";
 import { PROFILE_APP_SELECT, type AppProfileRow } from "@/lib/supabase/selects";
 
+type ServerSupabaseClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+export async function getCurrentProfileByAuthUserId(
+  supabase: ServerSupabaseClient,
+  authUserId: string,
+) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select(PROFILE_APP_SELECT)
+    .eq("auth_user_id", authUserId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ? mapProfileRow(data as unknown as AppProfileRow) : null;
+}
+
 export const getCurrentProfile = cache(async () => {
   const user = await getServerAuthUser();
 
@@ -14,17 +33,7 @@ export const getCurrentProfile = cache(async () => {
   }
 
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select(PROFILE_APP_SELECT)
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  return data ? mapProfileRow(data as unknown as AppProfileRow) : null;
+  return getCurrentProfileByAuthUserId(supabase, user.id);
 });
 
 export async function requireCurrentProfile() {
@@ -79,6 +88,17 @@ export async function listProfilesByIds(profileIds: string[]) {
   }
 
   const supabase = await createServerSupabaseClient();
+  return listProfilesByIdsWithSupabase(supabase, profileIds);
+}
+
+export async function listProfilesByIdsWithSupabase(
+  supabase: ServerSupabaseClient,
+  profileIds: string[],
+) {
+  if (profileIds.length === 0) {
+    return [] satisfies Profile[];
+  }
+
   const { data, error } = await supabase
     .from("profiles")
     .select(PROFILE_APP_SELECT)
