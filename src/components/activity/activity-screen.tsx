@@ -84,11 +84,11 @@ function ActivityTabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex min-h-[3.25rem] items-center justify-between gap-3 rounded-[1.1rem] px-4 py-3 text-left transition",
+        "flex min-h-[3.25rem] items-center justify-between gap-2.5 rounded-[1.1rem] px-4 py-3 text-left transition",
         active ? "bg-[#112317] text-white shadow-[0_16px_30px_rgba(6,21,12,0.16)]" : "bg-[#eef2ee] text-[#112317]",
       )}
     >
-      <span className="text-sm font-bold tracking-[-0.02em]">{label}</span>
+      <span className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.01em]">{label}</span>
       <span
         className={cn(
           "rounded-full px-2.5 py-1 text-[11px] font-bold",
@@ -130,13 +130,13 @@ function ActivityLoadingState({
           <ActivityTabButton
             active={initialTab === "requests"}
             count={0}
-            label="\uCC38\uC5EC"
+            label="참여"
             onClick={() => {}}
           />
           <ActivityTabButton
             active={initialTab === "listings"}
             count={0}
-            label="\uBAA8\uC9D1"
+            label="모집"
             onClick={() => {}}
           />
         </div>
@@ -752,13 +752,13 @@ function ActivityScreenBody({
           <ActivityTabButton
             active={activeTab === "requests"}
             count={myRequests.length}
-            label="\uCC38\uC5EC"
+            label="참여"
             onClick={() => handleTabChange("requests")}
           />
           <ActivityTabButton
             active={activeTab === "listings"}
             count={hostedMatches.length}
-            label="\uBAA8\uC9D1"
+            label="모집"
             onClick={() => handleTabChange("listings")}
           />
         </div>

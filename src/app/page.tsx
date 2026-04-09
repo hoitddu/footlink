@@ -1,5 +1,5 @@
-import { EntrySplashGate } from "@/components/entry/entry-splash-gate";
+import { EntryFlow } from "@/components/entry/entry-flow";
 
 export default function EntryPage() {
-  return <EntrySplashGate />;
+  return <EntryFlow />;
 }

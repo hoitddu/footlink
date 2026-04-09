@@ -156,7 +156,7 @@ function FeedScreenView({
             ))}
           </div>
 
-          <div className="mt-1.5 grid grid-cols-5 gap-1.5">
+          <div className="mt-1.5 grid grid-cols-5 gap-2">
               {SORT_OPTIONS.map((option) => (
                 <FilterPill
                   key={option.value}

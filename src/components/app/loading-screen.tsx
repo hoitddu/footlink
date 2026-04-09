@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+const INITIAL_ELAPSED_MS = 1600;
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -22,12 +24,12 @@ function buildRevealStyle(elapsedMs: number, startMs: number, durationMs: number
 }
 
 export function LoadingScreen() {
-  const [elapsedMs, setElapsedMs] = useState(0);
-  const [glowPhase, setGlowPhase] = useState(0);
+  const [elapsedMs, setElapsedMs] = useState(INITIAL_ELAPSED_MS);
+  const [glowPhase, setGlowPhase] = useState(INITIAL_ELAPSED_MS / 1000);
 
   useEffect(() => {
     let frameId = 0;
-    const startedAt = performance.now();
+    const startedAt = performance.now() - INITIAL_ELAPSED_MS;
 
     const tick = (now: number) => {
       const elapsed = now - startedAt;

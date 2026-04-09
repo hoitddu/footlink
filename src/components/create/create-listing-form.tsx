@@ -601,7 +601,7 @@ function CreateListingFormBody({
                       key={option.value}
                       type="button"
                       onClick={() => togglePositionTarget(option.value)}
-                      className={`min-w-0 rounded-full px-2.5 py-2 text-[12px] font-bold transition active:scale-95 ${
+                      className={`min-w-0 whitespace-nowrap rounded-full px-2 py-2 text-[11px] font-bold transition active:scale-95 ${
                         active
                           ? "kinetic-gradient text-white"
                           : "bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]"
