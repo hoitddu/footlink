@@ -30,6 +30,7 @@ import { formatMatchFormatLabel } from "@/lib/match-format";
 import { isProfileComplete } from "@/lib/profiles";
 import {
   buildKoreaDateTime,
+  cn,
   formatDurationMinutes,
   formatTimeRange,
   haversineDistance,
@@ -68,6 +69,16 @@ const DURATION_MINUTE_OPTIONS = [0, 30] as const;
 const FUTSAL_FORMAT_OPTIONS: FutsalFormatOption[] = ["4vs4", "5vs5", "6vs6"];
 const WHEEL_ITEM_HEIGHT = 44;
 const DEFAULT_START_BUFFER_MINUTES = 30;
+const FORM_PANEL_CLASS = "surface-card rounded-[1.65rem] p-4 ring-1 ring-white/55";
+const FORM_LABEL_CLASS =
+  "text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]";
+const SEGMENT_BUTTON_BASE =
+  "min-h-[2.9rem] rounded-[1rem] px-4 py-2.5 text-[14px] font-bold tracking-[-0.02em] transition active:scale-[0.98]";
+const SEGMENT_BUTTON_INACTIVE = "surface-subcard text-[#1d2921]";
+const CHIP_BUTTON_BASE =
+  "rounded-full px-3.5 py-2.5 text-[12px] font-bold tracking-[-0.02em] transition active:scale-95";
+const CHIP_BUTTON_INACTIVE =
+  "bg-white/88 text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]";
 
 function formatLocalDateInputValue(date: Date) {
   const year = date.getFullYear();
@@ -171,15 +182,15 @@ function StepperField({
 }) {
   return (
     <div className="min-w-0">
-      <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">
+      <p className="mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]">
         {label}
       </p>
-      <div className="overflow-hidden rounded-[1.1rem] bg-[#f4f7f3] px-2 py-2.5">
+      <div className="surface-subcard overflow-hidden rounded-[1.2rem] px-2.5 py-2.5">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1">
           <button
             type="button"
             onClick={onDecrease}
-            className="flex h-[1.9rem] w-[1.9rem] shrink-0 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_8px_16px_rgba(6,21,12,0.06)] transition active:scale-95"
+            className="surface-chip flex h-[2rem] w-[2rem] shrink-0 items-center justify-center rounded-full bg-white/92 text-[#112317] shadow-[0_8px_16px_rgba(6,21,12,0.06)] transition active:scale-95"
           >
             -
           </button>
@@ -197,7 +208,7 @@ function StepperField({
           <button
             type="button"
             onClick={onIncrease}
-            className="kinetic-gradient flex h-[1.9rem] w-[1.9rem] shrink-0 items-center justify-center rounded-full text-white transition active:scale-95"
+            className="kinetic-gradient flex h-[2rem] w-[2rem] shrink-0 items-center justify-center rounded-full text-white shadow-[0_12px_24px_rgba(6,21,12,0.14)] transition active:scale-95"
           >
             +
           </button>
@@ -272,8 +283,8 @@ function DurationWheelColumn({
 
   return (
     <div className="relative flex-1">
-      <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">{label}</p>
-      <div className="pointer-events-none absolute inset-x-2 top-[4.15rem] h-11 rounded-[0.95rem] bg-[#eef2ee] ring-1 ring-[#dfe5df]" />
+      <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]">{label}</p>
+      <div className="surface-subcard pointer-events-none absolute inset-x-2 top-[4.15rem] h-11 rounded-[0.95rem]" />
       <div
         ref={containerRef}
         className="no-scrollbar h-[13.2rem] overflow-y-auto py-[4.4rem] [scroll-snap-type:y_mandatory]"
@@ -517,19 +528,20 @@ function CreateListingFormBody({
   }
 
   return (
-    <div className="space-y-3.5 pb-28">
+    <div className="space-y-4 pb-[8.9rem]">
       <ScreenHeader href="/home" ariaLabel="홈으로 돌아가기" />
 
-      <section className="surface-card rounded-[1.55rem] p-3.5">
+      <section className={FORM_PANEL_CLASS}>
         <div className="grid grid-cols-2 gap-2">
           {SPORT_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => setSport(option.value)}
-              className={`min-h-11 rounded-[0.95rem] px-4 py-2.5 text-[15px] font-bold transition active:scale-[0.98] ${
-                sport === option.value ? "kinetic-gradient text-white" : "bg-[#eef2ee] text-[#223128]"
-              }`}
+              className={cn(
+                SEGMENT_BUTTON_BASE,
+                sport === option.value ? "kinetic-gradient text-white" : SEGMENT_BUTTON_INACTIVE,
+              )}
             >
               {option.label}
             </button>
@@ -537,18 +549,18 @@ function CreateListingFormBody({
         </div>
 
         {sport === "futsal" ? (
-          <div className="mt-2.5 rounded-[1.1rem] bg-[#f4f7f3] px-2.5 py-2.5">
+          <div className="surface-subcard mt-2.5 rounded-[1.2rem] px-2.5 py-2.5">
             <div className="flex items-center justify-center gap-2.5">
               {FUTSAL_FORMAT_OPTIONS.map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setFutsalFormat(option)}
-                  className={`min-w-[4.7rem] rounded-full px-3 py-2.5 text-[14px] font-bold transition active:scale-95 ${
-                    futsalFormat === option
-                      ? "kinetic-gradient text-white"
-                      : "bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]"
-                  }`}
+                  className={cn(
+                    "min-w-[4.7rem]",
+                    CHIP_BUTTON_BASE,
+                    futsalFormat === option ? "kinetic-gradient text-white" : CHIP_BUTTON_INACTIVE,
+                  )}
                 >
                   {formatMatchFormatLabel(option)}
                 </button>
@@ -574,19 +586,21 @@ function CreateListingFormBody({
         </div>
 
         <div className="mt-2.5">
-          <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">모집 포지션</p>
-          <div className="rounded-[1.1rem] bg-[#f4f7f3] px-2.5 py-2.5">
+          <p className="mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]">모집 포지션</p>
+          <div className="surface-subcard rounded-[1.2rem] px-2.5 py-2.5">
             {sport === "futsal" ? (
               <div className="flex items-center justify-between gap-3 rounded-[0.9rem] px-1 py-0.5">
                 <p className="text-[12px] font-medium text-[#66736a]">골키퍼를 모집할 경우에 선택해 주세요.</p>
                 <button
                   type="button"
                   onClick={() => togglePositionTarget("goalkeeper")}
-                  className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-bold transition active:scale-95 ${
+                  className={cn(
+                    "shrink-0 px-4 text-[13px]",
+                    CHIP_BUTTON_BASE,
                     positionTargets.includes("goalkeeper")
                       ? "kinetic-gradient text-white"
-                      : "bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]"
-                  }`}
+                      : CHIP_BUTTON_INACTIVE,
+                  )}
                 >
                   골키퍼
                 </button>
@@ -601,11 +615,11 @@ function CreateListingFormBody({
                       key={option.value}
                       type="button"
                       onClick={() => togglePositionTarget(option.value)}
-                      className={`min-w-0 whitespace-nowrap rounded-full px-2 py-2 text-[11px] font-bold transition active:scale-95 ${
-                        active
-                          ? "kinetic-gradient text-white"
-                          : "bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)]"
-                      }`}
+                      className={cn(
+                        "min-w-0 whitespace-nowrap px-2 text-[11px]",
+                        CHIP_BUTTON_BASE,
+                        active ? "kinetic-gradient text-white" : CHIP_BUTTON_INACTIVE,
+                      )}
                     >
                       {getMatchPositionLabel(option.value)}
                     </button>
@@ -617,10 +631,10 @@ function CreateListingFormBody({
         </div>
       </section>
 
-      <section className="surface-card rounded-[1.55rem] p-3.5">
+      <section className={FORM_PANEL_CLASS}>
           <div className="grid gap-3">
             <div className="grid grid-cols-2 gap-2">
-              <label className="group relative flex h-11 min-w-0 cursor-pointer items-center rounded-[1rem] bg-[#eef2ee] pl-10 pr-10 text-[13px] font-medium text-[#112317] transition focus-within:bg-white focus-within:ring-4 focus-within:ring-[#b8ff5a]/25">
+              <label className="surface-subcard group relative flex h-12 min-w-0 cursor-pointer items-center rounded-[1rem] pl-10 pr-10 text-[13px] font-semibold tracking-[-0.02em] text-[#112317] transition focus-within:bg-white/96 focus-within:ring-4 focus-within:ring-[#c7f36b]/18">
                 <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
                 <span className="truncate">{formatDisplayDate(date)}</span>
                 <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
@@ -633,7 +647,7 @@ function CreateListingFormBody({
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 />
               </label>
-              <label className="group relative flex h-11 min-w-0 cursor-pointer items-center rounded-[1rem] bg-[#eef2ee] px-4 pr-10 text-[13px] font-medium text-[#112317] transition focus-within:bg-white focus-within:ring-4 focus-within:ring-[#b8ff5a]/25">
+              <label className="surface-subcard group relative flex h-12 min-w-0 cursor-pointer items-center rounded-[1rem] px-4 pr-10 text-[13px] font-semibold tracking-[-0.02em] text-[#112317] transition focus-within:bg-white/96 focus-within:ring-4 focus-within:ring-[#c7f36b]/18">
                 <span className="truncate">{formatDisplayTime(time)}</span>
                 <Clock3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
                 <input
@@ -649,7 +663,7 @@ function CreateListingFormBody({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">경기시간</span>
+              <span className={FORM_LABEL_CLASS}>경기시간</span>
               <p className="text-[11px] font-semibold text-[#66736a]">
                 {formatTimeRange(buildKoreaDateTime(date, time), durationMinutes)}
               </p>
@@ -660,11 +674,12 @@ function CreateListingFormBody({
                   key={option}
                   type="button"
                   onClick={() => applyQuickDuration(option)}
-                  className={`rounded-full px-3.5 py-2 text-[12px] font-bold transition active:scale-95 ${
+                  className={cn(
+                    CHIP_BUTTON_BASE,
                     durationMinutes === option && !isCustomDuration
                       ? "kinetic-gradient text-white"
-                      : "bg-[#eef2ee] text-[#223128]"
-                  }`}
+                      : "surface-subcard text-[#223128]",
+                  )}
                 >
                   {formatDurationMinutes(option)}
                 </button>
@@ -672,11 +687,10 @@ function CreateListingFormBody({
               <button
                 type="button"
                 onClick={() => setDurationPickerOpen(true)}
-                className={`rounded-full px-3.5 py-2 text-[12px] font-bold transition active:scale-95 ${
-                  isCustomDuration
-                    ? "kinetic-gradient text-white"
-                    : "bg-[#eef2ee] text-[#223128]"
-                }`}
+                className={cn(
+                  CHIP_BUTTON_BASE,
+                  isCustomDuration ? "kinetic-gradient text-white" : "surface-subcard text-[#223128]",
+                )}
               >
                 {isCustomDuration ? formatDurationMinutes(durationMinutes) : "직접입력"}
               </button>
@@ -684,11 +698,11 @@ function CreateListingFormBody({
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">경기장</span>
+            <span className={FORM_LABEL_CLASS}>경기장</span>
             <button
               type="button"
               onClick={() => setIsPlacePickerOpen(true)}
-              className="flex min-h-11 w-full items-center justify-between gap-3 rounded-[1rem] bg-[#eef2ee] px-4 py-2.5 text-left transition active:scale-[0.985]"
+              className="surface-subcard flex min-h-12 w-full items-center justify-between gap-3 rounded-[1rem] px-4 py-2.5 text-left transition active:scale-[0.985]"
             >
               <div className="min-w-0 flex-1">
                 <p
@@ -706,18 +720,18 @@ function CreateListingFormBody({
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">연락 방식</span>
+            <span className={FORM_LABEL_CLASS}>연락 방식</span>
             <div className="grid grid-cols-2 gap-2">
               {DIRECT_CONTACT_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   type="button"
                   onClick={() => handleContactTypeChange(option.value)}
-                  className={`rounded-[1rem] px-4 py-2.5 text-[13px] font-bold transition ${
-                    contactType === option.value
-                      ? "kinetic-gradient text-white"
-                      : "bg-[#eef2ee] text-[#223128]"
-                  }`}
+                  className={cn(
+                    SEGMENT_BUTTON_BASE,
+                    "min-h-11 text-[13px]",
+                    contactType === option.value ? "kinetic-gradient text-white" : SEGMENT_BUTTON_INACTIVE,
+                  )}
                 >
                   {option.label}
                 </button>
@@ -751,7 +765,7 @@ function CreateListingFormBody({
           </div>
 
           <label className="space-y-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">메모</span>
+            <span className={FORM_LABEL_CLASS}>메모</span>
             <Textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
@@ -763,13 +777,13 @@ function CreateListingFormBody({
       </section>
 
       {error ? (
-        <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
+        <p className="rounded-[1.2rem] bg-[#f2ece8] px-4 py-3 text-sm font-semibold text-[#6b544e]">
           {error}
         </p>
       ) : null}
 
-      <div className="glass-panel safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] rounded-t-[1.75rem] px-4 pb-5 pt-3 shadow-[0_-18px_42px_rgba(10,18,13,0.06)]">
-        <Button className="w-full gap-2" size="lg" type="button" disabled={isSubmitting} onClick={submitListing}>
+      <div className="action-dock safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] rounded-t-[1.75rem] px-4 pb-5 pt-3">
+        <Button className="w-full gap-2.5 rounded-[1.15rem] shadow-[0_20px_38px_rgba(6,21,12,0.16)]" size="lg" type="button" disabled={isSubmitting} onClick={submitListing}>
           <span>{isSubmitting ? "등록 중..." : "용병 모집하기"}</span>
           <ChevronRight className="h-5 w-5" />
         </Button>
@@ -799,7 +813,7 @@ function CreateListingFormBody({
               </SheetDescription>
             </div>
 
-            <div className="rounded-[1.35rem] bg-[#f4f7f3] px-4 py-4">
+            <div className="surface-subcard rounded-[1.35rem] px-4 py-4">
               <div className="flex gap-3">
                 <DurationWheelColumn
                   label="시간"
@@ -818,7 +832,7 @@ function CreateListingFormBody({
               </div>
             </div>
 
-            <div className="rounded-[1.25rem] bg-[#eef2ee] px-4 py-4">
+            <div className="surface-subcard rounded-[1.25rem] px-4 py-4">
               <p className="text-[13px] font-bold text-[#112317]">
                 총 {formatDurationMinutes(durationPickerHours * 60 + durationPickerMinutes)}
               </p>

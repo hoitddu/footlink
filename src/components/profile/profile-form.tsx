@@ -34,6 +34,13 @@ type SaveProfileInput = {
   default_contact_type: DirectContactType;
 };
 
+const PROFILE_PANEL_CLASS = "surface-card rounded-[1.8rem] p-5 ring-1 ring-white/55";
+const PROFILE_LABEL_CLASS =
+  "text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]";
+const PROFILE_SEGMENT_BASE =
+  "rounded-[1rem] px-4 py-3 text-[14px] font-bold tracking-[-0.02em] transition active:scale-[0.98]";
+const PROFILE_SEGMENT_INACTIVE = "surface-subcard text-[#1d2921]";
+
 function ProfileEditor({
   profile,
   returnTo,
@@ -132,26 +139,30 @@ function ProfileEditor({
     <div className="space-y-5">
       <ScreenHeader href={returnTo ?? "/home"} ariaLabel="홈으로 돌아가기" />
 
-      <FlashBanner key={flashAt ?? resolvedFlash ?? "profile-flash"} flash={resolvedFlash} />
+      <FlashBanner
+        key={flashAt ?? resolvedFlash ?? "profile-flash"}
+        flash={resolvedFlash}
+        placement="bottom"
+      />
       {error ? (
-        <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
+        <p className="rounded-[1.2rem] bg-[#f2ece8] px-4 py-3 text-sm font-semibold text-[#6b544e]">
           {error}
         </p>
       ) : null}
 
       {onReset ? <DemoIdentitySwitcher /> : null}
 
-      <section className="surface-card rounded-[1.75rem] p-5">
+      <section className={PROFILE_PANEL_CLASS}>
         <div className="grid gap-5">
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+            <span className={PROFILE_LABEL_CLASS}>
               닉네임
             </span>
             <Input value={nickname} onChange={(event) => setNickname(event.target.value)} />
           </label>
 
           <div className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+            <span className={PROFILE_LABEL_CLASS}>
               선호 종목
             </span>
             <div className="grid grid-cols-2 gap-2">
@@ -160,10 +171,10 @@ function ProfileEditor({
                   key={sport.value}
                   type="button"
                   onClick={() => setPreferredSport(sport.value)}
-                  className={`rounded-[1rem] px-4 py-3 text-sm font-bold transition ${
+                  className={`${PROFILE_SEGMENT_BASE} ${
                     preferredSport === sport.value
-                      ? "bg-[#112317] text-white"
-                      : "bg-[#eef2ee] text-[#223128]"
+                      ? "kinetic-gradient text-white"
+                      : PROFILE_SEGMENT_INACTIVE
                   }`}
                 >
                   {sport.label}
@@ -174,7 +185,7 @@ function ProfileEditor({
 
           <div className="grid gap-3">
             <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              <span className={PROFILE_LABEL_CLASS}>
                 연령대
               </span>
               <div className="grid grid-cols-3 gap-2">
@@ -183,10 +194,10 @@ function ProfileEditor({
                     key={band.value}
                     type="button"
                     onClick={() => setAgeBand(band.value)}
-                    className={`rounded-[1rem] px-3 py-3 text-sm font-bold transition ${
+                    className={`${PROFILE_SEGMENT_BASE} px-3 ${
                       ageBand === band.value
-                        ? "bg-[#112317] text-white"
-                        : "bg-[#eef2ee] text-foreground"
+                        ? "kinetic-gradient text-white"
+                        : PROFILE_SEGMENT_INACTIVE
                     }`}
                   >
                     {band.label}
@@ -196,7 +207,7 @@ function ProfileEditor({
             </div>
 
             <div className="space-y-2">
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+              <span className={PROFILE_LABEL_CLASS}>
                 SKILL LEVEL
               </span>
               <div className="grid grid-cols-4 gap-2">
@@ -205,10 +216,10 @@ function ProfileEditor({
                     key={skill}
                     type="button"
                     onClick={() => setSkillLevel(skill)}
-                    className={`rounded-[1rem] px-3 py-3 text-sm font-bold transition ${
+                    className={`${PROFILE_SEGMENT_BASE} px-3 ${
                       skillLevel === skill
-                        ? "bg-[#112317] text-white"
-                        : "bg-[#eef2ee] text-foreground"
+                        ? "kinetic-gradient text-white"
+                        : PROFILE_SEGMENT_INACTIVE
                     }`}
                   >
                     {getSkillLevelLabel(skill)}
@@ -219,7 +230,7 @@ function ProfileEditor({
           </div>
 
           <div className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+            <span className={PROFILE_LABEL_CLASS}>
               기본 연락 방식
             </span>
             <div className="grid grid-cols-2 gap-2">
@@ -228,10 +239,10 @@ function ProfileEditor({
                   key={option.value}
                   type="button"
                   onClick={() => setDefaultContactType(option.value)}
-                  className={`rounded-[1rem] px-4 py-3 text-sm font-bold transition ${
+                  className={`${PROFILE_SEGMENT_BASE} ${
                     defaultContactType === option.value
-                      ? "bg-[#112317] text-white"
-                      : "bg-[#eef2ee] text-[#223128]"
+                      ? "kinetic-gradient text-white"
+                      : PROFILE_SEGMENT_INACTIVE
                   }`}
                 >
                   {option.label}
@@ -241,7 +252,7 @@ function ProfileEditor({
           </div>
 
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+            <span className={PROFILE_LABEL_CLASS}>
               오픈채팅 링크
             </span>
             <Input
@@ -252,7 +263,7 @@ function ProfileEditor({
           </label>
 
           <label className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+            <span className={PROFILE_LABEL_CLASS}>
               휴대폰 번호
             </span>
             <Input
@@ -264,11 +275,11 @@ function ProfileEditor({
           </label>
 
           <div className="flex gap-2">
-            <Button className="flex-1" type="button" onClick={handleSave} disabled={isSaving}>
+            <Button className="flex-1 rounded-[1.15rem]" type="button" onClick={handleSave} disabled={isSaving}>
               {isSaving ? "저장 중..." : "저장하기"}
             </Button>
             {onReset ? (
-              <Button className="flex-1" type="button" variant="secondary" onClick={onReset}>
+              <Button className="flex-1 rounded-[1.15rem]" type="button" variant="secondary" onClick={onReset}>
                 데모 초기화
               </Button>
             ) : null}

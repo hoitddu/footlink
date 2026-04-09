@@ -5,21 +5,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-2xl text-sm font-bold transition-all outline-none disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-[1.05rem] text-sm font-bold tracking-[-0.02em] transition-all outline-none focus-visible:ring-4 focus-visible:ring-[#c7f36b]/18 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
   {
     variants: {
       variant: {
         default:
-          "kinetic-gradient !text-white shadow-[0_18px_36px_rgba(6,21,12,0.18)] hover:brightness-105 [&_svg]:text-white",
+          "kinetic-gradient !text-white shadow-[0_18px_36px_rgba(6,21,12,0.16)] hover:brightness-[1.03] [&_svg]:text-white",
         secondary:
-          "bg-[#eef2ee] text-[#112317] ring-1 ring-[#112317]/6 hover:bg-[#e7ede6] [&_svg]:text-[#112317]",
-        ghost: "bg-transparent text-[#112317] hover:bg-black/4",
-        subtle: "bg-accent-soft text-accent hover:bg-[#caff87]/28",
+          "surface-subcard text-[#112317] shadow-[0_10px_22px_rgba(10,18,13,0.06)] hover:bg-white/92 [&_svg]:text-[#112317]",
+        ghost: "bg-transparent text-[#112317] hover:bg-[#112317]/4",
+        subtle: "bg-accent-soft text-accent hover:bg-[#caff87]/24",
       },
       size: {
         default: "h-11 px-5",
         sm: "h-10 px-4 text-sm",
-        lg: "h-14 px-6 text-base",
+        lg: "h-[3.45rem] px-6 text-[15px]",
         icon: "h-11 w-11 rounded-xl",
       },
     },

@@ -8,12 +8,12 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        urgent: "bg-[#ffe3de] text-[#c3342b]",
-        soon: "bg-[#fff0d7] text-[#9a6111]",
-        success: "bg-[#e4f6e8] text-[#1f7a38]",
-        team: "bg-[#dce8ff] text-[#2455a6]",
-        calm: "bg-[#eef2ee] text-[#536157]",
-        outline: "bg-white/72 text-foreground ring-1 ring-black/5",
+        urgent: "bg-[#f7ddd2] text-[#8e3e32]",
+        soon: "bg-[#efe4c5] text-[#7b6020]",
+        success: "bg-[#dfede0] text-[#295d3a]",
+        team: "bg-[#e6eee4] text-[#365341]",
+        calm: "bg-[#edf2ea] text-[#536157]",
+        outline: "bg-white/82 text-foreground ring-1 ring-black/6",
       },
     },
     defaultVariants: {

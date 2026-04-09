@@ -10,10 +10,10 @@ export function ScreenHeader({
   ariaLabel?: string;
 }) {
   return (
-    <section className="surface-card rounded-[1.55rem] px-4 py-3.5">
+    <section className="shell-card rounded-[1.65rem] px-4 py-3.5">
       <div className="flex items-center justify-between">
         <BackButton href={href} ariaLabel={ariaLabel} />
-        <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#112317]">
+        <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#f4f7f1]">
           FOOTLINK
         </span>
         <span className="block h-11 w-11" aria-hidden="true" />

@@ -6,7 +6,6 @@ import { MapPin } from "lucide-react";
 import { DateFilterBar } from "@/components/feed/date-filter-bar";
 import { MatchCard } from "@/components/feed/match-card";
 import { buildContextQuery } from "@/lib/context";
-import { FEED_SPORT_OPTIONS } from "@/lib/constants";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { getFeedMatches } from "@/lib/feed";
 import type {
@@ -14,8 +13,15 @@ import type {
   FeedDataSource,
   FeedDateFilterItem,
   FeedSort,
+  FeedSportFilter,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const SPORT_FILTER_OPTIONS: Array<{ value: FeedSportFilter; label: string }> = [
+  { value: "all", label: "전체" },
+  { value: "futsal", label: "풋살" },
+  { value: "soccer", label: "축구" },
+];
 
 const SORT_OPTIONS: Array<{ value: FeedSort; label: string }> = [
   { value: "recommended", label: "추천" },
@@ -24,6 +30,8 @@ const SORT_OPTIONS: Array<{ value: FeedSort; label: string }> = [
   { value: "fee", label: "참가비" },
   { value: "closing", label: "마감임박" },
 ];
+
+const DAY_OF_WEEK_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 function formatDateId(date: Date) {
   const year = date.getFullYear();
@@ -44,7 +52,7 @@ function buildDateFilterItems(referenceNow: number, selectedDate?: string) {
     items.push({
       id: formatDateId(current),
       label: `${current.getMonth() + 1}.${current.getDate()}`,
-      dayOfWeek: ["일", "월", "화", "수", "목", "금", "토"][current.getDay()] ?? "",
+      dayOfWeek: DAY_OF_WEEK_LABELS[current.getDay()] ?? "",
       fullDate: formatDateId(current),
     });
   }
@@ -55,7 +63,7 @@ function buildDateFilterItems(referenceNow: number, selectedDate?: string) {
     items.push({
       id: selectedDate,
       label: `${extraDate.getMonth() + 1}.${extraDate.getDate()}`,
-      dayOfWeek: ["일", "월", "화", "수", "목", "금", "토"][extraDate.getDay()] ?? "",
+      dayOfWeek: DAY_OF_WEEK_LABELS[extraDate.getDay()] ?? "",
       fullDate: selectedDate,
     });
   }
@@ -83,12 +91,10 @@ function FilterPill({
       className={cn(
         "rounded-full font-bold transition active:scale-[0.985]",
         compact
-          ? "min-h-[2.34rem] px-1 text-[10px] leading-none tracking-[-0.08em] whitespace-nowrap"
+          ? "min-h-[2.34rem] px-1.5 text-[10.5px] leading-none tracking-[-0.06em] whitespace-nowrap"
           : "min-h-10 px-3.5 text-[12px]",
         stretch && "w-full",
-        active
-          ? "bg-[#06150c] text-white shadow-[0_10px_18px_rgba(6,21,12,0.11)]"
-          : "bg-white/86 text-[#334139] shadow-[0_6px_12px_rgba(10,18,13,0.025)] ring-1 ring-[#e7ece7]",
+        active ? "shell-chip-active" : "shell-chip",
       )}
     >
       {label}
@@ -131,14 +137,14 @@ function FeedScreenView({
 
   return (
     <div className="pb-24">
-      <div className="-mx-4 sticky top-0 z-30 bg-[linear-gradient(180deg,rgba(250,251,249,0.98)_0%,rgba(250,251,249,0.94)_82%,rgba(250,251,249,0)_100%)] px-4 pb-2.5 pt-1 backdrop-blur-xl">
-        <div className="px-1">
+      <div className="-mx-4 sticky top-0 z-30 px-4 pb-2.5 pt-1.5">
+        <div className="shell-card rounded-[1.8rem] px-4 pb-4 pt-3.5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="font-display text-[1.08rem] font-bold tracking-[0.18em] text-[#112317]">
+              <span className="font-display text-[1.08rem] font-bold tracking-[0.18em] text-[#f4f7f1]">
                 FOOTLINK
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/84 px-2.5 py-1 text-[11px] font-semibold text-[#55625a] ring-1 ring-[#e9eeea]">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/8 px-2.5 py-1 text-[11px] font-semibold text-[#c9d5ca] ring-1 ring-white/10">
                 <MapPin className="h-3.5 w-3.5" />
                 수원
               </span>
@@ -146,7 +152,7 @@ function FeedScreenView({
           </div>
 
           <div className="mt-2.5 flex gap-2">
-            {FEED_SPORT_OPTIONS.map((option) => (
+            {SPORT_FILTER_OPTIONS.map((option) => (
               <FilterPill
                 key={option.value}
                 active={resolvedContext.sport === option.value}
@@ -156,17 +162,17 @@ function FeedScreenView({
             ))}
           </div>
 
-          <div className="mt-1.5 grid grid-cols-5 gap-2">
-              {SORT_OPTIONS.map((option) => (
-                <FilterPill
-                  key={option.value}
-                  active={sort === option.value}
-                  label={option.label}
-                  compact
-                  stretch
-                  onClick={() => applyContext({}, option.value)}
-                />
-              ))}
+          <div className="mt-2 grid grid-cols-5 gap-2">
+            {SORT_OPTIONS.map((option) => (
+              <FilterPill
+                key={option.value}
+                active={sort === option.value}
+                label={option.label}
+                compact
+                stretch
+                onClick={() => applyContext({}, option.value)}
+              />
+            ))}
           </div>
 
           <div className="mt-[1.15rem]">
@@ -208,7 +214,7 @@ function FeedScreenView({
           ))
         ) : (
           <div className="surface-card rounded-[1.25rem] px-4 py-5 text-[14px] font-medium leading-6 text-[#66736a]">
-            해당 조건에 맞는 용병 공석이 없어요. 날짜나 종목을 바꿔 다시 확인해보세요.
+            해당 조건에 맞는 공석이 없어요. 날짜나 종목을 바꿔 다시 확인해보세요.
           </div>
         )}
       </div>

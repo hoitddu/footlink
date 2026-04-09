@@ -39,7 +39,7 @@ function BottomNavFrame() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-[430px] px-3">
-      <nav className="surface-panel relative grid w-full grid-cols-4 rounded-t-[1.7rem] border-x border-t border-white/65 bg-[rgba(255,255,255,0.94)] px-1.5 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-14px_40px_rgba(10,18,13,0.08)] before:pointer-events-none before:absolute before:inset-x-0 before:bottom-0 before:h-[calc(env(safe-area-inset-bottom)+0.7rem)] before:rounded-b-[1.7rem] before:bg-[linear-gradient(180deg,rgba(255,255,255,0.9)_0%,rgba(255,255,255,0.97)_100%)]">
+      <nav className="relative grid w-full grid-cols-4 rounded-t-[1.7rem] border-x border-t border-[rgba(231,240,232,0.08)] bg-[linear-gradient(180deg,rgba(17,28,21,0.96)_0%,rgba(13,22,16,0.98)_100%)] px-1.5 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-18px_44px_rgba(4,10,6,0.28)] before:pointer-events-none before:absolute before:inset-x-0 before:bottom-0 before:h-[calc(env(safe-area-inset-bottom)+0.7rem)] before:rounded-b-[1.7rem] before:bg-[linear-gradient(180deg,rgba(13,22,16,0.92)_0%,rgba(13,22,16,0.98)_100%)]">
         {items.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || (item.href === "/home" && pathname.startsWith("/match/"));
@@ -54,15 +54,15 @@ function BottomNavFrame() {
               className={cn(
                 "relative z-10 flex min-h-[3.4rem] flex-col items-center justify-center gap-1 rounded-[1rem] px-1.5 py-1.5 transition-all",
                 active
-                  ? "kinetic-gradient lime-glow rounded-[1.05rem] text-white shadow-[0_10px_24px_rgba(6,21,12,0.2)] [&_svg]:text-white"
-                  : "text-[#2c3a32] hover:bg-[#f3f6f2] [&_svg]:text-[#34433b]",
+                  ? "rounded-[1.05rem] bg-[#f4f7f1] text-[#112317] shadow-[0_12px_24px_rgba(4,10,6,0.22)] [&_svg]:text-[#112317]"
+                  : "text-[#b2c0b3] hover:bg-white/[0.05] [&_svg]:text-[#aab8ac]",
               )}
             >
               <Icon className={cn("h-[1.15rem] w-[1.15rem] shrink-0", active && "scale-[1.02]")} />
               <span
                 className={cn(
                   "block text-[11px] font-semibold leading-[1.05] tracking-[-0.02em]",
-                  active ? "text-white" : "text-[#2f3d34]",
+                  active ? "text-[#112317]" : "text-[#b6c4b7]",
                 )}
               >
                 {item.label}

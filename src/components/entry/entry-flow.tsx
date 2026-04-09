@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { MapPin } from "lucide-react";
-import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Clock3, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { REGION_OPTIONS } from "@/lib/constants";
@@ -10,9 +9,42 @@ import { REGION_OPTIONS } from "@/lib/constants";
 type LocationStatus = "idle" | "loading" | "granted" | "fallback";
 
 const LOCATION_DECISION_KEY = "footlink-location-decision-v1";
+const DEFAULT_HOME_HREF = "/home?sport=futsal&sort=recommended&region=suwon";
+
+function LandingSampleCard() {
+  return (
+    <div className="mt-8 w-full max-w-[19.25rem] rounded-[1.7rem] border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0.06)_100%)] p-4 shadow-[0_20px_44px_rgba(0,0,0,0.26)] backdrop-blur-[20px]">
+      <div className="flex items-center justify-between gap-3">
+        <div className="inline-flex items-center gap-2 rounded-full bg-[#fff3ea] px-3 py-1.5 text-[12px] font-bold text-[#9d4f3c]">
+          <Clock3 className="h-3.5 w-3.5" />
+          35분 후 시작
+        </div>
+        <span className="rounded-full bg-[#c7ff57] px-3 py-1.5 text-[11px] font-bold text-[#08110a] shadow-[0_8px_20px_rgba(199,255,87,0.22)]">
+          1자리
+        </span>
+      </div>
+
+      <div className="mt-4 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c8e7a7]">
+        <span>SUWON</span>
+        <span className="h-1 w-1 rounded-full bg-white/35" />
+        <span>FUTSAL</span>
+      </div>
+
+      <h2 className="mt-3 text-[1.38rem] font-bold leading-[1.08] tracking-[-0.045em] text-white">
+        영통 풋살 센터
+      </h2>
+      <p className="mt-2 text-[13px] leading-6 text-white/72">오늘 20:00 - 22:00 · 도보 8분 · 5vs5</p>
+
+      <div className="mt-4 rounded-[1.25rem] bg-[#08110a]/42 px-3.5 py-3.5 text-center text-[13px] font-semibold text-white ring-1 ring-white/8">
+        당신을 위한 마지막 한자리
+      </div>
+    </div>
+  );
+}
 
 function LandingScreen({
   onStart,
+  ctaPending,
   locationPromptOpen,
   locationStatus,
   onLocationAllow,
@@ -20,6 +52,7 @@ function LandingScreen({
   onLocationPromptOpenChange,
 }: {
   onStart: () => void;
+  ctaPending: boolean;
   locationPromptOpen: boolean;
   locationStatus: LocationStatus;
   onLocationAllow: () => void;
@@ -28,56 +61,54 @@ function LandingScreen({
 }) {
   const statusCopy = {
     idle: "위치를 허용하면 더 가까운 경기부터 정렬됩니다.",
-    loading: "현재 위치를 확인하고 있어요.",
+    loading: "현재 위치를 빠르게 확인하고 있어요.",
     granted: "현재 위치 기준으로 더 가까운 경기부터 정렬해드릴게요.",
     fallback: "위치 없이도 수원 전체 공석을 바로 볼 수 있어요.",
   } as const;
 
   return (
-    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-[#04070d]">
-      <Image
-        src="/landing-bg.webp"
-        alt=""
-        fill
-        priority
-        sizes="430px"
-        className="absolute inset-0 scale-[1.06] object-cover object-center brightness-[0.6] saturate-[0.76]"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,9,18,0.74)_0%,rgba(8,14,25,0.34)_34%,rgba(7,12,18,0.18)_58%,rgba(2,5,8,0.9)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_22%,rgba(180,203,240,0.18),transparent_28%),radial-gradient(circle_at_14%_44%,rgba(255,255,255,0.82),transparent_11%),radial-gradient(circle_at_86%_44%,rgba(255,255,255,0.82),transparent_11%),radial-gradient(circle_at_50%_82%,rgba(145,214,88,0.18),transparent_28%)] opacity-90" />
+    <div
+      className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden bg-[#04070d] bg-cover bg-center"
+      style={{
+        backgroundImage: "url('/landing-bg.webp')",
+      }}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(4,8,14,0.72)_0%,rgba(8,14,22,0.34)_30%,rgba(8,14,20,0.18)_58%,rgba(2,5,8,0.92)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_16%,rgba(199,255,87,0.12),transparent_20%),radial-gradient(circle_at_15%_44%,rgba(255,255,255,0.86),transparent_11%),radial-gradient(circle_at_85%_44%,rgba(255,255,255,0.86),transparent_11%),radial-gradient(circle_at_50%_82%,rgba(145,214,88,0.14),transparent_28%)] opacity-90" />
       <div className="absolute inset-0 turf-texture opacity-[0.11]" />
 
-      <main className="relative z-10 flex min-h-[100dvh] flex-col px-8 pb-[calc(3.9rem+env(safe-area-inset-bottom))] pt-[calc(1.2rem+env(safe-area-inset-top))] text-white">
+      <main className="relative z-10 flex min-h-[100dvh] flex-col px-7 pb-[calc(3.9rem+env(safe-area-inset-bottom))] pt-[calc(1.2rem+env(safe-area-inset-top))] text-white">
         <div className="flex items-center justify-center">
-          <span className="font-display text-[clamp(1.12rem,3.8vw,1.28rem)] font-semibold tracking-[0.34em] text-white/96">
+          <span className="font-display text-[clamp(1.08rem,3.8vw,1.28rem)] font-semibold tracking-[0.34em] text-white/96">
             FOOTLINK
           </span>
         </div>
 
-        <div className="mx-auto mt-[clamp(4rem,10vh,5.2rem)] flex w-full max-w-[21.5rem] flex-1 flex-col items-center text-center">
+        <div className="mx-auto mt-[clamp(3.4rem,8vh,4.8rem)] flex w-full max-w-[21.5rem] flex-1 flex-col items-center text-center">
           <div className="space-y-4">
-            <p className="font-display text-[clamp(0.96rem,3.5vw,1.06rem)] font-semibold uppercase tracking-[0.22em] text-[#c8e7a7]">
+            <p className="font-display text-[clamp(0.82rem,3vw,0.96rem)] font-semibold uppercase tracking-[0.26em] text-[#c8e7a7]">
               SUWON PILOT
             </p>
-            <h1 className="mx-auto max-w-[18.75rem] font-display text-[clamp(3.4rem,14vw,4.6rem)] font-[780] leading-[0.92] tracking-[-0.048em] text-white [text-wrap:balance]">
-              Fill the
-              <br />
-              last spot
-              <br />
-              fast.
+            <h1 className="mx-auto flex max-w-none flex-col items-center gap-1 font-display font-[780] leading-[0.98] text-white">
+              <span className="block whitespace-nowrap text-[clamp(2.85rem,10.8vw,3.85rem)] tracking-[-0.055em]">
+                Wanna play?
+              </span>
+              <span className="block whitespace-nowrap text-[clamp(2.1rem,8.2vw,2.9rem)] tracking-[-0.05em]">
+                Join the last spot.
+              </span>
             </h1>
-            <p className="mx-auto max-w-[18rem] text-[14px] leading-6 text-white/78">
-              수원에서 경기 직전 비는 한 자리를 가장 빠르게 찾고 바로 합류하세요.
-            </p>
           </div>
+
+          <LandingSampleCard />
 
           <button
             type="button"
             onClick={onStart}
-            className="mt-[clamp(2.5rem,6vh,3.2rem)] flex h-[clamp(4.25rem,10vw,4.6rem)] w-[min(86%,19rem)] items-center justify-center rounded-[1.45rem] bg-[#c7ff57] px-6 text-[#071009] shadow-[0_18px_34px_rgba(0,0,0,0.24),0_0_0_1px_rgba(255,255,255,0.12)_inset] transition duration-200 active:scale-[0.988]"
+            disabled={ctaPending}
+            className="mt-7 flex h-[clamp(4.15rem,10vw,4.5rem)] w-[min(88%,19rem)] items-center justify-center rounded-[1.45rem] bg-[#c7ff57] px-6 text-[#071009] shadow-[0_18px_34px_rgba(0,0,0,0.24),0_0_0_1px_rgba(255,255,255,0.12)_inset] transition duration-200 active:scale-[0.988] disabled:scale-100 disabled:opacity-85"
           >
-            <span className="block text-center text-[clamp(1.22rem,4.7vw,1.45rem)] font-bold leading-none tracking-[-0.03em]">
-              시작하기
+            <span className="block text-center text-[clamp(1.18rem,4.6vw,1.38rem)] font-bold leading-none tracking-[-0.03em]">
+              {ctaPending ? "Opening..." : "Find a game"}
             </span>
           </button>
 
@@ -91,15 +122,19 @@ function LandingScreen({
             type="button"
             aria-label="위치 안내 닫기"
             className="absolute inset-0 bg-[#09110c]/52 backdrop-blur-[2px]"
-            onClick={() => onLocationPromptOpenChange(false)}
+            onClick={() => {
+              if (locationStatus === "loading") {
+                return;
+              }
+
+              onLocationPromptOpenChange(false);
+            }}
           />
           <div className="surface-card relative w-full max-w-[22rem] rounded-[1.7rem] p-5 shadow-[0_20px_50px_rgba(6,21,12,0.16)]">
             <div className="flex h-12 w-12 items-center justify-center rounded-[1rem] bg-[#112317] text-[#b8ff5a]">
               <MapPin className="h-5 w-5" />
             </div>
-            <h2 className="mt-4 text-[1.3rem] font-bold tracking-[-0.04em] text-[#112317]">
-              위치를 허용할까요?
-            </h2>
+            <h2 className="mt-4 text-[1.3rem] font-bold tracking-[-0.04em] text-[#112317]">위치를 허용할까요?</h2>
             <p className="mt-2 text-[13px] leading-6 text-[#66736a]">{statusCopy[locationStatus]}</p>
 
             <div className="mt-5 space-y-2.5">
@@ -114,7 +149,8 @@ function LandingScreen({
               <button
                 type="button"
                 onClick={onLocationSkip}
-                className="flex h-11 w-full items-center justify-center rounded-[1.1rem] bg-[#eef2ee] text-[13px] font-bold text-[#112317] transition active:scale-95"
+                disabled={locationStatus === "loading"}
+                className="flex h-11 w-full items-center justify-center rounded-[1.1rem] bg-[#eef2ee] text-[13px] font-bold text-[#112317] transition active:scale-95 disabled:opacity-50"
               >
                 나중에 할게요
               </button>
@@ -131,6 +167,8 @@ export function EntryFlow() {
   const shouldPrefetchHome = process.env.NODE_ENV === "production";
   const [locationStatus, setLocationStatus] = useState<LocationStatus>("idle");
   const [locationPromptOpen, setLocationPromptOpen] = useState(false);
+  const [ctaPending, setCtaPending] = useState(false);
+  const requestInFlightRef = useRef(false);
   const [locationState, setLocationState] = useState<{
     lat?: number;
     lng?: number;
@@ -162,11 +200,16 @@ export function EntryFlow() {
     window.localStorage.setItem(LOCATION_DECISION_KEY, value);
   }
 
+  function resetLaunchState() {
+    requestInFlightRef.current = false;
+    setCtaPending(false);
+  }
+
   function moveToHomeWithFallback() {
     setLocationStatus("fallback");
     setLocationState({ regionSlug: REGION_OPTIONS[0].slug });
     setLocationPromptOpen(false);
-    router.push("/home?sport=futsal&sort=recommended&region=suwon");
+    router.push(DEFAULT_HOME_HREF);
   }
 
   function handleLocationRequest() {
@@ -175,10 +218,14 @@ export function EntryFlow() {
       return;
     }
 
+    requestInFlightRef.current = true;
+    setLocationPromptOpen(true);
     setLocationStatus("loading");
+    setCtaPending(true);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        requestInFlightRef.current = false;
         setLocationState({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
@@ -195,19 +242,37 @@ export function EntryFlow() {
         if (typeof window !== "undefined") {
           window.localStorage.removeItem(LOCATION_DECISION_KEY);
         }
+        requestInFlightRef.current = false;
         moveToHomeWithFallback();
       },
-      { enableHighAccuracy: true, timeout: 5000 },
+      {
+        enableHighAccuracy: false,
+        timeout: 2500,
+        maximumAge: 1000 * 60 * 10,
+      },
     );
   }
 
   function handleLocationSkip() {
+    if (requestInFlightRef.current) {
+      requestInFlightRef.current = false;
+    }
+
     moveToHomeWithFallback();
   }
 
   async function handleStart() {
+    if (requestInFlightRef.current) {
+      return;
+    }
+
+    requestInFlightRef.current = true;
+    setCtaPending(true);
+
     if (typeof window === "undefined") {
       setLocationPromptOpen(true);
+      setLocationStatus("idle");
+      resetLaunchState();
       return;
     }
 
@@ -240,6 +305,8 @@ export function EntryFlow() {
     }
 
     setLocationPromptOpen(true);
+    setLocationStatus("idle");
+    resetLaunchState();
   }
 
   useEffect(() => {
@@ -253,6 +320,7 @@ export function EntryFlow() {
   return (
     <LandingScreen
       onStart={handleStart}
+      ctaPending={ctaPending}
       locationPromptOpen={locationPromptOpen}
       locationStatus={locationStatus}
       onLocationAllow={handleLocationRequest}

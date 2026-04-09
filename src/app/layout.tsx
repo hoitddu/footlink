@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: "FOOTLINK",
     images: [
       {
-        url: "/opengraph-image",
+        url: "/og-share.png",
         width: 1200,
         height: 630,
         alt: "FOOTLINK",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "FOOTLINK",
-    images: ["/opengraph-image"],
+    images: ["/og-share.png"],
   },
   icons: {
     icon: [

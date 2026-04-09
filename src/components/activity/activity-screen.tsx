@@ -85,7 +85,9 @@ function ActivityTabButton({
       onClick={onClick}
       className={cn(
         "flex min-h-[3.25rem] items-center justify-between gap-2.5 rounded-[1.1rem] px-4 py-3 text-left transition",
-        active ? "bg-[#112317] text-white shadow-[0_16px_30px_rgba(6,21,12,0.16)]" : "bg-[#eef2ee] text-[#112317]",
+        active
+          ? "bg-[#112317] text-white shadow-[0_18px_32px_rgba(6,21,12,0.18)]"
+          : "surface-subcard text-[#112317]",
       )}
     >
       <span className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.01em]">{label}</span>
@@ -116,16 +118,16 @@ function ActivityLoadingState({
 
       {flash || loadError ? (
         <div className="space-y-3">
-          <FlashBanner flash={flash} />
+          <FlashBanner flash={flash} placement="bottom" />
           {loadError ? (
-            <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
+            <p className="rounded-[1.2rem] bg-[#f7ddd2] px-4 py-3 text-sm font-semibold text-[#8e3e32]">
               {loadError}
             </p>
           ) : null}
         </div>
       ) : null}
 
-      <section className="surface-card rounded-[1.5rem] p-3">
+      <section className="surface-card rounded-[1.5rem] p-3 ring-1 ring-white/55">
         <div className="grid grid-cols-2 gap-2">
           <ActivityTabButton
             active={initialTab === "requests"}
@@ -142,11 +144,11 @@ function ActivityLoadingState({
         </div>
       </section>
 
-      <section className="surface-card rounded-[1.45rem] p-5">
+      <section className="surface-card rounded-[1.45rem] p-5 ring-1 ring-white/55">
         <div className="space-y-3">
-          <div className="h-4 w-32 rounded-full bg-[#eef2ee]" />
-          <div className="h-4 w-48 rounded-full bg-[#f4f7f3]" />
-          <div className="h-4 w-40 rounded-full bg-[#f4f7f3]" />
+          <div className="h-4 w-32 rounded-full bg-[#e7ede4]" />
+          <div className="h-4 w-48 rounded-full bg-[#eff3ec]" />
+          <div className="h-4 w-40 rounded-full bg-[#eff3ec]" />
         </div>
       </section>
     </div>
@@ -175,7 +177,7 @@ function MyJoinCard({
   return (
     <article
       className={cn(
-        "surface-card rounded-[1.45rem] p-4 transition",
+        "surface-card rounded-[1.5rem] p-4 ring-1 ring-white/55 transition",
         highlighted && "ring-2 ring-[#b8ff5a]",
       )}
     >
@@ -185,7 +187,7 @@ function MyJoinCard({
             <Badge variant={getParticipationStatusTone(request.status)}>
               {getParticipationStatusLabel(request.status)}
             </Badge>
-            <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#445149]">
+            <span className="surface-chip rounded-full px-2.5 py-1 text-[11px] font-bold">
               {formatSportType(match.sport_type ?? "futsal")}
             </span>
           </div>
@@ -201,7 +203,7 @@ function MyJoinCard({
       </div>
 
       {request.host_note ? (
-        <p className="mt-3 rounded-[1rem] bg-[#f4f7f3] px-3.5 py-3 text-[13px] leading-6 text-[#445149]">
+        <p className="surface-subcard mt-3 rounded-[1rem] px-3.5 py-3 text-[13px] leading-6 text-[#445149]">
           {request.host_note}
         </p>
       ) : null}
@@ -253,7 +255,7 @@ function ClosedRequestRow({
   return (
     <article
       className={cn(
-        "rounded-[1rem] bg-[#f4f7f3] px-4 py-3.5 transition",
+        "surface-subcard rounded-[1rem] px-4 py-3.5 transition",
         highlighted && "ring-2 ring-[#b8ff5a]",
       )}
     >
@@ -296,7 +298,7 @@ function PendingRequestRow({
   onReject: () => void;
 }) {
   return (
-    <div className="rounded-[1rem] bg-[#f4f7f3] px-3.5 py-3.5">
+    <div className="surface-subcard rounded-[1rem] px-3.5 py-3.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[#112317]">
@@ -350,7 +352,7 @@ function ConnectedRequestRow({
   const actionDisabled = Boolean(pendingAction);
 
   return (
-    <div className="rounded-[1rem] bg-[#eef2ee] px-3.5 py-3">
+    <div className="surface-subcard rounded-[1rem] px-3.5 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[#112317]">
@@ -415,7 +417,7 @@ function HostSpotCard({
   return (
     <article
       className={cn(
-        "surface-card rounded-[1.45rem] p-4 transition",
+        "surface-card rounded-[1.5rem] p-4 ring-1 ring-white/55 transition",
         highlighted && "ring-2 ring-[#b8ff5a]",
       )}
     >
@@ -426,7 +428,7 @@ function HostSpotCard({
               {match.remaining_slots <= 1 ? "1\uC790\uB9AC" : `${match.remaining_slots}\uC790\uB9AC`}
             </Badge>
             {pendingRequests.length > 0 ? (
-              <span className="rounded-full bg-[#f4f7f3] px-2.5 py-1 text-[11px] font-bold text-[#55625a]">
+              <span className="surface-chip rounded-full px-2.5 py-1 text-[11px] font-bold">
                 {"\uC0C8 \uC694\uCCAD"} {pendingRequests.length}
               </span>
             ) : null}
@@ -449,13 +451,13 @@ function HostSpotCard({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
+        <span className="surface-chip rounded-full px-3 py-1.5 text-[12px] font-semibold">
           {"\uC694\uCCAD"} {pendingRequests.length}
         </span>
-        <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
+        <span className="surface-chip rounded-full px-3 py-1.5 text-[12px] font-semibold">
           {"\uC5F0\uB77D"} {connectedRequests.length}
         </span>
-        <span className="rounded-full bg-[#f4f7f3] px-3 py-1.5 text-[12px] font-semibold text-[#55625a]">
+        <span className="surface-chip rounded-full px-3 py-1.5 text-[12px] font-semibold">
           {"\uC885\uB8CC"} {closedRequests.length}
         </span>
       </div>
@@ -490,7 +492,7 @@ function HostSpotCard({
           })}
         </div>
       ) : requests.length === 0 ? (
-        <div className="mt-3 rounded-[1rem] bg-[#f4f7f3] px-4 py-3 text-sm text-[#66736a]">
+        <div className="surface-subcard mt-3 rounded-[1rem] px-4 py-3 text-sm text-[#66736a]">
           {"\uC544\uC9C1 \uB4E4\uC5B4\uC628 \uC694\uCCAD\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}
         </div>
       ) : null}
@@ -736,9 +738,10 @@ function ActivityScreenBody({
           <FlashBanner
             key={localFlashAt ?? flashAt ?? resolvedFlash ?? "activity-flash"}
             flash={resolvedFlash}
+            placement="bottom"
           />
           {error ? (
-            <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
+            <p className="rounded-[1.2rem] bg-[#f7ddd2] px-4 py-3 text-sm font-semibold text-[#8e3e32]">
               {error}
             </p>
           ) : null}
@@ -747,7 +750,7 @@ function ActivityScreenBody({
 
       {showDemoIdentitySwitcher ? <DemoIdentitySwitcher /> : null}
 
-      <section className="surface-card rounded-[1.5rem] p-3">
+      <section className="surface-card rounded-[1.5rem] p-3 ring-1 ring-white/55">
         <div className="grid grid-cols-2 gap-2">
           <ActivityTabButton
             active={activeTab === "requests"}
@@ -767,7 +770,7 @@ function ActivityScreenBody({
       {activeTab === "requests" ? (
         <section className="space-y-3">
           {openRequests.length === 0 && dismissibleClosedRequests.length === 0 ? (
-            <section className="surface-card rounded-[1.45rem] p-5">
+            <section className="surface-card rounded-[1.5rem] p-5 ring-1 ring-white/55">
               <p className="text-sm text-[#66736a]">{"\uCC38\uC5EC \uC694\uCCAD\uD55C \uB9E4\uCE58\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."}</p>
               <Button asChild className="mt-4" size="sm">
                 <Link href="/home">{"\uB9E4\uCE58 \uCC3E\uAE30"}</Link>
@@ -798,10 +801,10 @@ function ActivityScreenBody({
           )}
 
           {dismissibleClosedRequests.length > 0 ? (
-            <section className="surface-card rounded-[1.45rem] p-4">
+            <section className="surface-card rounded-[1.5rem] p-4 ring-1 ring-white/55">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold tracking-[-0.02em] text-[#112317]">{"\uC885\uB8CC\uB41C \uC694\uCCAD"}</h2>
-                <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#55625a]">
+                <span className="surface-chip rounded-full px-2.5 py-1 text-[11px] font-bold">
                   {dismissibleClosedRequests.length}
                 </span>
               </div>
@@ -833,7 +836,7 @@ function ActivityScreenBody({
       ) : (
         <section className="space-y-3">
           {hostedMatches.length === 0 ? (
-            <section className="surface-card rounded-[1.45rem] p-5">
+            <section className="surface-card rounded-[1.5rem] p-5 ring-1 ring-white/55">
               <p className="text-sm text-[#66736a]">{"\uC9C4\uD589 \uC911\uC778 \uBAA8\uC9D1\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}</p>
               <Button asChild className="mt-4" size="sm">
                 <Link href="/create">{"\uC6A9\uBCD1 \uBAA8\uC9D1\uD558\uAE30"}</Link>
