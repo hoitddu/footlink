@@ -71,6 +71,7 @@ function ProfileEditor({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [localFlash, setLocalFlash] = useState<"saved" | undefined>(undefined);
+  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(undefined);
   const [error, setError] = useState("");
   const saveLockRef = useRef(false);
   const flashParam = searchParams.get("flash");
@@ -123,6 +124,7 @@ function ProfileEditor({
 
       const nextFlashAt = Date.now();
       setLocalFlash("saved");
+      setLocalFlashAt(String(nextFlashAt));
 
       if (typeof window !== "undefined") {
         window.history.replaceState(null, "", `/profile?flash=saved&flashAt=${nextFlashAt}`);
@@ -140,9 +142,10 @@ function ProfileEditor({
       <ScreenHeader href={returnTo ?? "/home"} ariaLabel="홈으로 돌아가기" />
 
       <FlashBanner
-        key={flashAt ?? resolvedFlash ?? "profile-flash"}
+        key={localFlashAt ?? flashAt ?? resolvedFlash ?? "profile-flash"}
         flash={resolvedFlash}
-        placement="bottom"
+        placement="cta"
+        durationMs={2800}
       />
       {error ? (
         <p className="rounded-[1.2rem] bg-[#f2ece8] px-4 py-3 text-sm font-semibold text-[#6b544e]">

@@ -39,7 +39,7 @@ function BottomNavFrame() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-[430px] px-3">
-      <nav className="relative grid w-full grid-cols-4 rounded-t-[1.7rem] border-x border-t border-[rgba(231,240,232,0.08)] bg-[linear-gradient(180deg,rgba(17,28,21,0.96)_0%,rgba(13,22,16,0.98)_100%)] px-1.5 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-18px_44px_rgba(4,10,6,0.28)] before:pointer-events-none before:absolute before:inset-x-0 before:bottom-0 before:h-[calc(env(safe-area-inset-bottom)+0.7rem)] before:rounded-b-[1.7rem] before:bg-[linear-gradient(180deg,rgba(13,22,16,0.92)_0%,rgba(13,22,16,0.98)_100%)]">
+      <nav className="relative grid w-full grid-cols-4 rounded-[1.7rem] border border-[rgba(231,240,232,0.08)] bg-[linear-gradient(180deg,rgba(17,28,21,0.96)_0%,rgba(13,22,16,0.98)_100%)] px-1.5 pb-[calc(0.45rem+env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-18px_44px_rgba(4,10,6,0.28)]">
         {items.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href || (item.href === "/home" && pathname.startsWith("/match/"));

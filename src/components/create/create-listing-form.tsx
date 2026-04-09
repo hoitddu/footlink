@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { ensureAnonymousSessionAction } from "@/app/actions/auth";
 import { createMatchAction } from "@/app/actions/matches";
 import type { PlaceSearchResult } from "@/components/create/kakao-place-picker";
+import { FlashBanner } from "@/components/app/flash-banner";
 import { ScreenHeader } from "@/components/app/screen-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -352,9 +353,12 @@ function CreateListingFormBody({
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [localFlash, setLocalFlash] = useState<"created" | undefined>(undefined);
+  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(undefined);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [submitAfterProfile, setSubmitAfterProfile] = useState(false);
   const submitLockRef = useRef(false);
+  const redirectTimerRef = useRef<number | null>(null);
   const minimumDate = getMinimumSelectableDate();
   const minimumTime = getMinimumSelectableTime(date);
 
@@ -407,6 +411,14 @@ function CreateListingFormBody({
       setTime(minimumTime);
     }
   }, [minimumTime, time]);
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
 
   function applyQuickDuration(duration: (typeof QUICK_DURATION_OPTIONS)[number]) {
     setDurationMinutes(duration);
@@ -511,7 +523,13 @@ function CreateListingFormBody({
         note: note.trim(),
       });
 
-      router.push(`/activity?tab=listings&highlight=${createdMatch.id}&flash=created&flashAt=${Date.now()}`);
+      const nextFlashAt = Date.now();
+      setLocalFlash("created");
+      setLocalFlashAt(String(nextFlashAt));
+
+      redirectTimerRef.current = window.setTimeout(() => {
+        router.push(`/activity?tab=listings&highlight=${createdMatch.id}&flash=created&flashAt=${nextFlashAt}`);
+      }, 1200);
     } catch (createError) {
       if (requiresProfileSetup(createError)) {
         setSubmitAfterProfile(true);
@@ -530,6 +548,12 @@ function CreateListingFormBody({
   return (
     <div className="space-y-4 pb-[8.9rem]">
       <ScreenHeader href="/home" ariaLabel="홈으로 돌아가기" />
+      <FlashBanner
+        key={localFlashAt ?? "create-flash"}
+        flash={localFlash}
+        placement="cta"
+        durationMs={2800}
+      />
 
       <section className={FORM_PANEL_CLASS}>
         <div className="grid grid-cols-2 gap-2">

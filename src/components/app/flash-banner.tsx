@@ -44,9 +44,11 @@ const flashMessages = {
 export function FlashBanner({
   flash,
   placement = "top",
+  durationMs = 2400,
 }: {
   flash?: keyof typeof flashMessages;
-  placement?: "top" | "bottom";
+  placement?: "top" | "bottom" | "cta";
+  durationMs?: number;
 }) {
   if (!flash) {
     return null;
@@ -63,9 +65,16 @@ export function FlashBanner({
       className={`fixed left-1/2 z-[70] w-[calc(100%-2rem)] max-w-[24.9rem] -translate-x-1/2 rounded-[1.2rem] px-4 py-3 text-sm font-semibold shadow-[0_18px_42px_rgba(8,18,12,0.12)] ${
         placement === "bottom"
           ? "bottom-[calc(var(--app-bottom-nav-visual-height)+env(safe-area-inset-bottom)+1rem)]"
-          : "top-[calc(env(safe-area-inset-top)+1rem)]"
+          : placement === "cta"
+            ? "bottom-[calc(env(safe-area-inset-bottom)+6.6rem)]"
+            : "top-[calc(env(safe-area-inset-top)+1rem)]"
       } ${content.tone}`}
-      style={{ animation: placement === "bottom" ? "flash-toast-bottom 2.4s ease forwards" : "flash-toast 2.4s ease forwards" }}
+      style={{
+        animation:
+          placement === "top"
+            ? `flash-toast ${durationMs}ms ease forwards`
+            : `flash-toast-bottom ${durationMs}ms ease forwards`,
+      }}
     >
       {content.text}
     </p>

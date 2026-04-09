@@ -91,8 +91,8 @@ function FilterPill({
       className={cn(
         "rounded-full font-bold transition active:scale-[0.985]",
         compact
-          ? "min-h-[2.34rem] px-1.5 text-[10.5px] leading-none tracking-[-0.06em] whitespace-nowrap"
-          : "min-h-10 px-3.5 text-[12px]",
+          ? "min-h-[2.16rem] overflow-hidden px-1 text-[8.5px] leading-none tracking-[-0.09em] whitespace-nowrap sm:px-1.5 sm:text-[9.5px]"
+          : "min-h-[2.7rem] px-3.5 text-[11.5px]",
         stretch && "w-full",
         active ? "shell-chip-active" : "shell-chip",
       )}
@@ -137,21 +137,21 @@ function FeedScreenView({
 
   return (
     <div className="pb-24">
-      <div className="-mx-4 sticky top-0 z-30 px-4 pb-2.5 pt-1.5">
-        <div className="shell-card rounded-[1.8rem] px-4 pb-4 pt-3.5">
+      <div className="-mx-4 sticky top-0 z-30 px-4 pb-2 pt-1">
+        <div className="shell-card rounded-[1.7rem] px-4 pb-3.5 pt-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="font-display text-[1.08rem] font-bold tracking-[0.18em] text-[#f4f7f1]">
+              <span className="font-display text-[1.02rem] font-bold tracking-[0.17em] text-[#f4f7f1]">
                 FOOTLINK
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/8 px-2.5 py-1 text-[11px] font-semibold text-[#c9d5ca] ring-1 ring-white/10">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/8 px-2.5 py-[0.35rem] text-[10px] font-semibold text-[#c9d5ca] ring-1 ring-white/10">
                 <MapPin className="h-3.5 w-3.5" />
                 수원
               </span>
             </div>
           </div>
 
-          <div className="mt-2.5 flex gap-2">
+          <div className="mt-2 flex gap-1.5">
             {SPORT_FILTER_OPTIONS.map((option) => (
               <FilterPill
                 key={option.value}
@@ -162,7 +162,7 @@ function FeedScreenView({
             ))}
           </div>
 
-          <div className="mt-2 grid grid-cols-5 gap-2">
+          <div className="mt-1.5 grid grid-cols-5 gap-1.5">
             {SORT_OPTIONS.map((option) => (
               <FilterPill
                 key={option.value}
@@ -175,7 +175,7 @@ function FeedScreenView({
             ))}
           </div>
 
-          <div className="mt-[1.15rem]">
+          <div className="mt-3">
             <DateFilterBar
               items={dateItems}
               selectedId={selectedDateId}

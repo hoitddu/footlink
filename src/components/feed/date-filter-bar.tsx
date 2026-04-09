@@ -32,7 +32,7 @@ export function DateFilterBar({
 
   return (
     <div className="-mx-4 overflow-x-auto px-4 no-scrollbar">
-      <div className="flex min-w-max gap-2 pb-1">
+      <div className="flex min-w-max gap-2 pb-0.5">
         {items.map((item) => {
           const active = item.id === selectedId;
           const isAll = item.id === "all";
@@ -47,18 +47,18 @@ export function DateFilterBar({
               aria-pressed={active}
               onClick={() => onSelect(item)}
               className={cn(
-                "flex h-[4.25rem] min-w-[4rem] flex-col items-center justify-center rounded-[1.3rem] border text-center transition active:scale-[0.985]",
+                "flex h-[3.78rem] min-w-[3.75rem] flex-col items-center justify-center rounded-[1.2rem] border text-center transition active:scale-[0.985]",
                 active
                   ? "border-[#f4f7f1] bg-[#f4f7f1] text-[#112317] shadow-[0_10px_22px_rgba(4,10,6,0.24)]"
                   : "border-white/10 bg-white/[0.05] text-[#d8e0d9] shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
-                isAll && "min-w-[4.35rem]",
+                isAll && "min-w-[4.05rem]",
               )}
             >
               {isAll ? (
                 <>
                   <span
                     className={cn(
-                      "text-[0.9rem] font-bold tracking-[-0.03em]",
+                      "text-[0.82rem] font-bold tracking-[-0.03em]",
                       active ? "text-[#112317]" : "text-[#f0f4ee]",
                     )}
                   >
@@ -66,7 +66,7 @@ export function DateFilterBar({
                   </span>
                   <span
                     className={cn(
-                      "mt-0.5 text-[0.9rem] font-bold tracking-[-0.03em]",
+                      "mt-0.5 text-[0.82rem] font-bold tracking-[-0.03em]",
                       active ? "text-[#112317]" : "text-[#f0f4ee]",
                     )}
                   >
@@ -77,7 +77,7 @@ export function DateFilterBar({
                 <>
                   <span
                     className={cn(
-                      "text-[0.96rem] font-bold tracking-[-0.04em]",
+                      "text-[0.9rem] font-bold tracking-[-0.04em]",
                       active ? "text-[#112317]" : "text-[#f0f4ee]",
                     )}
                   >
@@ -85,7 +85,7 @@ export function DateFilterBar({
                   </span>
                   <span
                     className={cn(
-                      "mt-0.5 text-[0.8rem] font-semibold",
+                      "mt-0.5 text-[0.72rem] font-semibold",
                       active ? "text-[#516056]" : "text-[#93a297]",
                     )}
                   >
