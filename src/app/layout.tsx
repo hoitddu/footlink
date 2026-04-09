@@ -18,7 +18,9 @@ export const metadata: Metadata = {
     title: "FOOTLINK",
     images: [
       {
-        url: "/og-share.png",
+        // Versioned filename busts Facebook/Twitter/KakaoTalk crawler caches.
+        // Bump the version (og-share-v4.png, ...) whenever the image changes.
+        url: "/og-share-v3.png",
         width: 1200,
         height: 630,
         alt: "FOOTLINK",
@@ -28,7 +30,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "FOOTLINK",
-    images: ["/og-share.png"],
+    images: ["/og-share-v3.png"],
   },
   icons: {
     icon: [

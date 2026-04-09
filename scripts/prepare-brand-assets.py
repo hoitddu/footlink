@@ -30,7 +30,10 @@ def prepare_og() -> None:
     source = Image.open(PUBLIC_DIR / "og.png").convert("RGBA")
     cleaned = cover_watermark(source, x0=2620, y0=1320, x1=2838, y1=1500)
     resized = cleaned.resize((1200, 630), Image.Resampling.LANCZOS)
+    # Keep filenames in sync: og-share.png is the legacy path, og-share-v3.png
+    # is the versioned URL referenced in layout.tsx to bust social crawler caches.
     resized.save(PUBLIC_DIR / "og-share.png", format="PNG")
+    resized.save(PUBLIC_DIR / "og-share-v3.png", format="PNG")
 
 
 def prepare_pwa() -> None:
