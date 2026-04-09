@@ -4,6 +4,8 @@ import { twMerge } from "tailwind-merge";
 import { getAgeBandLabel, getSkillLevelLabel, getSportLabel } from "@/lib/constants";
 import type { SkillLevel, SportType } from "@/lib/types";
 
+const KOREA_TIME_ZONE = "Asia/Seoul";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -34,6 +36,33 @@ export function parseKoreaDateTime(value: string) {
   return new Date(normalized).getTime();
 }
 
+function formatInKorea(date: string | Date, options: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: KOREA_TIME_ZONE,
+    ...options,
+  }).format(typeof date === "string" ? new Date(date) : date);
+}
+
+function formatPartsInKorea(date: string | Date, options: Intl.DateTimeFormatOptions) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: KOREA_TIME_ZONE,
+    ...options,
+  }).formatToParts(typeof date === "string" ? new Date(date) : date);
+}
+
+export function buildKoreaDateTime(date: string, time: string) {
+  return `${date}T${time}:00+09:00`;
+}
+
+function getKoreaDateKey(date: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: KOREA_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(date));
+}
+
 export function isPastKoreaDateTime(value: string, referenceNow = Date.now()) {
   const timestamp = parseKoreaDateTime(value);
 
@@ -61,11 +90,11 @@ export function formatDurationMinutes(durationMinutes: number) {
 
 export function formatTimeRange(startAt: string, durationMinutes = 120) {
   const start = formatTimeOnly(startAt);
-  const end = new Intl.DateTimeFormat("ko-KR", {
+  const end = formatInKorea(getMatchEndDate(startAt, durationMinutes), {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).format(getMatchEndDate(startAt, durationMinutes));
+  });
 
   return `${start} - ${end}`;
 }
@@ -140,13 +169,13 @@ export function getShortestTravelEstimate(distanceKm: number): TravelEstimate {
 }
 
 export function formatStartAt(date: string) {
-  const parts = new Intl.DateTimeFormat("ko-KR", {
+  const parts = formatPartsInKorea(date, {
     month: "numeric",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).formatToParts(new Date(date));
+  });
 
   const month = parts.find((part) => part.type === "month")?.value ?? "";
   const day = parts.find((part) => part.type === "day")?.value ?? "";
@@ -157,11 +186,11 @@ export function formatStartAt(date: string) {
 }
 
 export function formatTimeOnly(date: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
+  return formatInKorea(date, {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
-  }).format(new Date(date));
+  });
 }
 
 export function formatSkillLevel(level: SkillLevel) {
@@ -204,9 +233,7 @@ export function formatUrgencyLabel(date: string, minutesUntilStart: number) {
     return `${Math.round(minutesUntilStart / 60)}시간 내 시작`;
   }
 
-  const target = new Date(date);
-  const now = new Date();
-  const sameDay = target.toDateString() === now.toDateString();
+  const sameDay = getKoreaDateKey(date) === getKoreaDateKey(new Date().toISOString());
 
   if (sameDay) {
     return `오늘 ${formatTimeOnly(date)}`;

@@ -111,8 +111,12 @@ export function getParticipationStatusLabel(status: ParticipationStatus) {
     return "요청됨";
   }
 
-  if (status === "accepted" || status === "confirmed") {
-    return "연락 가능";
+  if (status === "accepted") {
+    return "수락됨";
+  }
+
+  if (status === "confirmed") {
+    return "확정됨";
   }
 
   if (status === "withdrawn") {
@@ -123,11 +127,11 @@ export function getParticipationStatusLabel(status: ParticipationStatus) {
 }
 
 export function getParticipationStatusTone(status: ParticipationStatus) {
-  if (status === "accepted" || status === "confirmed") {
+  if (status === "confirmed") {
     return "success" as const;
   }
 
-  if (status === "pending") {
+  if (status === "pending" || status === "accepted") {
     return "soon" as const;
   }
 

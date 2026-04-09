@@ -1,7 +1,11 @@
 const flashMessages = {
+  saved: {
+    tone: "bg-[#eef2ee] text-[#112317]",
+    text: "저장되었습니다.",
+  },
   created: {
     tone: "bg-[#eef2ee] text-[#112317]",
-    text: "공석을 올렸습니다. 들어오는 참여 요청을 빠르게 확인해 보세요.",
+    text: "용병 모집이 등록되었습니다. 들어오는 참여 요청을 빠르게 확인해 보세요.",
   },
   requested: {
     tone: "bg-[#fff0d7] text-[#9a6111]",
@@ -9,7 +13,7 @@ const flashMessages = {
   },
   accepted: {
     tone: "bg-[#dce8ff] text-[#2455a6]",
-    text: "호스트가 요청을 확인했습니다. 오픈채팅이나 연락 링크를 확인해 보세요.",
+    text: "호스트가 요청을 수락했습니다. 연락 후 확정 여부를 정하면 됩니다.",
   },
   confirmed: {
     tone: "bg-[#e4f6e8] text-[#1f7a38]",

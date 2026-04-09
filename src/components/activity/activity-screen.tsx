@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { cancelMatchAction } from "@/app/actions/matches";
 import {
   acceptParticipationAction,
+  confirmParticipationAction,
   rejectParticipationAction,
   withdrawParticipationAction,
 } from "@/app/actions/requests";
@@ -40,7 +41,7 @@ type ActivityFlash =
   | "withdrawn"
   | "deleted";
 type PendingActivityAction =
-  | { targetId: string; kind: "withdraw" | "accept" | "reject" | "delete" }
+  | { targetId: string; kind: "withdraw" | "accept" | "confirm" | "reject" | "delete" }
   | null;
 
 function isOpenRequest(request: ParticipationRequest) {
@@ -223,6 +224,59 @@ function PendingRequestRow({
   );
 }
 
+function ConnectedRequestRow({
+  request,
+  requesterName,
+  requesterMeta,
+  pendingAction,
+  onConfirm,
+  onReject,
+}: {
+  request: ParticipationRequest;
+  requesterName: string;
+  requesterMeta: string | null;
+  pendingAction: PendingActivityAction;
+  onConfirm: () => void;
+  onReject: () => void;
+}) {
+  const statusLabel = request.status === "confirmed" ? "확정됨" : "수락됨";
+  const confirmPending = pendingAction?.targetId === request.id && pendingAction.kind === "confirm";
+  const rejectPending = pendingAction?.targetId === request.id && pendingAction.kind === "reject";
+  const actionDisabled = Boolean(pendingAction);
+
+  return (
+    <div className="rounded-[1rem] bg-[#eef2ee] px-3.5 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-[#112317]">
+            {requesterName} · {getParticipationSummary(request)}
+          </p>
+          {requesterMeta ? <p className="mt-1 text-[12px] text-[#66736a]">{requesterMeta}</p> : null}
+        </div>
+        <Badge variant={request.status === "confirmed" ? "calm" : "soon"}>{statusLabel}</Badge>
+      </div>
+
+      {request.status === "accepted" ? (
+        <div className="mt-3 flex gap-2">
+          <Button className="flex-1" size="sm" type="button" onClick={onConfirm} disabled={actionDisabled}>
+            {confirmPending ? "확정 중..." : "확정"}
+          </Button>
+          <Button
+            className="flex-1"
+            size="sm"
+            type="button"
+            variant="secondary"
+            onClick={onReject}
+            disabled={actionDisabled}
+          >
+            {rejectPending ? "거절 중..." : "거절"}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function HostSpotCard({
   state,
   match,
@@ -230,6 +284,7 @@ function HostSpotCard({
   highlighted,
   pendingAction,
   onAccept,
+  onConfirm,
   onReject,
   onDelete,
 }: {
@@ -239,6 +294,7 @@ function HostSpotCard({
   highlighted: boolean;
   pendingAction: PendingActivityAction;
   onAccept: (requestId: string) => void;
+  onConfirm: (requestId: string) => void;
   onReject: (requestId: string) => void;
   onDelete: () => void;
 }) {
@@ -328,24 +384,31 @@ function HostSpotCard({
             );
           })}
         </div>
-      ) : (
+      ) : requests.length === 0 ? (
         <div className="mt-3 rounded-[1rem] bg-[#f4f7f3] px-4 py-3 text-sm text-[#66736a]">
           아직 들어온 요청이 없습니다.
         </div>
-      )}
+      ) : null}
 
       {connectedRequests.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 space-y-2">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">연락 및 확정</p>
           {connectedRequests.map((request) => {
             const requester = getProfileById(state, request.requester_profile_id);
+            const requesterMeta = requester
+              ? `${formatSkillLevel(requester.skill_level)} · ${formatAgeBand(requester.age)}`
+              : null;
 
             return (
-              <span
+              <ConnectedRequestRow
                 key={request.id}
-                className="rounded-full bg-[#eef2ee] px-3 py-1.5 text-[12px] font-medium text-[#445149]"
-              >
-                {requester?.nickname ?? "참여자"} · 연락 전달됨
-              </span>
+                request={request}
+                requesterName={requester?.nickname ?? "참여자"}
+                requesterMeta={requesterMeta}
+                pendingAction={pendingAction}
+                onConfirm={() => onConfirm(request.id)}
+                onReject={() => onReject(request.id)}
+              />
             );
           })}
         </div>
@@ -361,6 +424,7 @@ function ActivityScreenBody({
   state,
   onWithdraw,
   onAccept,
+  onConfirm,
   onReject,
   onDelete,
   showDemoIdentitySwitcher,
@@ -371,6 +435,7 @@ function ActivityScreenBody({
   state: DemoAppState;
   onWithdraw: (requestId: string) => Promise<void>;
   onAccept: (requestId: string) => Promise<void>;
+  onConfirm: (requestId: string) => Promise<void>;
   onReject: (requestId: string) => Promise<void>;
   onDelete: (matchId: string) => Promise<void>;
   showDemoIdentitySwitcher: boolean;
@@ -430,7 +495,7 @@ function ActivityScreenBody({
 
   async function handleAccept(requestId: string, matchId: string) {
     setError("");
-    setPendingAction({ targetId: requestId, kind: "accept" });
+    setPendingAction({ targetId: requestId, kind: "confirm" });
 
     try {
       await onAccept(requestId);
@@ -442,6 +507,25 @@ function ActivityScreenBody({
       });
     } catch (acceptError) {
       setError(getUserFacingErrorMessage(acceptError, "참가 요청을 수락하지 못했습니다."));
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleConfirm(requestId: string, matchId: string) {
+    setError("");
+    setPendingAction({ targetId: requestId, kind: "accept" });
+
+    try {
+      await onConfirm(requestId);
+      setActiveTab("listings");
+      replaceActivityQuery({
+        tab: "listings",
+        highlight: matchId,
+        flash: "confirmed",
+      });
+    } catch (confirmError) {
+      setError(getUserFacingErrorMessage(confirmError, "최종 확정을 처리하지 못했습니다."));
     } finally {
       setPendingAction(null);
     }
@@ -609,6 +693,7 @@ function ActivityScreenBody({
                 highlighted={highlight === match.id}
                 pendingAction={pendingAction}
                 onAccept={(requestId) => handleAccept(requestId, match.id)}
+                onConfirm={(requestId) => handleConfirm(requestId, match.id)}
                 onReject={(requestId) => handleReject(requestId, match.id)}
                 onDelete={() => handleDelete(match.id)}
               />
@@ -636,6 +721,9 @@ function DemoActivityScreen(props: {
       }}
       onAccept={async (requestId) => {
         actions.acceptParticipation(requestId);
+      }}
+      onConfirm={async (requestId) => {
+        actions.confirmParticipation(requestId);
       }}
       onReject={async (requestId) => {
         actions.rejectParticipation(requestId);
@@ -671,6 +759,9 @@ export function ActivityScreen({
         }}
         onAccept={async (requestId) => {
           await acceptParticipationAction(requestId);
+        }}
+        onConfirm={async (requestId) => {
+          await confirmParticipationAction(requestId);
         }}
         onReject={async (requestId) => {
           await rejectParticipationAction(requestId);

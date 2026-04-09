@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { saveProfile } from "@/components/profile/profile-save";
+import { FlashBanner } from "@/components/app/flash-banner";
 import { ScreenHeader } from "@/components/app/screen-header";
 import { DemoIdentitySwitcher } from "@/components/app/demo-identity-switcher";
 import { Button } from "@/components/ui/button";
@@ -34,11 +35,13 @@ type SaveProfileInput = {
 function ProfileEditor({
   profile,
   returnTo,
+  flash,
   onSaveProfile,
   onReset,
 }: {
   profile: Profile | null;
   returnTo?: string;
+  flash?: "saved";
   onSaveProfile: (input: SaveProfileInput) => Promise<void>;
   onReset?: () => void;
 }) {
@@ -52,11 +55,9 @@ function ProfileEditor({
   const [defaultContactType, setDefaultContactType] = useState<DirectContactType>(
     profile?.default_contact_type ?? (profile?.open_chat_link ? "openchat" : profile?.phone_number ? "phone" : "openchat"),
   );
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSave() {
-    setSaved(false);
     setError("");
 
     try {
@@ -71,14 +72,12 @@ function ProfileEditor({
         default_contact_type: defaultContactType,
       });
 
-      setSaved(true);
-
       if (returnTo) {
         router.push(returnTo);
         return;
       }
 
-      router.refresh();
+      router.replace("/profile?flash=saved", { scroll: false });
     } catch (saveError) {
       setError(getUserFacingErrorMessage(saveError, "프로필을 저장하지 못했습니다."));
     }
@@ -88,11 +87,7 @@ function ProfileEditor({
     <div className="space-y-5">
       <ScreenHeader href={returnTo ?? "/home"} ariaLabel="홈으로 돌아가기" />
 
-      {saved ? (
-        <p className="rounded-[1.2rem] bg-[#eef2ee] px-4 py-3 text-sm font-semibold text-[#112317]">
-          프로필을 저장했습니다.
-        </p>
-      ) : null}
+      <FlashBanner flash={flash} />
       {error ? (
         <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
           {error}
@@ -221,13 +216,14 @@ function ProfileEditor({
   );
 }
 
-function DemoProfileForm({ returnTo }: { returnTo?: string }) {
+function DemoProfileForm({ returnTo, flash }: { returnTo?: string; flash?: "saved" }) {
   const { currentProfile, actions } = useDemoApp();
 
   return (
     <ProfileEditor
       profile={currentProfile ?? null}
       returnTo={returnTo}
+      flash={flash}
       onSaveProfile={async (input) => {
         actions.updateCurrentProfile(input);
       }}
@@ -239,15 +235,18 @@ function DemoProfileForm({ returnTo }: { returnTo?: string }) {
 export function ProfileForm({
   profile,
   returnTo,
+  flash,
 }: {
   profile?: Profile | null;
   returnTo?: string;
+  flash?: "saved";
 }) {
   if (profile !== undefined) {
     return (
       <ProfileEditor
         profile={profile}
         returnTo={returnTo}
+        flash={flash}
         onSaveProfile={async (input) => {
           await saveProfile({
             nickname: input.nickname.trim(),
@@ -265,5 +264,5 @@ export function ProfileForm({
     );
   }
 
-  return <DemoProfileForm returnTo={returnTo} />;
+  return <DemoProfileForm returnTo={returnTo} flash={flash} />;
 }

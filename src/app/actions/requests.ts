@@ -118,12 +118,19 @@ export async function acceptParticipationAction(requestId: string, hostNote?: st
     });
 
     if (error) {
+      if (error.message === "INSUFFICIENT_REMAINING_SLOTS") {
+        throw createAppError("INSUFFICIENT_REMAINING_SLOTS");
+      }
+
+      if (error.message === "MATCH_NOT_OPEN") {
+        throw createAppError("MATCH_CLOSED");
+      }
+
       throw error;
     }
 
     const request = await getRequestRow(requestId);
 
-    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
 
@@ -146,11 +153,20 @@ export async function confirmParticipationAction(requestId: string, hostNote?: s
     });
 
     if (error) {
+      if (error.message === "INSUFFICIENT_REMAINING_SLOTS") {
+        throw createAppError("INSUFFICIENT_REMAINING_SLOTS");
+      }
+
+      if (error.message === "MATCH_NOT_OPEN") {
+        throw createAppError("MATCH_CLOSED");
+      }
+
       throw error;
     }
 
     const request = await getRequestRow(requestId);
 
+    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
 

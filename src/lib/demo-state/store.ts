@@ -112,14 +112,14 @@ function findActiveParticipation(state: DemoAppState, matchId: string, requester
   );
 }
 
-function closePendingRequests(state: DemoAppState, matchId: string, acceptedRequestId: string) {
+function closeOpenRequests(state: DemoAppState, matchId: string, keptRequestId: string) {
   const now = new Date().toISOString();
 
   state.participationRequests = state.participationRequests.map((request) => {
     if (
       request.match_id !== matchId ||
-      request.id === acceptedRequestId ||
-      request.status !== "pending"
+      request.id === keptRequestId ||
+      !["pending", "accepted"].includes(request.status)
     ) {
       return request;
     }
@@ -352,23 +352,11 @@ export function acceptParticipation(state: DemoAppState, requestId: string, host
     throw new Error("남은 자리가 부족합니다.");
   }
 
-  match.remaining_slots -= request.requested_count;
-  match.updated_at = new Date().toISOString();
-
-  if (match.remaining_slots <= 0) {
-    match.remaining_slots = 0;
-    match.status = "matched";
-  }
-
   request.status = "accepted";
   request.decided_at = new Date().toISOString();
   request.updated_at = request.decided_at;
   request.host_note = hostNote?.trim() || request.host_note;
   request.accepted_contact_link = acceptedContactValue;
-
-  if (match.status === "matched") {
-    closePendingRequests(next, match.id, request.id);
-  }
 
   pushNotification(next, {
     profile_id: requester.id,
@@ -399,6 +387,23 @@ export function confirmParticipation(state: DemoAppState, requestId: string, hos
   const requester = getProfile(next, request.requester_profile_id);
   const match = getMatch(next, request.match_id);
   const now = new Date().toISOString();
+
+  if (match.status !== "open") {
+    throw new Error("이미 마감된 매치입니다.");
+  }
+
+  if (match.remaining_slots < request.requested_count) {
+    throw new Error("남은 자리가 부족합니다.");
+  }
+
+  match.remaining_slots -= request.requested_count;
+  match.updated_at = now;
+
+  if (match.remaining_slots <= 0) {
+    match.remaining_slots = 0;
+    match.status = "matched";
+    closeOpenRequests(next, match.id, request.id);
+  }
 
   request.status = "confirmed";
   request.decided_at = now;
@@ -436,10 +441,16 @@ export function cancelParticipationConfirmation(
   }
 
   const now = new Date().toISOString();
+  const match = getMatch(next, request.match_id);
+
   request.status = "accepted";
   request.decided_at = now;
   request.updated_at = now;
   request.host_note = hostNote?.trim() || request.host_note;
+
+  match.remaining_slots = Math.min(match.total_slots, match.remaining_slots + request.requested_count);
+  match.status = "open";
+  match.updated_at = now;
 
   return { state: next, request };
 }
@@ -453,7 +464,7 @@ export function rejectParticipation(state: DemoAppState, requestId: string, host
     throw new Error("호스트만 요청을 거절할 수 있습니다.");
   }
 
-  if (request.status !== "pending") {
+  if (!["pending", "accepted"].includes(request.status)) {
     throw new Error("거절할 수 없는 요청 상태입니다.");
   }
 

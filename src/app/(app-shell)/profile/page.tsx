@@ -9,8 +9,9 @@ type ProfilePageProps = {
 export default async function ProfilePage({ searchParams }: ProfilePageProps) {
   const resolved = await searchParams;
   const returnTo = Array.isArray(resolved.returnTo) ? resolved.returnTo[0] : resolved.returnTo;
+  const flash = Array.isArray(resolved.flash) ? resolved.flash[0] : resolved.flash;
   const profile =
     getAppDataSource() === "supabase" ? await getCurrentProfile() : undefined;
 
-  return <ProfileForm profile={profile} returnTo={returnTo} />;
+  return <ProfileForm profile={profile} returnTo={returnTo} flash={flash === "saved" ? "saved" : undefined} />;
 }

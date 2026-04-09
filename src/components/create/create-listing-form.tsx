@@ -28,7 +28,13 @@ import { getUserFacingErrorMessage, requiresProfileSetup } from "@/lib/errors";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { formatMatchFormatLabel } from "@/lib/match-format";
 import { isProfileComplete } from "@/lib/profiles";
-import { formatDurationMinutes, formatTimeRange, haversineDistance, isPastKoreaDateTime } from "@/lib/utils";
+import {
+  buildKoreaDateTime,
+  formatDurationMinutes,
+  formatTimeRange,
+  haversineDistance,
+  isPastKoreaDateTime,
+} from "@/lib/utils";
 import type {
   CreateMatchInput,
   DirectContactType,
@@ -413,7 +419,7 @@ function CreateListingFormBody({
 
   async function submitListing() {
     setError("");
-    const startAt = `${date}T${time}:00`;
+    const startAt = buildKoreaDateTime(date, time);
 
     if (isPastKoreaDateTime(startAt)) {
       setError("현재 시각보다 지난 경기 시간으로는 모집할 수 없습니다.");
@@ -622,7 +628,7 @@ function CreateListingFormBody({
             <div className="flex items-center justify-between gap-3">
               <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">경기시간</span>
               <p className="text-[11px] font-semibold text-[#66736a]">
-                {formatTimeRange(`${date}T${time}:00`, durationMinutes)}
+                {formatTimeRange(buildKoreaDateTime(date, time), durationMinutes)}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -794,7 +800,7 @@ function CreateListingFormBody({
                 총 {formatDurationMinutes(durationPickerHours * 60 + durationPickerMinutes)}
               </p>
               <p className="mt-1 text-[13px] text-[#66736a]">
-                {formatTimeRange(`${date}T${time}:00`, durationPickerHours * 60 + durationPickerMinutes)}
+                {formatTimeRange(buildKoreaDateTime(date, time), durationPickerHours * 60 + durationPickerMinutes)}
               </p>
             </div>
 

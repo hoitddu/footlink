@@ -6,10 +6,15 @@ import type { MatchWithMeta } from "@/lib/types";
 import { cn, formatFee, formatTimeRange, getTravelEstimates } from "@/lib/utils";
 
 function formatCardSchedule(date: string, durationMinutes: number, showDate: boolean) {
-  const target = new Date(date);
-  const month = target.getMonth() + 1;
-  const day = target.getDate();
-  const dayOfWeek = ["일", "월", "화", "수", "목", "금", "토"][target.getDay()] ?? "";
+  const parts = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+  }).formatToParts(new Date(date));
+  const month = parts.find((part) => part.type === "month")?.value ?? "";
+  const day = parts.find((part) => part.type === "day")?.value ?? "";
+  const dayOfWeek = parts.find((part) => part.type === "weekday")?.value ?? "";
   const timeRange = formatTimeRange(date, durationMinutes);
 
   if (!showDate) {

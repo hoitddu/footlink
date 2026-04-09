@@ -5,6 +5,7 @@ const APP_ERROR_MESSAGES = {
   OWN_MATCH_REQUEST_FORBIDDEN: "내가 만든 매치에는 참가 요청을 보낼 수 없습니다.",
   MATCH_CLOSED: "이미 마감된 매치입니다.",
   MATCH_START_IN_PAST: "현재 시각보다 지난 경기 시간으로는 모집할 수 없습니다.",
+  INSUFFICIENT_REMAINING_SLOTS: "남은 자리가 부족합니다. 다른 요청이 먼저 확정됐습니다.",
   REQUEST_COUNT_EXCEEDS_REMAINING: "남은 자리보다 많은 인원을 요청할 수 없습니다.",
   MATCH_DELETE_HAS_ACCEPTED_REQUESTS: "이미 수락된 참가자가 있는 모집은 마감할 수 없습니다.",
   PROFILE_SAVE_INCOMPLETE: "프로필 저장이 완전하지 않습니다. 다시 시도해 주세요.",
