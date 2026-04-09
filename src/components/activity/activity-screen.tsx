@@ -495,6 +495,7 @@ function ActivityScreenBody({
   const [error, setError] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingActivityAction>(null);
   const flashParam = searchParams.get("flash");
+  const flashAt = searchParams.get("flashAt");
   const resolvedFlash = (
     flashParam &&
     ["created", "requested", "accepted", "confirmed", "rejected", "withdrawn", "cleared", "deleted"].includes(
@@ -534,7 +535,10 @@ function ActivityScreenBody({
 
   function handleTabChange(nextTab: ActivityTab) {
     setActiveTab(nextTab);
-    replaceActivityQuery({ tab: nextTab });
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/activity?tab=${nextTab}`);
+    }
   }
 
   async function handleWithdraw(requestId: string) {
@@ -659,7 +663,7 @@ function ActivityScreenBody({
 
       {resolvedFlash || error ? (
         <div className="space-y-3">
-          <FlashBanner flash={resolvedFlash} />
+          <FlashBanner key={flashAt ?? resolvedFlash ?? "activity-flash"} flash={resolvedFlash} />
           {error ? (
             <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
               {error}

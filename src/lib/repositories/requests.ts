@@ -1,12 +1,12 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { mapMatchRequestRow, mapMatchRow } from "@/lib/supabase/mappers";
 import { getCurrentProfile, listProfilesByIds } from "@/lib/repositories/profiles";
+import { scheduleMatchLifecycleMaintenance } from "@/lib/repositories/lifecycle";
 import {
   createAppStateSnapshot,
   deriveNotificationsFromRequests,
   getDerivedNotificationId,
 } from "@/lib/repositories/snapshots";
-import type { ParticipationRequest } from "@/lib/types";
 import {
   MATCH_ACTIVITY_SELECT,
   MATCH_REQUEST_ACTIVITY_SELECT,
@@ -94,15 +94,11 @@ async function listHostedMatches(supabase: SupabaseClient, currentProfileId: str
   return (data ?? []).map(mapMatchRow);
 }
 
-async function listInboundRequests(supabase: SupabaseClient, matchIds: string[]) {
-  if (matchIds.length === 0) {
-    return [] satisfies ParticipationRequest[];
-  }
-
+async function listInboundRequestsByHost(supabase: SupabaseClient, hostProfileId: string) {
   const { data, error } = await supabase
     .from("match_requests")
     .select(MATCH_REQUEST_ACTIVITY_SELECT)
-    .in("match_id", matchIds)
+    .eq("host_profile_id", hostProfileId)
     .order("created_at", { ascending: false })
     .returns<ActivityMatchRequestRow[]>();
 
@@ -130,15 +126,11 @@ async function listRequesterNotifications(supabase: SupabaseClient, currentProfi
   return (data ?? []).map(mapMatchRequestRow);
 }
 
-async function listPendingHostNotifications(supabase: SupabaseClient, matchIds: string[]) {
-  if (matchIds.length === 0) {
-    return [] satisfies ParticipationRequest[];
-  }
-
+async function listPendingHostNotifications(supabase: SupabaseClient, hostProfileId: string) {
   const { data, error } = await supabase
     .from("match_requests")
     .select(MATCH_REQUEST_ACTIVITY_SELECT)
-    .in("match_id", matchIds)
+    .eq("host_profile_id", hostProfileId)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(20)
@@ -197,32 +189,28 @@ export async function getActivitySnapshot() {
     return createAppStateSnapshot({ currentProfile: null });
   }
 
+  // Housekeeping runs in the background; never block page render.
+  scheduleMatchLifecycleMaintenance();
+
   const supabase = await createServerSupabaseClient();
-  const { error: lifecycleError } = await supabase.rpc("close_expired_matches");
 
-  if (lifecycleError) {
-    throw lifecycleError;
-  }
+  // Single parallel wave: inbound requests are filtered by host_profile_id directly,
+  // so they no longer depend on hostedMatchIds resolving first.
+  const [hostedMatches, primaryRequests, dismissedRequestIds, inboundRequests] =
+    await Promise.all([
+      listHostedMatches(supabase, currentProfile.id),
+      listMyRequests(supabase, currentProfile.id),
+      listDismissedRequestIds(supabase, currentProfile.id),
+      listInboundRequestsByHost(supabase, currentProfile.id),
+    ]);
 
-  const [hostedMatches, primaryRequests, dismissedRequestIds] = await Promise.all([
-    listHostedMatches(supabase, currentProfile.id),
-    listMyRequests(supabase, currentProfile.id),
-    listDismissedRequestIds(supabase, currentProfile.id),
-  ]);
+  const visiblePrimaryRequests = primaryRequests.filter(
+    (request) => !dismissedRequestIds.has(request.id),
+  );
 
-  const visiblePrimaryRequests = primaryRequests.filter((request) => !dismissedRequestIds.has(request.id));
+  const hostedMatchIdSet = new Set(hostedMatches.map((match) => match.id));
 
-  const hostedMatchIds = hostedMatches.map((match) => match.id);
-  const hostedMatchIdSet = new Set(hostedMatchIds);
-
-  const earlyProfileIds = new Set([
-    currentProfile.id,
-    ...hostedMatches.map((match) => match.creator_profile_id),
-    ...visiblePrimaryRequests.map((r) => r.requester_profile_id),
-    ...visiblePrimaryRequests.map((r) => r.host_profile_id),
-  ]);
-
-  const externalMatchIdsFromRequests = Array.from(
+  const externalMatchIds = Array.from(
     new Set(
       visiblePrimaryRequests
         .map((r) => r.match_id)
@@ -230,26 +218,32 @@ export async function getActivitySnapshot() {
     ),
   );
 
-  const [inboundRequests, externalMatches, earlyProfiles] = await Promise.all([
-    listInboundRequests(supabase, hostedMatchIds),
-    listMatchesByIds(supabase, externalMatchIdsFromRequests),
-    listProfilesByIds(Array.from(earlyProfileIds)),
-  ]);
-
-  const requests = dedupeById([...visiblePrimaryRequests, ...inboundRequests]);
-
-  const matches = dedupeById([...hostedMatches, ...externalMatches]);
-
-  const allProfileIds = new Set([
-    ...earlyProfileIds,
+  const profileIds = new Set<string>([
+    currentProfile.id,
+    ...hostedMatches.map((match) => match.creator_profile_id),
+    ...visiblePrimaryRequests.map((r) => r.requester_profile_id),
+    ...visiblePrimaryRequests.map((r) => r.host_profile_id),
     ...inboundRequests.map((r) => r.requester_profile_id),
     ...inboundRequests.map((r) => r.host_profile_id),
-    ...externalMatches.map((m) => m.creator_profile_id),
   ]);
-  const missingProfileIds = Array.from(allProfileIds).filter((id) => !earlyProfileIds.has(id));
+
+  // Second (and final) wave: external matches + a single profile fetch
+  // that already includes every id we need.
+  const [externalMatches, profilesFromFirstPass] = await Promise.all([
+    listMatchesByIds(supabase, externalMatchIds),
+    listProfilesByIds(Array.from(profileIds)),
+  ]);
+
+  const externalCreatorIds = externalMatches
+    .map((match) => match.creator_profile_id)
+    .filter((id) => !profileIds.has(id));
+
   const extraProfiles =
-    missingProfileIds.length > 0 ? await listProfilesByIds(missingProfileIds) : [];
-  const profiles = dedupeById([...earlyProfiles, ...extraProfiles]);
+    externalCreatorIds.length > 0 ? await listProfilesByIds(externalCreatorIds) : [];
+
+  const requests = dedupeById([...visiblePrimaryRequests, ...inboundRequests]);
+  const matches = dedupeById([...hostedMatches, ...externalMatches]);
+  const profiles = dedupeById([...profilesFromFirstPass, ...extraProfiles]);
 
   return createAppStateSnapshot({
     currentProfile,
@@ -267,14 +261,13 @@ export async function getNotificationsSnapshot() {
   }
 
   const supabase = await createServerSupabaseClient();
-  const hostedMatches = await listHostedMatches(supabase, currentProfile.id);
-  const hostedMatchIds = hostedMatches.map((match) => match.id);
-  const hostedMatchIdSet = new Set(hostedMatchIds);
 
-  const [requesterNotifications, hostNotifications] = await Promise.all([
+  const [hostedMatches, requesterNotifications, hostNotifications] = await Promise.all([
+    listHostedMatches(supabase, currentProfile.id),
     listRequesterNotifications(supabase, currentProfile.id),
-    listPendingHostNotifications(supabase, hostedMatchIds),
+    listPendingHostNotifications(supabase, currentProfile.id),
   ]);
+  const hostedMatchIdSet = new Set(hostedMatches.map((match) => match.id));
 
   const earlyProfileIds = new Set([
     currentProfile.id,
@@ -334,12 +327,10 @@ export async function getUnreadNotificationCount() {
   }
 
   const supabase = await createServerSupabaseClient();
-  const hostedMatches = await listHostedMatches(supabase, currentProfile.id);
-  const hostedMatchIds = hostedMatches.map((match) => match.id);
 
   const [requesterNotifications, hostNotifications] = await Promise.all([
     listRequesterNotifications(supabase, currentProfile.id),
-    listPendingHostNotifications(supabase, hostedMatchIds),
+    listPendingHostNotifications(supabase, currentProfile.id),
   ]);
 
   const notificationIds = dedupeById([...requesterNotifications, ...hostNotifications])

@@ -30,6 +30,39 @@ export async function createMatchAction(input: CreateMatchInput) {
 
     const supabase = await createServerSupabaseClient();
     const now = new Date().toISOString();
+    const duplicateCutoff = new Date(Date.now() - 15_000).toISOString();
+
+    const { data: duplicateRows, error: duplicateLookupError } = await supabase
+      .from("matches")
+      .select(MATCH_CREATE_RETURN_SELECT)
+      .eq("creator_profile_id", currentProfile.id)
+      .eq("listing_type", input.listing_type)
+      .eq("sport_type", input.sport_type)
+      .eq("title", input.title)
+      .eq("address", input.address)
+      .eq("start_at", input.start_at)
+      .eq("duration_minutes", input.duration_minutes)
+      .eq("fee", input.fee)
+      .eq("total_slots", input.total_slots)
+      .eq("remaining_slots", input.remaining_slots)
+      .eq("contact_type", input.contact_type)
+      .eq("contact_link", normalizedContactValue)
+      .gte("created_at", duplicateCutoff)
+      .in("status", ["open", "matched"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .returns<CreateMatchReturnRow[]>();
+
+    if (duplicateLookupError) {
+      throw duplicateLookupError;
+    }
+
+    const duplicateRow = duplicateRows?.[0];
+
+    if (duplicateRow) {
+      return mapMatchRow(duplicateRow);
+    }
+
     const payload = {
       ...input,
       creator_profile_id: currentProfile.id,
@@ -52,8 +85,9 @@ export async function createMatchAction(input: CreateMatchInput) {
 
     const match = mapMatchRow(data as unknown as CreateMatchReturnRow);
 
-    revalidatePath("/home");
-    revalidatePath("/create");
+    // /home reads the feed through unstable_cache (20s revalidate) and /create
+    // has no match-dependent server data, so only bust the pages that
+    // immediately display the new listing.
     revalidatePath("/activity");
     revalidatePath(`/match/${match.id}`);
 
@@ -83,7 +117,6 @@ export async function cancelMatchAction(matchId: string) {
       throw error;
     }
 
-    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${matchId}`);
 

@@ -226,6 +226,24 @@ select {
   }
 }
 
+@keyframes flash-toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+
+  12%,
+  76% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .loading-ring-shell {
     animation: none;

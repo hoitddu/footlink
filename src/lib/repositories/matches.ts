@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 
 import { REGION_OPTIONS } from "@/lib/constants";
 import { getFeedMatches } from "@/lib/feed";
+import { scheduleMatchLifecycleMaintenance } from "@/lib/repositories/lifecycle";
 import { getCurrentProfile } from "@/lib/repositories/profiles";
 import { createAppStateSnapshot } from "@/lib/repositories/snapshots";
 import { createPublicServerSupabaseClient, createServerSupabaseClient } from "@/lib/supabase/server";
@@ -18,12 +19,6 @@ import {
 } from "@/lib/supabase/selects";
 import type { FeedContext, FeedDataSource } from "@/lib/types";
 
-function startOfDayKst(date: Date) {
-  return new Date(
-    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T00:00:00+09:00`,
-  );
-}
-
 function endOfDayKst(date: Date) {
   return new Date(
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T23:59:59+09:00`,
@@ -36,73 +31,23 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
-function getWindowBounds(context: FeedContext) {
-  if (context.selectedDateFrom) {
-    const selectedDate = new Date(`${context.selectedDateFrom}T12:00:00+09:00`);
-    return {
-      start: startOfDayKst(selectedDate).toISOString(),
-      end: endOfDayKst(selectedDate).toISOString(),
-    };
-  }
-
-  const now = new Date();
-
-  if (context.window === "all") {
-    return {
-      start: now.toISOString(),
-      end: endOfDayKst(addDays(now, 6)).toISOString(),
-    };
-  }
-
-  if (context.window === "now") {
-    return {
-      start: now.toISOString(),
-      end: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(),
-    };
-  }
-
-  if (context.window === "tomorrow") {
-    const tomorrow = addDays(now, 1);
-    return {
-      start: startOfDayKst(tomorrow).toISOString(),
-      end: endOfDayKst(tomorrow).toISOString(),
-    };
-  }
-
-  if (context.window === "weekend") {
-    const day = now.getDay();
-    const saturday = day === 0 ? addDays(now, -1) : addDays(now, (6 - day + 7) % 7);
-    const sunday = addDays(saturday, 1);
-
-    return {
-      start: startOfDayKst(saturday).toISOString(),
-      end: endOfDayKst(sunday).toISOString(),
-    };
-  }
-
-  return {
-    start: now.toISOString(),
-    end: endOfDayKst(now).toISOString(),
-  };
-}
-
 function serializeFeedContext(context: FeedContext) {
   return JSON.stringify({
-    sport: context.sport,
-    window: context.window,
     regionSlug: context.regionSlug ?? "suwon",
-    selectedDateFrom: context.selectedDateFrom,
-    selectedDateTo: context.selectedDateTo,
   });
 }
 
 const getCachedFeedRows = unstable_cache(
   async (serializedContext: string) => {
-    const context = JSON.parse(serializedContext) as FeedContext;
+    const context = JSON.parse(serializedContext) as Pick<FeedContext, "regionSlug">;
     const supabase = createPublicServerSupabaseClient();
-    const bounds = getWindowBounds(context);
+    const now = new Date();
+    const bounds = {
+      start: now.toISOString(),
+      end: endOfDayKst(addDays(now, 6)).toISOString(),
+    };
 
-    let query = supabase
+    const query = supabase
       .from("matches")
       .select(MATCH_FEED_SELECT)
       .eq("status", "open")
@@ -112,11 +57,7 @@ const getCachedFeedRows = unstable_cache(
       .gte("start_at", bounds.start)
       .lte("start_at", bounds.end)
       .order("start_at", { ascending: true })
-      .limit(80);
-
-    if (context.sport !== "all") {
-      query = query.eq("sport_type", context.sport);
-    }
+      .limit(120);
 
     const { data, error } = await query.returns<FeedMatchRow[]>();
 
@@ -201,12 +142,8 @@ export async function getMatchDetail(id: string) {
 }
 
 export async function getMatchDetailSnapshot(matchId: string) {
-  const publicSupabase = createPublicServerSupabaseClient();
-  const { error: lifecycleError } = await publicSupabase.rpc("close_expired_matches");
-
-  if (lifecycleError) {
-    throw lifecycleError;
-  }
+  // Housekeeping runs in the background; never block detail render.
+  scheduleMatchLifecycleMaintenance();
 
   const [matchRow, currentProfile] = await Promise.all([
     getPublicMatchRow(matchId),

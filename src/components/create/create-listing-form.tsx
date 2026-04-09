@@ -8,7 +8,6 @@ import { useRouter } from "next/navigation";
 import { ensureAnonymousSessionAction } from "@/app/actions/auth";
 import { createMatchAction } from "@/app/actions/matches";
 import type { PlaceSearchResult } from "@/components/create/kakao-place-picker";
-import { KakaoPlacePicker } from "@/components/create/kakao-place-picker";
 import { ScreenHeader } from "@/components/app/screen-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +24,7 @@ import {
 } from "@/lib/contact";
 import { getMatchPositionLabel, getMatchPositionOptions, SPORT_OPTIONS } from "@/lib/constants";
 import { getUserFacingErrorMessage, requiresProfileSetup } from "@/lib/errors";
+import { useCurrentProfile } from "@/lib/current-profile-context";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { formatMatchFormatLabel } from "@/lib/match-format";
 import { isProfileComplete } from "@/lib/profiles";
@@ -49,6 +49,15 @@ const ProfileCompletionSheet = dynamic(
     import("@/components/profile/profile-completion-sheet").then(
       (module) => module.ProfileCompletionSheet,
     ),
+  { loading: () => null, ssr: false },
+);
+
+// Kakao Maps SDK adds ~500ms of external script load; defer until the
+// place picker sheet is actually opened so it's off the create-page
+// critical path.
+const KakaoPlacePicker = dynamic(
+  () =>
+    import("@/components/create/kakao-place-picker").then((module) => module.KakaoPlacePicker),
   { loading: () => null, ssr: false },
 );
 
@@ -152,35 +161,43 @@ function StepperField({
   value,
   onDecrease,
   onIncrease,
+  compactValue = false,
 }: {
   label: string;
   value: string;
   onDecrease: () => void;
   onIncrease: () => void;
+  compactValue?: boolean;
 }) {
   return (
     <div className="min-w-0">
       <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">
         {label}
       </p>
-      <div className="overflow-hidden rounded-[1.1rem] bg-[#f4f7f3] px-2.5 py-2.5">
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5">
+      <div className="overflow-hidden rounded-[1.1rem] bg-[#f4f7f3] px-2 py-2.5">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1">
           <button
             type="button"
             onClick={onDecrease}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_8px_16px_rgba(6,21,12,0.06)] transition active:scale-95"
+            className="flex h-[1.9rem] w-[1.9rem] shrink-0 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_8px_16px_rgba(6,21,12,0.06)] transition active:scale-95"
           >
             -
           </button>
-          <div className="min-w-0 flex items-center justify-center px-1 text-center">
-            <span className="truncate text-[1.16rem] font-bold tracking-[-0.05em] text-[#112317] sm:text-[1.24rem]">
+          <div className="min-w-0 flex items-center justify-center px-0.5 text-center">
+            <span
+              className={`min-w-0 whitespace-nowrap text-center font-bold text-[#112317] ${
+                compactValue
+                  ? "text-[1.01rem] tracking-[-0.06em] sm:text-[1.08rem]"
+                  : "text-[1.12rem] tracking-[-0.05em] sm:text-[1.2rem]"
+              }`}
+            >
               {value}
             </span>
           </div>
           <button
             type="button"
             onClick={onIncrease}
-            className="kinetic-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition active:scale-95"
+            className="kinetic-gradient flex h-[1.9rem] w-[1.9rem] shrink-0 items-center justify-center rounded-full text-white transition active:scale-95"
           >
             +
           </button>
@@ -302,7 +319,10 @@ function CreateListingFormBody({
 }) {
   const router = useRouter();
   const [defaultSchedule] = useState(getDefaultSchedule);
-  const [resolvedProfile, setResolvedProfile] = useState(currentProfile ?? null);
+  // Seed from the profile the layout/server already fetched. Local state lets
+  // ProfileCompletionSheet patch the viewer without forcing a full refresh.
+  const [resolvedProfile, setResolvedProfile] = useState<Profile | null>(currentProfile ?? null);
+  const resolvedProfileId = resolvedProfile?.id ?? null;
   const [sport, setSport] = useState<SportType>("futsal");
   const [neededCount, setNeededCount] = useState(1);
   const [date, setDate] = useState(defaultSchedule.date);
@@ -325,11 +345,12 @@ function CreateListingFormBody({
   const [error, setError] = useState("");
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [submitAfterProfile, setSubmitAfterProfile] = useState(false);
+  const submitLockRef = useRef(false);
   const minimumDate = getMinimumSelectableDate();
   const minimumTime = getMinimumSelectableTime(date);
 
   useEffect(() => {
-    if (!shouldLoadCurrentProfile || currentProfile) {
+    if (!shouldLoadCurrentProfile) {
       return;
     }
 
@@ -343,13 +364,30 @@ function CreateListingFormBody({
         }
       })
       .catch(() => {
-        // Keep the create flow interactive even if profile bootstrap fails.
+        // Keep the create flow interactive even if profile hydration fails.
       });
 
     return () => {
       cancelled = true;
     };
-  }, [currentProfile, shouldLoadCurrentProfile]);
+  }, [shouldLoadCurrentProfile]);
+
+  useEffect(() => {
+    if (!currentProfile) {
+      return;
+    }
+
+    setResolvedProfile((existingProfile) => {
+      if (
+        existingProfile?.id === currentProfile.id &&
+        existingProfile?.updated_at === currentProfile.updated_at
+      ) {
+        return existingProfile;
+      }
+
+      return currentProfile;
+    });
+  }, [currentProfile]);
 
   useEffect(() => {
     if (!durationPickerOpen) {
@@ -365,7 +403,10 @@ function CreateListingFormBody({
     const nextType = getProfileDefaultContactType(resolvedProfile);
     setContactType(nextType);
     setContactValue(getProfileContactValue(resolvedProfile, nextType));
-  }, [resolvedProfile]);
+    // resolvedProfile is derived from the prop so its identity changes every render;
+    // depending on the id keeps this effect from re-firing on unrelated renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedProfileId]);
 
   useEffect(() => {
     if (sport !== "futsal") {
@@ -420,6 +461,10 @@ function CreateListingFormBody({
   }
 
   async function submitListing() {
+    if (submitLockRef.current) {
+      return;
+    }
+
     setError("");
     const startAt = buildKoreaDateTime(date, time);
 
@@ -452,6 +497,7 @@ function CreateListingFormBody({
       return;
     }
 
+    submitLockRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -479,7 +525,7 @@ function CreateListingFormBody({
         note: note.trim(),
       });
 
-      router.push(`/activity?highlight=${createdMatch.id}&flash=created`);
+      router.push(`/activity?tab=listings&highlight=${createdMatch.id}&flash=created&flashAt=${Date.now()}`);
     } catch (createError) {
       if (requiresProfileSetup(createError)) {
         setSubmitAfterProfile(true);
@@ -489,11 +535,10 @@ function CreateListingFormBody({
           getUserFacingErrorMessage(createError, "공석을 등록하지 못했습니다. 잠시 후 다시 시도해 주세요."),
         );
       }
+      submitLockRef.current = false;
       setIsSubmitting(false);
       return;
     }
-
-    setIsSubmitting(false);
   }
 
   return (
@@ -549,6 +594,7 @@ function CreateListingFormBody({
             value={formatFeeLabel(fee)}
             onDecrease={() => adjustFee(-1000)}
             onIncrease={() => adjustFee(1000)}
+            compactValue
           />
         </div>
 
@@ -865,19 +911,20 @@ function DemoCreateListingForm() {
 
 export function CreateListingForm({
   currentProfile,
-  shouldLoadCurrentProfile = false,
   dataSource = currentProfile !== undefined ? "supabase" : "demo",
 }: {
   currentProfile?: Profile | null;
-  shouldLoadCurrentProfile?: boolean;
   dataSource?: AppDataSource;
 }) {
+  const shellProfile = useCurrentProfile();
+  const initialProfile = currentProfile === undefined ? shellProfile : currentProfile;
+
   if (dataSource === "supabase") {
     return (
       <CreateListingFormBody
-        currentProfile={currentProfile ?? null}
+        currentProfile={initialProfile ?? null}
         profileCompletionEnabled
-        shouldLoadCurrentProfile={shouldLoadCurrentProfile}
+        shouldLoadCurrentProfile={currentProfile === undefined}
         onCreateListing={async (input) => {
           await ensureAnonymousSessionAction();
           return createMatchAction(input);

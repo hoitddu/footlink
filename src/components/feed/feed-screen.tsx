@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { MapPin } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 import { DateFilterBar } from "@/components/feed/date-filter-bar";
 import { MatchCard } from "@/components/feed/match-card";
@@ -84,7 +83,7 @@ function FilterPill({
       className={cn(
         "rounded-full font-bold transition active:scale-[0.985]",
         compact
-          ? "min-h-[2.45rem] px-2 text-[11px] tracking-[-0.045em]"
+          ? "min-h-[2.34rem] px-1 text-[10px] leading-none tracking-[-0.08em] whitespace-nowrap"
           : "min-h-10 px-3.5 text-[12px]",
         stretch && "w-full",
         active
@@ -106,7 +105,6 @@ function FeedScreenView({
   initialReferenceNow: number;
   source: FeedDataSource;
 }) {
-  const router = useRouter();
   const [context, setContext] = useState(initialContext);
   const [sort, setSort] = useState<FeedSort>(initialContext.sort);
   const referenceNow = initialReferenceNow;
@@ -125,7 +123,10 @@ function FeedScreenView({
     const resolvedNext = { ...resolvedContext, ...next, sort: nextSort };
     setContext((current) => ({ ...current, ...next }));
     setSort(nextSort);
-    router.replace(`/home?${buildContextQuery(resolvedNext)}`, { scroll: false });
+
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/home?${buildContextQuery(resolvedNext)}`);
+    }
   }
 
   return (

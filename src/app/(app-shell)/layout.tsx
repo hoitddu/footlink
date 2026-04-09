@@ -2,22 +2,29 @@ import { BottomNav } from "@/components/app/bottom-nav";
 import { MobileShell } from "@/components/app/mobile-shell";
 import { PullToRefreshShell } from "@/components/app/pull-to-refresh-shell";
 import { getAppDataSource } from "@/lib/app-config";
+import { CurrentProfileProvider } from "@/lib/current-profile-context";
 import { createDemoSeed } from "@/lib/demo-state/seed";
 import { DemoAppProvider } from "@/lib/demo-state/provider";
+import { getCurrentProfile } from "@/lib/repositories/profiles";
 
-export default function AppShellLayout({
+export default async function AppShellLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   if (getAppDataSource() !== "demo") {
+    // Fetch the viewer once per request; child pages that also call
+    // getCurrentProfile() hit React's per-request cache(), so this is free,
+    // and client components can read the same value via useCurrentProfile().
+    const currentProfile = await getCurrentProfile();
+
     return (
-      <>
+      <CurrentProfileProvider value={currentProfile}>
         <PullToRefreshShell>
           <MobileShell>{children}</MobileShell>
         </PullToRefreshShell>
         <BottomNav />
-      </>
+      </CurrentProfileProvider>
     );
   }
 

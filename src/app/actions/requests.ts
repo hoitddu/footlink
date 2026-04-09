@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createAppError, isAppError, toUserFacingError } from "@/lib/errors";
+import { ensureMatchLifecycleMaintenance } from "@/lib/repositories/lifecycle";
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
 import { markNotificationsRead } from "@/lib/repositories/requests";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -30,14 +31,8 @@ async function getRequestRow(requestId: string) {
 }
 
 async function runMatchLifecycleMaintenance() {
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase.rpc("close_expired_matches");
-
-  if (error) {
-    throw error;
-  }
-
-  return supabase;
+  await ensureMatchLifecycleMaintenance();
+  return createServerSupabaseClient();
 }
 
 export async function submitParticipationAction(input: SubmitParticipationInput) {
@@ -95,7 +90,6 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
 
     const request = data as unknown as RequestPathRow;
 
-    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${input.matchId}`);
 
@@ -166,7 +160,6 @@ export async function confirmParticipationAction(requestId: string, hostNote?: s
 
     const request = await getRequestRow(requestId);
 
-    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
 
@@ -312,7 +305,6 @@ export async function markNotificationsReadAction(notificationIds: string[]) {
   try {
     await markNotificationsRead(notificationIds);
 
-    revalidatePath("/home");
     revalidatePath("/notifications");
   } catch (error) {
     if (isAppError(error)) {

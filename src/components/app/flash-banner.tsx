@@ -5,7 +5,7 @@ const flashMessages = {
   },
   created: {
     tone: "bg-[#eef2ee] text-[#112317]",
-    text: "용병 모집이 등록되었습니다. 들어오는 참여 요청을 빠르게 확인해 보세요.",
+    text: "용병 모집이 게시되었습니다. 들어오는 참여 요청을 빠르게 확인해 보세요.",
   },
   requested: {
     tone: "bg-[#fff0d7] text-[#9a6111]",
@@ -57,7 +57,10 @@ export function FlashBanner({
   }
 
   return (
-    <p className={`rounded-[1.2rem] px-4 py-3 text-sm font-semibold ${content.tone}`}>
+    <p
+      className={`fixed left-1/2 top-[calc(env(safe-area-inset-top)+1rem)] z-[70] w-[calc(100%-2rem)] max-w-[24.9rem] -translate-x-1/2 rounded-[1.2rem] px-4 py-3 text-sm font-semibold shadow-[0_18px_42px_rgba(8,18,12,0.12)] ${content.tone}`}
+      style={{ animation: "flash-toast 2.4s ease forwards" }}
+    >
       {content.text}
     </p>
   );
