@@ -28,7 +28,7 @@ import { getUserFacingErrorMessage, requiresProfileSetup } from "@/lib/errors";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import { formatMatchFormatLabel } from "@/lib/match-format";
 import { isProfileComplete } from "@/lib/profiles";
-import { formatDurationMinutes, formatTimeRange, haversineDistance } from "@/lib/utils";
+import { formatDurationMinutes, formatTimeRange, haversineDistance, isPastKoreaDateTime } from "@/lib/utils";
 import type {
   CreateMatchInput,
   DirectContactType,
@@ -52,9 +52,46 @@ const DURATION_HOUR_OPTIONS = [0, 1, 2, 3, 4, 5] as const;
 const DURATION_MINUTE_OPTIONS = [0, 30] as const;
 const FUTSAL_FORMAT_OPTIONS: FutsalFormatOption[] = ["4vs4", "5vs5", "6vs6"];
 const WHEEL_ITEM_HEIGHT = 44;
+const DEFAULT_START_BUFFER_MINUTES = 30;
 
-function getDefaultDate() {
-  return new Date().toISOString().slice(0, 10);
+function formatLocalDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatLocalTimeInputValue(date: Date) {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+}
+
+function getDefaultSchedule() {
+  const next = new Date(Date.now() + DEFAULT_START_BUFFER_MINUTES * 60 * 1000);
+  const roundedMinutes = Math.ceil(next.getMinutes() / 30) * 30;
+  next.setMinutes(roundedMinutes, 0, 0);
+
+  return {
+    date: formatLocalDateInputValue(next),
+    time: formatLocalTimeInputValue(next),
+  };
+}
+
+function getMinimumSelectableDate() {
+  return formatLocalDateInputValue(new Date());
+}
+
+function getMinimumSelectableTime(selectedDate: string) {
+  const today = getMinimumSelectableDate();
+
+  if (selectedDate !== today) {
+    return undefined;
+  }
+
+  return formatLocalTimeInputValue(new Date(Date.now() + 60 * 1000));
 }
 
 function isPlaceInSuwon(place: PlaceSearchResult) {
@@ -256,11 +293,12 @@ function CreateListingFormBody({
   shouldLoadCurrentProfile?: boolean;
 }) {
   const router = useRouter();
+  const [defaultSchedule] = useState(getDefaultSchedule);
   const [resolvedProfile, setResolvedProfile] = useState(currentProfile ?? null);
   const [sport, setSport] = useState<SportType>("futsal");
   const [neededCount, setNeededCount] = useState(1);
-  const [date, setDate] = useState(getDefaultDate);
-  const [time, setTime] = useState("20:00");
+  const [date, setDate] = useState(defaultSchedule.date);
+  const [time, setTime] = useState(defaultSchedule.time);
   const [durationMinutes, setDurationMinutes] = useState(120);
   const [isCustomDuration, setIsCustomDuration] = useState(false);
   const [durationPickerOpen, setDurationPickerOpen] = useState(false);
@@ -279,6 +317,8 @@ function CreateListingFormBody({
   const [error, setError] = useState("");
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [submitAfterProfile, setSubmitAfterProfile] = useState(false);
+  const minimumDate = getMinimumSelectableDate();
+  const minimumTime = getMinimumSelectableTime(date);
 
   useEffect(() => {
     if (!shouldLoadCurrentProfile || currentProfile) {
@@ -327,6 +367,12 @@ function CreateListingFormBody({
     setPositionTargets((current) => current.filter((position) => position === "goalkeeper"));
   }, [sport]);
 
+  useEffect(() => {
+    if (minimumTime && time < minimumTime) {
+      setTime(minimumTime);
+    }
+  }, [minimumTime, time]);
+
   function applyQuickDuration(duration: (typeof QUICK_DURATION_OPTIONS)[number]) {
     setDurationMinutes(duration);
     setIsCustomDuration(false);
@@ -367,6 +413,12 @@ function CreateListingFormBody({
 
   async function submitListing() {
     setError("");
+    const startAt = `${date}T${time}:00`;
+
+    if (isPastKoreaDateTime(startAt)) {
+      setError("현재 시각보다 지난 경기 시간으로는 모집할 수 없습니다.");
+      return;
+    }
 
     if (!selectedPlace) {
       setError("경기장을 먼저 선택해 주세요.");
@@ -405,7 +457,7 @@ function CreateListingFormBody({
         address: selectedPlace.address,
         lat: selectedPlace.lat,
         lng: selectedPlace.lng,
-        start_at: `${date}T${time}:00`,
+        start_at: startAt,
         duration_minutes: durationMinutes,
         fee,
         total_slots: neededCount,
@@ -547,6 +599,7 @@ function CreateListingFormBody({
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
+                  min={minimumDate}
                   aria-label="경기 날짜 선택"
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 />
@@ -558,6 +611,7 @@ function CreateListingFormBody({
                   type="time"
                   value={time}
                   onChange={(event) => setTime(event.target.value)}
+                  min={minimumTime}
                   aria-label="경기 시작 시간 선택"
                   className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                 />

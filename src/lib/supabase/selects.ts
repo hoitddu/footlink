@@ -103,6 +103,7 @@ export const MATCH_CREATE_RETURN_SELECT = joinColumns([
 export const MATCH_REQUEST_VALIDATION_SELECT = joinColumns([
   "id",
   "creator_profile_id",
+  "start_at",
   "remaining_slots",
   "status",
   "contact_type",
@@ -241,7 +242,7 @@ export type CreateMatchReturnRow = PartialRow<
 
 export type MatchRequestValidationRow = Pick<
   MatchRow,
-  "id" | "creator_profile_id" | "remaining_slots" | "status" | "contact_type"
+  "id" | "creator_profile_id" | "start_at" | "remaining_slots" | "status" | "contact_type"
 >;
 
 export type AppProfileRow = PartialRow<

@@ -1,5 +1,6 @@
 import { createDemoSeed } from "@/lib/demo-state/seed";
 import { getProfileContactValue, normalizeContactValue } from "@/lib/contact";
+import { isPastKoreaDateTime } from "@/lib/utils";
 import type {
   AppNotification,
   CreateMatchInput,
@@ -184,6 +185,10 @@ export function updateCurrentProfile(
 }
 
 export function createMatch(state: DemoAppState, input: CreateMatchInput) {
+  if (isPastKoreaDateTime(input.start_at)) {
+    throw new Error("MATCH_START_IN_PAST");
+  }
+
   const normalizedContactValue = normalizeContactValue(input.contact_type, input.contact_link);
 
   if (!normalizedContactValue) {
@@ -214,11 +219,11 @@ export function cancelMatch(state: DemoAppState, matchId: string) {
   const match = getMatch(next, matchId);
 
   if (match.creator_profile_id !== currentProfile.id) {
-    throw new Error("내가 만든 모집만 삭제할 수 있습니다.");
+    throw new Error("내가 만든 모집만 마감할 수 있습니다.");
   }
 
   if (match.status === "cancelled") {
-    throw new Error("이미 삭제된 모집입니다.");
+    throw new Error("이미 마감된 모집입니다.");
   }
 
   const hasAcceptedRequest = next.participationRequests.some(
@@ -226,7 +231,7 @@ export function cancelMatch(state: DemoAppState, matchId: string) {
   );
 
   if (hasAcceptedRequest) {
-    throw new Error("이미 수락된 참가자가 있는 모집은 삭제할 수 없습니다.");
+    throw new Error("이미 수락된 참가자가 있는 모집은 마감할 수 없습니다.");
   }
 
   const now = new Date().toISOString();
@@ -241,7 +246,7 @@ export function cancelMatch(state: DemoAppState, matchId: string) {
     return {
       ...request,
       status: "rejected",
-      host_note: request.host_note ?? "호스트가 모집을 삭제했습니다.",
+      host_note: request.host_note ?? "호스트가 모집을 마감했습니다.",
       decided_at: now,
       updated_at: now,
     };

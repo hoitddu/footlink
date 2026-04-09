@@ -29,10 +29,21 @@ async function getRequestRow(requestId: string) {
   return data as unknown as RequestPathRow;
 }
 
+async function runMatchLifecycleMaintenance() {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.rpc("close_expired_matches");
+
+  if (error) {
+    throw error;
+  }
+
+  return supabase;
+}
+
 export async function submitParticipationAction(input: SubmitParticipationInput) {
   try {
     const currentProfile = await requireCurrentProfile();
-    const supabase = await createServerSupabaseClient();
+    const supabase = await runMatchLifecycleMaintenance();
     const { data: matchRow, error: matchError } = await supabase
       .from("matches")
       .select(MATCH_REQUEST_VALIDATION_SELECT)
@@ -50,6 +61,10 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
     }
 
     if (match.status !== "open" || match.remaining_slots <= 0) {
+      throw createAppError("MATCH_CLOSED");
+    }
+
+    if (new Date(match.start_at).getTime() <= Date.now()) {
       throw createAppError("MATCH_CLOSED");
     }
 
@@ -96,7 +111,7 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
 
 export async function acceptParticipationAction(requestId: string, hostNote?: string) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await runMatchLifecycleMaintenance();
     const { error } = await supabase.rpc("accept_match_request", {
       p_request_id: requestId,
       p_host_note: hostNote?.trim() || null,
@@ -124,7 +139,7 @@ export async function acceptParticipationAction(requestId: string, hostNote?: st
 
 export async function confirmParticipationAction(requestId: string, hostNote?: string) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await runMatchLifecycleMaintenance();
     const { error } = await supabase.rpc("confirm_match_request", {
       p_request_id: requestId,
       p_host_note: hostNote?.trim() || null,
@@ -151,7 +166,7 @@ export async function confirmParticipationAction(requestId: string, hostNote?: s
 
 export async function cancelParticipationConfirmationAction(requestId: string, hostNote?: string) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await runMatchLifecycleMaintenance();
     const { error } = await supabase.rpc("cancel_match_request_confirmation", {
       p_request_id: requestId,
       p_host_note: hostNote?.trim() || null,
@@ -178,7 +193,7 @@ export async function cancelParticipationConfirmationAction(requestId: string, h
 
 export async function rejectParticipationAction(requestId: string, hostNote?: string) {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await runMatchLifecycleMaintenance();
     const { error } = await supabase.rpc("reject_match_request", {
       p_request_id: requestId,
       p_host_note: hostNote?.trim() || null,

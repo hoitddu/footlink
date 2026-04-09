@@ -12,10 +12,16 @@ import {
   type CreateMatchReturnRow,
 } from "@/lib/supabase/selects";
 import type { CreateMatchInput } from "@/lib/types";
+import { isPastKoreaDateTime } from "@/lib/utils";
 
 export async function createMatchAction(input: CreateMatchInput) {
   try {
     const currentProfile = await requireCurrentProfile();
+
+    if (isPastKoreaDateTime(input.start_at)) {
+      throw createAppError("MATCH_START_IN_PAST");
+    }
+
     const normalizedContactValue = normalizeContactValue(input.contact_type, input.contact_link);
 
     if (!normalizedContactValue) {
@@ -63,51 +69,18 @@ export async function createMatchAction(input: CreateMatchInput) {
 
 export async function cancelMatchAction(matchId: string) {
   try {
-    const currentProfile = await requireCurrentProfile();
+    await requireCurrentProfile();
     const supabase = await createServerSupabaseClient();
-
-    const { data: acceptedRequests, error: acceptedRequestsError } = await supabase
-      .from("match_requests")
-      .select("id")
-      .eq("match_id", matchId)
-      .in("status", ["accepted", "confirmed"]);
-
-    if (acceptedRequestsError) {
-      throw acceptedRequestsError;
-    }
-
-    if ((acceptedRequests ?? []).length > 0) {
-      throw createAppError("MATCH_DELETE_HAS_ACCEPTED_REQUESTS");
-    }
-
-    const now = new Date().toISOString();
-    const { error } = await supabase
-      .from("matches")
-      .update({
-        status: "cancelled",
-        updated_at: now,
-      })
-      .eq("id", matchId)
-      .eq("creator_profile_id", currentProfile.id)
-      .neq("status", "cancelled");
+    const { error } = await supabase.rpc("cancel_host_match", {
+      p_match_id: matchId,
+    });
 
     if (error) {
+      if (error.message === "MATCH_DELETE_HAS_ACCEPTED_REQUESTS") {
+        throw createAppError("MATCH_DELETE_HAS_ACCEPTED_REQUESTS");
+      }
+
       throw error;
-    }
-
-    const { error: rejectPendingError } = await supabase
-      .from("match_requests")
-      .update({
-        status: "rejected",
-        host_note: "호스트가 모집을 삭제했습니다.",
-        decided_at: now,
-        updated_at: now,
-      })
-      .eq("match_id", matchId)
-      .eq("status", "pending");
-
-    if (rejectPendingError) {
-      throw rejectPendingError;
     }
 
     revalidatePath("/home");
@@ -120,6 +93,6 @@ export async function cancelMatchAction(matchId: string) {
       throw error;
     }
 
-    throw toUserFacingError(error, "모집을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    throw toUserFacingError(error, "모집을 마감하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }

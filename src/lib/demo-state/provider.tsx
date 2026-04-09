@@ -108,7 +108,7 @@ export function DemoAppProvider({
         });
 
         if (!updated) {
-          throw new Error("모집을 삭제하지 못했습니다.");
+          throw new Error("모집을 마감하지 못했습니다.");
         }
 
         return updated;

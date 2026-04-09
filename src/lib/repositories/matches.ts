@@ -130,24 +130,20 @@ const getCachedFeedRows = unstable_cache(
   { revalidate: 20 },
 );
 
-const getCachedPublicMatchRow = unstable_cache(
-  async (matchId: string) => {
-    const supabase = createPublicServerSupabaseClient();
-    const { data, error } = await supabase
-      .from("matches")
-      .select(MATCH_DETAIL_SELECT)
-      .eq("id", matchId)
-      .maybeSingle();
+async function getPublicMatchRow(matchId: string) {
+  const supabase = createPublicServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("matches")
+    .select(MATCH_DETAIL_SELECT)
+    .eq("id", matchId)
+    .maybeSingle();
 
-    if (error) {
-      throw error;
-    }
+  if (error) {
+    throw error;
+  }
 
-    return (data as unknown as DetailMatchRow | null) ?? null;
-  },
-  ["public-match-row-v2"],
-  { revalidate: 20 },
-);
+  return (data as unknown as DetailMatchRow | null) ?? null;
+}
 
 const getCachedPublicProfiles = unstable_cache(
   async (serializedIds: string) => {
@@ -205,8 +201,15 @@ export async function getMatchDetail(id: string) {
 }
 
 export async function getMatchDetailSnapshot(matchId: string) {
+  const publicSupabase = createPublicServerSupabaseClient();
+  const { error: lifecycleError } = await publicSupabase.rpc("close_expired_matches");
+
+  if (lifecycleError) {
+    throw lifecycleError;
+  }
+
   const [matchRow, currentProfile] = await Promise.all([
-    getCachedPublicMatchRow(matchId),
+    getPublicMatchRow(matchId),
     getCurrentProfile(),
   ]);
 

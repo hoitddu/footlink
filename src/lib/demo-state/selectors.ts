@@ -44,9 +44,13 @@ export function getInboundRequestsForMatch(state: DemoAppState, matchId: string)
 }
 
 export function getHostedMatches(state: DemoAppState) {
+  const now = Date.now();
   return state.matches
     .filter(
-      (match) => match.creator_profile_id === state.currentProfileId && match.status !== "cancelled",
+      (match) =>
+        match.creator_profile_id === state.currentProfileId &&
+        match.status === "open" &&
+        new Date(match.start_at).getTime() > now,
     )
     .sort((left, right) => left.start_at.localeCompare(right.start_at));
 }

@@ -12,6 +12,34 @@ export function formatFee(value: number) {
   return `${new Intl.NumberFormat("ko-KR").format(value)}원`;
 }
 
+export function parseKoreaDateTime(value: string) {
+  const normalized = value.trim();
+  const match = normalized.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/,
+  );
+
+  if (match) {
+    const [, year, month, day, hour, minute, second = "00"] = match;
+
+    return Date.UTC(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour) - 9,
+      Number(minute),
+      Number(second),
+    );
+  }
+
+  return new Date(normalized).getTime();
+}
+
+export function isPastKoreaDateTime(value: string, referenceNow = Date.now()) {
+  const timestamp = parseKoreaDateTime(value);
+
+  return !Number.isFinite(timestamp) || timestamp <= referenceNow;
+}
+
 export function getMatchEndDate(startAt: string, durationMinutes = 120) {
   return new Date(new Date(startAt).getTime() + durationMinutes * 60 * 1000);
 }

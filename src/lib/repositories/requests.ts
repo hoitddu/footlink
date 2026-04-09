@@ -62,11 +62,13 @@ async function listMyRequests(supabase: SupabaseClient, currentProfileId: string
 }
 
 async function listHostedMatches(supabase: SupabaseClient, currentProfileId: string) {
+  const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("matches")
     .select(MATCH_ACTIVITY_SELECT)
     .eq("creator_profile_id", currentProfileId)
-    .neq("status", "cancelled")
+    .eq("status", "open")
+    .gt("start_at", now)
     .order("start_at", { ascending: true })
     .returns<ActivityMatchRow[]>();
 
@@ -181,6 +183,11 @@ export async function getActivitySnapshot() {
   }
 
   const supabase = await createServerSupabaseClient();
+  const { error: lifecycleError } = await supabase.rpc("close_expired_matches");
+
+  if (lifecycleError) {
+    throw lifecycleError;
+  }
 
   const [hostedMatches, primaryRequests] = await Promise.all([
     listHostedMatches(supabase, currentProfile.id),
