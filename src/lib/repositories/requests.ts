@@ -27,6 +27,7 @@ function isNotificationReadStorageMissing(error: { code?: string; message?: stri
 }
 
 type SupabaseClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+type RequestActivityDismissalRow = { request_id: string };
 
 async function listMatchesByIds(supabase: SupabaseClient, matchIds: string[]) {
   if (matchIds.length === 0) {
@@ -61,13 +62,27 @@ async function listMyRequests(supabase: SupabaseClient, currentProfileId: string
   return (data ?? []).map(mapMatchRequestRow);
 }
 
+async function listDismissedRequestIds(supabase: SupabaseClient, currentProfileId: string) {
+  const { data, error } = await supabase
+    .from("request_activity_dismissals")
+    .select("request_id")
+    .eq("profile_id", currentProfileId)
+    .returns<RequestActivityDismissalRow[]>();
+
+  if (error) {
+    throw error;
+  }
+
+  return new Set((data ?? []).map((row) => row.request_id));
+}
+
 async function listHostedMatches(supabase: SupabaseClient, currentProfileId: string) {
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("matches")
     .select(MATCH_ACTIVITY_SELECT)
     .eq("creator_profile_id", currentProfileId)
-    .eq("status", "open")
+    .in("status", ["open", "matched"])
     .gt("start_at", now)
     .order("start_at", { ascending: true })
     .returns<ActivityMatchRow[]>();
@@ -189,10 +204,13 @@ export async function getActivitySnapshot() {
     throw lifecycleError;
   }
 
-  const [hostedMatches, primaryRequests] = await Promise.all([
+  const [hostedMatches, primaryRequests, dismissedRequestIds] = await Promise.all([
     listHostedMatches(supabase, currentProfile.id),
     listMyRequests(supabase, currentProfile.id),
+    listDismissedRequestIds(supabase, currentProfile.id),
   ]);
+
+  const visiblePrimaryRequests = primaryRequests.filter((request) => !dismissedRequestIds.has(request.id));
 
   const hostedMatchIds = hostedMatches.map((match) => match.id);
   const hostedMatchIdSet = new Set(hostedMatchIds);
@@ -200,13 +218,13 @@ export async function getActivitySnapshot() {
   const earlyProfileIds = new Set([
     currentProfile.id,
     ...hostedMatches.map((match) => match.creator_profile_id),
-    ...primaryRequests.map((r) => r.requester_profile_id),
-    ...primaryRequests.map((r) => r.host_profile_id),
+    ...visiblePrimaryRequests.map((r) => r.requester_profile_id),
+    ...visiblePrimaryRequests.map((r) => r.host_profile_id),
   ]);
 
   const externalMatchIdsFromRequests = Array.from(
     new Set(
-      primaryRequests
+      visiblePrimaryRequests
         .map((r) => r.match_id)
         .filter((id) => !hostedMatchIdSet.has(id)),
     ),
@@ -218,7 +236,7 @@ export async function getActivitySnapshot() {
     listProfilesByIds(Array.from(earlyProfileIds)),
   ]);
 
-  const requests = dedupeById([...primaryRequests, ...inboundRequests]);
+  const requests = dedupeById([...visiblePrimaryRequests, ...inboundRequests]);
 
   const matches = dedupeById([...hostedMatches, ...externalMatches]);
 

@@ -24,6 +24,7 @@ export default async function ActivityPage({ searchParams }: ActivityPageProps) 
           | "confirmed"
           | "rejected"
           | "withdrawn"
+          | "cleared"
           | "deleted"
           | undefined
       }

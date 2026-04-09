@@ -68,17 +68,25 @@ function FilterPill({
   active,
   label,
   onClick,
+  compact = false,
+  stretch = false,
 }: {
   active: boolean;
   label: string;
   onClick: () => void;
+  compact?: boolean;
+  stretch?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "min-h-10 rounded-full px-3.5 text-[12px] font-bold transition active:scale-[0.985]",
+        "rounded-full font-bold transition active:scale-[0.985]",
+        compact
+          ? "min-h-[2.45rem] px-2 text-[11px] tracking-[-0.045em]"
+          : "min-h-10 px-3.5 text-[12px]",
+        stretch && "w-full",
         active
           ? "bg-[#06150c] text-white shadow-[0_10px_18px_rgba(6,21,12,0.11)]"
           : "bg-white/86 text-[#334139] shadow-[0_6px_12px_rgba(10,18,13,0.025)] ring-1 ring-[#e7ece7]",
@@ -147,17 +155,17 @@ function FeedScreenView({
             ))}
           </div>
 
-          <div className="-mx-4 mt-1.5 overflow-x-auto px-4 no-scrollbar">
-            <div className="flex min-w-max gap-2">
+          <div className="mt-1.5 grid grid-cols-5 gap-1.5">
               {SORT_OPTIONS.map((option) => (
                 <FilterPill
                   key={option.value}
                   active={sort === option.value}
                   label={option.label}
+                  compact
+                  stretch
                   onClick={() => applyContext({}, option.value)}
                 />
               ))}
-            </div>
           </div>
 
           <div className="mt-[1.15rem]">

@@ -10,6 +10,7 @@ import {
   confirmParticipation as confirmParticipationState,
   createMatch as createMatchState,
   createResetState,
+  dismissParticipationRequest as dismissParticipationRequestState,
   rejectParticipation as rejectParticipationState,
   submitParticipation as submitParticipationState,
   switchProfile as switchProfileState,
@@ -202,6 +203,9 @@ export function DemoAppProvider({
         }
 
         return updated;
+      },
+      dismissParticipationRequest(requestId) {
+        setState((current) => dismissParticipationRequestState(current, requestId));
       },
       markNotificationsRead(notificationIds) {
         setState((current) => markNotificationsReadState(current, notificationIds));

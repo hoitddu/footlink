@@ -163,22 +163,24 @@ function StepperField({
       <p className="mb-1.5 pl-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6d786f]">
         {label}
       </p>
-      <div className="rounded-[1.1rem] bg-[#f4f7f3] px-3.5 py-2.5">
-        <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2.5">
+      <div className="overflow-hidden rounded-[1.1rem] bg-[#f4f7f3] px-2.5 py-2.5">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5">
           <button
             type="button"
             onClick={onDecrease}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_10px_20px_rgba(6,21,12,0.06)] transition active:scale-95"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#112317] shadow-[0_8px_16px_rgba(6,21,12,0.06)] transition active:scale-95"
           >
             -
           </button>
-          <div className="flex items-center justify-center text-center">
-            <span className="truncate text-[1.32rem] font-bold tracking-[-0.05em] text-[#112317]">{value}</span>
+          <div className="min-w-0 flex items-center justify-center px-1 text-center">
+            <span className="truncate text-[1.16rem] font-bold tracking-[-0.05em] text-[#112317] sm:text-[1.24rem]">
+              {value}
+            </span>
           </div>
           <button
             type="button"
             onClick={onIncrease}
-            className="kinetic-gradient flex h-9 w-9 items-center justify-center rounded-full text-white transition active:scale-95"
+            className="kinetic-gradient flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white transition active:scale-95"
           >
             +
           </button>

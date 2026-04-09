@@ -260,6 +260,54 @@ export async function withdrawParticipationAction(requestId: string) {
   }
 }
 
+export async function dismissParticipationRequestAction(requestId: string) {
+  try {
+    const currentProfile = await requireCurrentProfile();
+    const supabase = await createServerSupabaseClient();
+    const { data: request, error: requestError } = await supabase
+      .from("match_requests")
+      .select("id, match_id, requester_profile_id, status")
+      .eq("id", requestId)
+      .returns<{ id: string; match_id: string; requester_profile_id: string; status: string }[]>()
+      .single();
+
+    if (requestError) {
+      throw requestError;
+    }
+
+    if (request.requester_profile_id !== currentProfile.id) {
+      throw new Error("요청자만 참여 요청 기록을 삭제할 수 있습니다.");
+    }
+
+    if (!["rejected", "withdrawn", "expired"].includes(request.status)) {
+      throw new Error("이미 진행 중인 요청은 삭제할 수 없습니다.");
+    }
+
+    const { error: dismissError } = await supabase.from("request_activity_dismissals").upsert(
+      {
+        profile_id: currentProfile.id,
+        request_id: request.id,
+        dismissed_at: new Date().toISOString(),
+      },
+      { onConflict: "profile_id,request_id" },
+    );
+
+    if (dismissError) {
+      throw dismissError;
+    }
+
+    revalidatePath("/activity");
+
+    return request.id;
+  } catch (error) {
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw toUserFacingError(error, "참여 요청 기록을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+  }
+}
+
 export async function markNotificationsReadAction(notificationIds: string[]) {
   try {
     await markNotificationsRead(notificationIds);

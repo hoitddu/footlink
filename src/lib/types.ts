@@ -210,6 +210,7 @@ export interface DemoAppActions {
   cancelParticipationConfirmation: (requestId: string, hostNote?: string) => ParticipationRequest;
   rejectParticipation: (requestId: string, hostNote?: string) => ParticipationRequest;
   withdrawParticipation: (requestId: string) => ParticipationRequest;
+  dismissParticipationRequest: (requestId: string) => void;
   markNotificationsRead: (notificationIds?: string[]) => void;
   resetDemoState: () => void;
 }

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { cancelMatchAction } from "@/app/actions/matches";
 import {
   acceptParticipationAction,
   confirmParticipationAction,
+  dismissParticipationRequestAction,
   rejectParticipationAction,
   withdrawParticipationAction,
 } from "@/app/actions/requests";
@@ -39,13 +40,18 @@ type ActivityFlash =
   | "confirmed"
   | "rejected"
   | "withdrawn"
+  | "cleared"
   | "deleted";
 type PendingActivityAction =
-  | { targetId: string; kind: "withdraw" | "accept" | "confirm" | "reject" | "delete" }
+  | { targetId: string; kind: "withdraw" | "accept" | "confirm" | "reject" | "delete" | "dismiss" }
   | null;
 
 function isOpenRequest(request: ParticipationRequest) {
   return ["pending", "accepted", "confirmed"].includes(request.status);
+}
+
+function isDismissibleRequest(request: ParticipationRequest) {
+  return ["rejected", "withdrawn", "expired"].includes(request.status);
 }
 
 function formatPrimaryMeta(match: Match) {
@@ -169,6 +175,47 @@ function MyJoinCard({
           ) : null}
         </div>
       ) : null}
+    </article>
+  );
+}
+
+function ClosedRequestRow({
+  match,
+  request,
+  highlighted,
+  dismissPending,
+  onDismiss,
+}: {
+  match: Match;
+  request: ParticipationRequest;
+  highlighted: boolean;
+  dismissPending: boolean;
+  onDismiss: () => void;
+}) {
+  return (
+    <article
+      className={cn(
+        "rounded-[1rem] bg-[#f4f7f3] px-4 py-3.5 transition",
+        highlighted && "ring-2 ring-[#b8ff5a]",
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={getParticipationStatusTone(request.status)}>
+              {getParticipationStatusLabel(request.status)}
+            </Badge>
+          </div>
+          <p className="mt-2 truncate text-sm font-semibold text-[#112317]">{match.title}</p>
+          <p className="mt-1 truncate text-[12px] text-[#66736a]">{formatPrimaryMeta(match)}</p>
+          {request.host_note ? (
+            <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[#55625a]">{request.host_note}</p>
+          ) : null}
+        </div>
+        <Button size="sm" type="button" variant="secondary" onClick={onDismiss} disabled={dismissPending}>
+          {dismissPending ? "삭제 중..." : "삭제"}
+        </Button>
+      </div>
     </article>
   );
 }
@@ -426,6 +473,7 @@ function ActivityScreenBody({
   onAccept,
   onConfirm,
   onReject,
+  onDismiss,
   onDelete,
   showDemoIdentitySwitcher,
 }: {
@@ -437,18 +485,33 @@ function ActivityScreenBody({
   onAccept: (requestId: string) => Promise<void>;
   onConfirm: (requestId: string) => Promise<void>;
   onReject: (requestId: string) => Promise<void>;
+  onDismiss: (requestId: string) => Promise<void>;
   onDelete: (matchId: string) => Promise<void>;
   showDemoIdentitySwitcher: boolean;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<ActivityTab>(initialTab);
   const [error, setError] = useState("");
   const [pendingAction, setPendingAction] = useState<PendingActivityAction>(null);
+  const flashParam = searchParams.get("flash");
+  const resolvedFlash = (
+    flashParam &&
+    ["created", "requested", "accepted", "confirmed", "rejected", "withdrawn", "cleared", "deleted"].includes(
+      flashParam,
+    )
+      ? flashParam
+      : flash
+  ) as ActivityFlash | undefined;
 
   const myRequests = useMemo(() => getMyParticipationRequests(state), [state]);
   const hostedMatches = useMemo(() => getHostedMatches(state), [state]);
   const openRequests = useMemo(() => myRequests.filter(isOpenRequest), [myRequests]);
   const closedRequests = useMemo(() => myRequests.filter((request) => !isOpenRequest(request)), [myRequests]);
+  const dismissibleClosedRequests = useMemo(
+    () => closedRequests.filter(isDismissibleRequest),
+    [closedRequests],
+  );
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -572,13 +635,31 @@ function ActivityScreenBody({
     }
   }
 
+  async function handleDismiss(requestId: string) {
+    setError("");
+    setPendingAction({ targetId: requestId, kind: "dismiss" });
+
+    try {
+      await onDismiss(requestId);
+      setActiveTab("requests");
+      replaceActivityQuery({
+        tab: "requests",
+        flash: "cleared",
+      });
+    } catch (dismissError) {
+      setError(getUserFacingErrorMessage(dismissError, "참여 요청 기록을 삭제하지 못했습니다."));
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <ScreenHeader href="/home" ariaLabel="홈으로 돌아가기" />
 
-      {flash || error ? (
+      {resolvedFlash || error ? (
         <div className="space-y-3">
-          <FlashBanner flash={flash} />
+          <FlashBanner flash={resolvedFlash} />
           {error ? (
             <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
               {error}
@@ -593,7 +674,7 @@ function ActivityScreenBody({
         <div className="grid grid-cols-2 gap-2">
           <ActivityTabButton
             active={activeTab === "requests"}
-            count={openRequests.length}
+            count={myRequests.length}
             label="참여"
             onClick={() => handleTabChange("requests")}
           />
@@ -608,7 +689,7 @@ function ActivityScreenBody({
 
       {activeTab === "requests" ? (
         <section className="space-y-3">
-          {openRequests.length === 0 ? (
+          {openRequests.length === 0 && dismissibleClosedRequests.length === 0 ? (
             <section className="surface-card rounded-[1.45rem] p-5">
               <p className="text-sm text-[#66736a]">참여 요청한 매치가 없습니다.</p>
               <Button asChild className="mt-4" size="sm">
@@ -639,16 +720,16 @@ function ActivityScreenBody({
             })
           )}
 
-          {closedRequests.length > 0 ? (
+          {dismissibleClosedRequests.length > 0 ? (
             <section className="surface-card rounded-[1.45rem] p-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold tracking-[-0.02em] text-[#112317]">지난 활동</h2>
+                <h2 className="text-sm font-bold tracking-[-0.02em] text-[#112317]">종료된 요청</h2>
                 <span className="rounded-full bg-[#eef2ee] px-2.5 py-1 text-[11px] font-bold text-[#55625a]">
-                  {closedRequests.length}
+                  {dismissibleClosedRequests.length}
                 </span>
               </div>
               <div className="mt-3 space-y-2">
-                {closedRequests.map((request) => {
+                {dismissibleClosedRequests.map((request) => {
                   const match = state.matches.find((item) => item.id === request.match_id);
 
                   if (!match) {
@@ -656,18 +737,16 @@ function ActivityScreenBody({
                   }
 
                   return (
-                    <div
+                    <ClosedRequestRow
                       key={request.id}
-                      className="flex items-center justify-between gap-3 rounded-[1rem] bg-[#f4f7f3] px-4 py-3"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[#112317]">{match.title}</p>
-                        <p className="mt-1 truncate text-[12px] text-[#66736a]">{formatPrimaryMeta(match)}</p>
-                      </div>
-                      <Badge variant={getParticipationStatusTone(request.status)}>
-                        {getParticipationStatusLabel(request.status)}
-                      </Badge>
-                    </div>
+                      match={match}
+                      request={request}
+                      highlighted={highlight === request.id || highlight === match.id}
+                      dismissPending={
+                        pendingAction?.targetId === request.id && pendingAction.kind === "dismiss"
+                      }
+                      onDismiss={() => handleDismiss(request.id)}
+                    />
                   );
                 })}
               </div>
@@ -728,6 +807,9 @@ function DemoActivityScreen(props: {
       onReject={async (requestId) => {
         actions.rejectParticipation(requestId);
       }}
+      onDismiss={async (requestId) => {
+        actions.dismissParticipationRequest(requestId);
+      }}
       onDelete={async (matchId) => {
         actions.cancelMatch(matchId);
       }}
@@ -765,6 +847,9 @@ export function ActivityScreen({
         }}
         onReject={async (requestId) => {
           await rejectParticipationAction(requestId);
+        }}
+        onDismiss={async (requestId) => {
+          await dismissParticipationRequestAction(requestId);
         }}
         onDelete={async (matchId) => {
           await cancelMatchAction(matchId);

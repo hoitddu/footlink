@@ -31,6 +31,10 @@ const flashMessages = {
     tone: "bg-[#f6f1f0] text-[#6b5852]",
     text: "참여 요청을 취소했습니다.",
   },
+  cleared: {
+    tone: "bg-[#eef2ee] text-[#112317]",
+    text: "참여 요청 기록을 삭제했습니다.",
+  },
   deleted: {
     tone: "bg-[#f6f1f0] text-[#6b5852]",
     text: "모집을 마감했습니다.",

@@ -1,5 +1,6 @@
 import { BottomNav } from "@/components/app/bottom-nav";
 import { MobileShell } from "@/components/app/mobile-shell";
+import { PullToRefreshShell } from "@/components/app/pull-to-refresh-shell";
 import { getAppDataSource } from "@/lib/app-config";
 import { createDemoSeed } from "@/lib/demo-state/seed";
 import { DemoAppProvider } from "@/lib/demo-state/provider";
@@ -12,7 +13,9 @@ export default function AppShellLayout({
   if (getAppDataSource() !== "demo") {
     return (
       <>
-        <MobileShell>{children}</MobileShell>
+        <PullToRefreshShell>
+          <MobileShell>{children}</MobileShell>
+        </PullToRefreshShell>
         <BottomNav />
       </>
     );
@@ -23,7 +26,9 @@ export default function AppShellLayout({
 
   return (
     <DemoAppProvider initialState={initialState}>
-      <MobileShell>{children}</MobileShell>
+      <PullToRefreshShell>
+        <MobileShell>{children}</MobileShell>
+      </PullToRefreshShell>
       <BottomNav />
     </DemoAppProvider>
   );

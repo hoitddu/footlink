@@ -32,8 +32,19 @@ export function getMatchOrganizer(state: DemoAppState, match: Match) {
 }
 
 export function getMyParticipationRequests(state: DemoAppState) {
+  const now = Date.now();
+  const matchMap = new Map(state.matches.map((match) => [match.id, match]));
+
   return state.participationRequests
-    .filter((request) => request.requester_profile_id === state.currentProfileId)
+    .filter((request) => {
+      if (request.requester_profile_id !== state.currentProfileId) {
+        return false;
+      }
+
+      const match = matchMap.get(request.match_id);
+
+      return Boolean(match && new Date(match.start_at).getTime() > now);
+    })
     .sort((left, right) => right.created_at.localeCompare(left.created_at));
 }
 
@@ -49,7 +60,7 @@ export function getHostedMatches(state: DemoAppState) {
     .filter(
       (match) =>
         match.creator_profile_id === state.currentProfileId &&
-        match.status === "open" &&
+        ["open", "matched"].includes(match.status) &&
         new Date(match.start_at).getTime() > now,
     )
     .sort((left, right) => left.start_at.localeCompare(right.start_at));
@@ -117,6 +128,10 @@ export function getParticipationStatusLabel(status: ParticipationStatus) {
 
   if (status === "confirmed") {
     return "확정됨";
+  }
+
+  if (status === "rejected") {
+    return "거절됨";
   }
 
   if (status === "withdrawn") {

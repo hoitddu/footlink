@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { saveProfile } from "@/components/profile/profile-save";
 import { FlashBanner } from "@/components/app/flash-banner";
@@ -46,6 +46,7 @@ function ProfileEditor({
   onReset?: () => void;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [nickname, setNickname] = useState(profile?.nickname ?? "");
   const [ageBand, setAgeBand] = useState<number>(profile?.age ?? 20);
   const [skillLevel, setSkillLevel] = useState<Profile["skill_level"]>(profile?.skill_level ?? "mid");
@@ -56,6 +57,7 @@ function ProfileEditor({
     profile?.default_contact_type ?? (profile?.open_chat_link ? "openchat" : profile?.phone_number ? "phone" : "openchat"),
   );
   const [error, setError] = useState("");
+  const resolvedFlash = searchParams.get("flash") === "saved" ? "saved" : flash;
 
   async function handleSave() {
     setError("");
@@ -87,7 +89,7 @@ function ProfileEditor({
     <div className="space-y-5">
       <ScreenHeader href={returnTo ?? "/home"} ariaLabel="홈으로 돌아가기" />
 
-      <FlashBanner flash={flash} />
+      <FlashBanner flash={resolvedFlash} />
       {error ? (
         <p className="rounded-[1.2rem] bg-[#ffe3de] px-4 py-3 text-sm font-semibold text-[#c3342b]">
           {error}

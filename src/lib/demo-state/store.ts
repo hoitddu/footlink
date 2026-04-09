@@ -13,6 +13,7 @@ import type {
 } from "@/lib/types";
 
 const duplicateBlockingStatuses: ParticipationStatus[] = ["pending", "accepted", "confirmed"];
+const dismissibleParticipationStatuses: ParticipationStatus[] = ["rejected", "withdrawn", "expired"];
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -509,6 +510,28 @@ export function withdrawParticipation(state: DemoAppState, requestId: string) {
   request.updated_at = now;
 
   return { state: next, request };
+}
+
+export function dismissParticipationRequest(state: DemoAppState, requestId: string) {
+  const next = cloneState(state);
+  const currentProfile = getCurrentProfile(next);
+  const request = getRequest(next, requestId);
+
+  if (request.requester_profile_id !== currentProfile.id) {
+    throw new Error("요청자만 참여 기록을 삭제할 수 있습니다.");
+  }
+
+  if (!dismissibleParticipationStatuses.includes(request.status)) {
+    throw new Error("삭제할 수 없는 참여 요청 상태입니다.");
+  }
+
+  next.participationRequests = next.participationRequests.filter((item) => item.id !== requestId);
+  next.notifications = next.notifications.filter(
+    (notification) =>
+      !(notification.profile_id === currentProfile.id && notification.related_request_id === requestId),
+  );
+
+  return next;
 }
 
 export function markNotificationsRead(state: DemoAppState, notificationIds?: string[]) {
