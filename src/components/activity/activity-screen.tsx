@@ -23,13 +23,21 @@ import {
   getCachedActivitySnapshot,
   primeActivitySnapshot,
 } from "@/lib/activity-snapshot-client";
-import { cn, formatAgeBand, formatFee, formatSkillLevel, formatSportType, formatStartAt, formatTimeRange } from "@/lib/utils";
+import {
+  cn,
+  formatAgeBand,
+  formatFee,
+  formatSkillLevel,
+  formatSportType,
+  formatStartAt,
+  formatTimeRange,
+} from "@/lib/utils";
 import { useDemoApp } from "@/lib/demo-state/provider";
 import {
   getHostedMatches,
   getInboundRequestsForMatch,
+  getParticipationContactActions,
   getMyParticipationRequests,
-  getParticipationContactLink,
   getParticipationStatusLabel,
   getParticipationStatusTone,
   getParticipationSummary,
@@ -48,9 +56,10 @@ type ActivityFlash =
   | "withdrawn"
   | "cleared"
   | "deleted";
-type PendingActivityAction =
-  | { targetId: string; kind: "withdraw" | "accept" | "confirm" | "reject" | "delete" | "dismiss" }
-  | null;
+type PendingActivityAction = {
+  targetId: string;
+  kind: "withdraw" | "accept" | "confirm" | "reject" | "delete" | "dismiss";
+} | null;
 
 function isOpenRequest(request: ParticipationRequest) {
   return ["pending", "accepted", "confirmed"].includes(request.status);
@@ -90,7 +99,9 @@ function ActivityTabButton({
           : "surface-subcard text-[#112317]",
       )}
     >
-      <span className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.01em]">{label}</span>
+      <span className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.01em]">
+        {label}
+      </span>
       <span
         className={cn(
           "rounded-full px-2.5 py-1 text-[11px] font-bold",
@@ -116,18 +127,14 @@ function ActivityLoadingState({
     <div className="space-y-4">
       <ScreenHeader href="/home" ariaLabel="Go home" />
 
-      {flash || loadError ? (
-        <div className="space-y-3">
-          <FlashBanner flash={flash} placement="bottom" />
-          {loadError ? (
-            <p className="rounded-[1.2rem] bg-[#f7ddd2] px-4 py-3 text-sm font-semibold text-[#8e3e32]">
-              {loadError}
-            </p>
-          ) : null}
-        </div>
+      {loadError ? (
+        <p className="rounded-[1.2rem] bg-[#f7ddd2] px-4 py-3 text-sm font-semibold text-[#8e3e32]">
+          {loadError}
+        </p>
       ) : null}
 
-      <section className="surface-card rounded-[1.5rem] p-3 ring-1 ring-white/55">
+      <section className="surface-card space-y-2 rounded-[1.5rem] p-3 ring-1 ring-white/55">
+        <FlashBanner flash={flash} placement="cta" durationMs={2800} />
         <div className="grid grid-cols-2 gap-2">
           <ActivityTabButton
             active={initialTab === "requests"}
@@ -171,7 +178,7 @@ function MyJoinCard({
   withdrawPending: boolean;
 }) {
   const host = getProfileById(state, request.host_profile_id);
-  const contactLink = getParticipationContactLink(state, request);
+  const contactActions = getParticipationContactActions(state, request);
   const canWithdraw = request.status === "pending";
 
   return (
@@ -194,10 +201,15 @@ function MyJoinCard({
           <h3 className="mt-2 truncate text-[1.02rem] font-bold tracking-[-0.03em] text-[#112317]">
             {match.title}
           </h3>
-          <p className="mt-1 text-[13px] text-[#66736a]">{formatPrimaryMeta(match)}</p>
-          <p className="mt-1 truncate text-[13px] text-[#66736a]">{formatSecondaryMeta(match)}</p>
+          <p className="mt-1 text-[13px] text-[#66736a]">
+            {formatPrimaryMeta(match)}
+          </p>
+          <p className="mt-1 truncate text-[13px] text-[#66736a]">
+            {formatSecondaryMeta(match)}
+          </p>
           <p className="mt-1 text-[12px] font-medium text-[#55625a]">
-            {host?.nickname ?? "FootLink Host"} / {getParticipationSummary(request)}
+            {host?.nickname ?? "FootLink Host"} /{" "}
+            {getParticipationSummary(request)}
           </p>
         </div>
       </div>
@@ -208,29 +220,37 @@ function MyJoinCard({
         </p>
       ) : null}
 
-      {contactLink || canWithdraw ? (
+      {contactActions.length > 0 || canWithdraw ? (
         <div className="mt-3 flex gap-2">
-          {contactLink ? (
-            <Button asChild className="flex-1" size="sm">
+          {contactActions.map((action) => (
+            <Button
+              key={action.kind}
+              asChild
+              className="flex-1"
+              size="sm"
+              variant="secondary"
+            >
               <a
-                href={contactLink.href}
-                rel={contactLink.href.startsWith("http") ? "noreferrer" : undefined}
-                target={contactLink.href.startsWith("http") ? "_blank" : undefined}
+                href={action.href}
+                rel={action.href.startsWith("http") ? "noreferrer" : undefined}
+                target={action.href.startsWith("http") ? "_blank" : undefined}
               >
-                {contactLink.label}
+                {action.label}
               </a>
             </Button>
-          ) : null}
+          ))}
           {canWithdraw ? (
             <Button
-              className={cn(!contactLink && "flex-1")}
+              className={cn(contactActions.length === 0 && "flex-1")}
               size="sm"
               type="button"
               variant="secondary"
               onClick={onWithdraw}
               disabled={withdrawPending}
             >
-              {withdrawPending ? "\uC694\uCCAD \uCDE8\uC18C \uC911..." : "\uC694\uCCAD \uCDE8\uC18C"}
+              {withdrawPending
+                ? "\uC694\uCCAD \uCDE8\uC18C \uC911..."
+                : "\uC694\uCCAD \uCDE8\uC18C"}
             </Button>
           ) : null}
         </div>
@@ -266,13 +286,25 @@ function ClosedRequestRow({
               {getParticipationStatusLabel(request.status)}
             </Badge>
           </div>
-          <p className="mt-2 truncate text-sm font-semibold text-[#112317]">{match.title}</p>
-          <p className="mt-1 truncate text-[12px] text-[#66736a]">{formatPrimaryMeta(match)}</p>
+          <p className="mt-2 truncate text-sm font-semibold text-[#112317]">
+            {match.title}
+          </p>
+          <p className="mt-1 truncate text-[12px] text-[#66736a]">
+            {formatPrimaryMeta(match)}
+          </p>
           {request.host_note ? (
-            <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[#55625a]">{request.host_note}</p>
+            <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[#55625a]">
+              {request.host_note}
+            </p>
           ) : null}
         </div>
-        <Button size="sm" type="button" variant="secondary" onClick={onDismiss} disabled={dismissPending}>
+        <Button
+          size="sm"
+          type="button"
+          variant="secondary"
+          onClick={onDismiss}
+          disabled={dismissPending}
+        >
           {dismissPending ? "\uC0AD\uC81C \uC911..." : "\uC0AD\uC81C"}
         </Button>
       </div>
@@ -304,17 +336,30 @@ function PendingRequestRow({
           <p className="truncate text-sm font-semibold text-[#112317]">
             {requesterName} / {getParticipationSummary(request)}
           </p>
-          {requesterMeta ? <p className="mt-1 text-[12px] text-[#66736a]">{requesterMeta}</p> : null}
+          {requesterMeta ? (
+            <p className="mt-1 text-[12px] text-[#66736a]">{requesterMeta}</p>
+          ) : null}
           {request.message ? (
-            <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[#55625a]">{request.message}</p>
+            <p className="mt-2 line-clamp-2 text-[12px] leading-5 text-[#55625a]">
+              {request.message}
+            </p>
           ) : null}
         </div>
         <Badge variant="soon">{"\uC694\uCCAD"}</Badge>
       </div>
 
       <div className="mt-3 flex gap-2">
-        <Button className="flex-1" size="sm" type="button" onClick={onAccept} disabled={disabled}>
-          {pendingAction?.targetId === request.id && pendingAction.kind === "accept" ? "\uC218\uB77D \uC911..." : "\uC218\uB77D"}
+        <Button
+          className="flex-1"
+          size="sm"
+          type="button"
+          onClick={onAccept}
+          disabled={disabled}
+        >
+          {pendingAction?.targetId === request.id &&
+          pendingAction.kind === "accept"
+            ? "\uC218\uB77D \uC911..."
+            : "\uC218\uB77D"}
         </Button>
         <Button
           className="flex-1"
@@ -324,7 +369,10 @@ function PendingRequestRow({
           onClick={onReject}
           disabled={disabled}
         >
-          {pendingAction?.targetId === request.id && pendingAction.kind === "reject" ? "\uAC70\uC808 \uC911..." : "\uAC70\uC808"}
+          {pendingAction?.targetId === request.id &&
+          pendingAction.kind === "reject"
+            ? "\uAC70\uC808 \uC911..."
+            : "\uAC70\uC808"}
         </Button>
       </div>
     </div>
@@ -346,9 +394,14 @@ function ConnectedRequestRow({
   onConfirm: () => void;
   onReject: () => void;
 }) {
-  const statusLabel = request.status === "confirmed" ? "\uD655\uC815\uB428" : "\uC5F0\uB77D \uC911";
-  const confirmPending = pendingAction?.targetId === request.id && pendingAction.kind === "confirm";
-  const rejectPending = pendingAction?.targetId === request.id && pendingAction.kind === "reject";
+  const statusLabel =
+    request.status === "confirmed"
+      ? "\uD655\uC815\uB428"
+      : "\uC5F0\uB77D \uC911";
+  const confirmPending =
+    pendingAction?.targetId === request.id && pendingAction.kind === "confirm";
+  const rejectPending =
+    pendingAction?.targetId === request.id && pendingAction.kind === "reject";
   const actionDisabled = Boolean(pendingAction);
 
   return (
@@ -358,14 +411,24 @@ function ConnectedRequestRow({
           <p className="truncate text-sm font-semibold text-[#112317]">
             {requesterName} / {getParticipationSummary(request)}
           </p>
-          {requesterMeta ? <p className="mt-1 text-[12px] text-[#66736a]">{requesterMeta}</p> : null}
+          {requesterMeta ? (
+            <p className="mt-1 text-[12px] text-[#66736a]">{requesterMeta}</p>
+          ) : null}
         </div>
-        <Badge variant={request.status === "confirmed" ? "calm" : "soon"}>{statusLabel}</Badge>
+        <Badge variant={request.status === "confirmed" ? "calm" : "soon"}>
+          {statusLabel}
+        </Badge>
       </div>
 
       {request.status === "accepted" ? (
         <div className="mt-3 flex gap-2">
-          <Button className="flex-1" size="sm" type="button" onClick={onConfirm} disabled={actionDisabled}>
+          <Button
+            className="flex-1"
+            size="sm"
+            type="button"
+            onClick={onConfirm}
+            disabled={actionDisabled}
+          >
             {confirmPending ? "\uD655\uC815 \uC911..." : "\uD655\uC815"}
           </Button>
           <Button
@@ -405,13 +468,18 @@ function HostSpotCard({
   onReject: (requestId: string) => void;
   onDelete: () => void;
 }) {
-  const pendingRequests = requests.filter((request) => request.status === "pending");
-  const connectedRequests = requests.filter((request) => ["accepted", "confirmed"].includes(request.status));
+  const pendingRequests = requests.filter(
+    (request) => request.status === "pending",
+  );
+  const connectedRequests = requests.filter((request) =>
+    ["accepted", "confirmed"].includes(request.status),
+  );
   const closedRequests = requests.filter((request) =>
     ["rejected", "withdrawn", "expired"].includes(request.status),
   );
   const hasLockedRequest = connectedRequests.length > 0;
-  const deletePending = pendingAction?.targetId === match.id && pendingAction.kind === "delete";
+  const deletePending =
+    pendingAction?.targetId === match.id && pendingAction.kind === "delete";
   const canDelete = !hasLockedRequest && match.status === "open";
 
   return (
@@ -425,7 +493,9 @@ function HostSpotCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={match.remaining_slots <= 1 ? "urgent" : "soon"}>
-              {match.remaining_slots <= 1 ? "1\uC790\uB9AC" : `${match.remaining_slots}\uC790\uB9AC`}
+              {match.remaining_slots <= 1
+                ? "1\uC790\uB9AC"
+                : `${match.remaining_slots}\uC790\uB9AC`}
             </Badge>
             {pendingRequests.length > 0 ? (
               <span className="surface-chip rounded-full px-2.5 py-1 text-[11px] font-bold">
@@ -436,7 +506,9 @@ function HostSpotCard({
           <h3 className="mt-2 truncate text-[1.02rem] font-bold tracking-[-0.03em] text-[#112317]">
             {match.title}
           </h3>
-          <p className="mt-1 text-[13px] text-[#66736a]">{formatStartAt(match.start_at)}</p>
+          <p className="mt-1 text-[13px] text-[#66736a]">
+            {formatStartAt(match.start_at)}
+          </p>
         </div>
         <Button
           className="h-9 rounded-[1rem] px-3.5 text-[13px] font-semibold"
@@ -446,7 +518,9 @@ function HostSpotCard({
           onClick={onDelete}
           disabled={!canDelete || deletePending}
         >
-          {deletePending ? "\uB9C8\uAC10 \uC911..." : "\uBAA8\uC9D1 \uB9C8\uAC10"}
+          {deletePending
+            ? "\uB9C8\uAC10 \uC911..."
+            : "\uBAA8\uC9D1 \uB9C8\uAC10"}
         </Button>
       </div>
 
@@ -465,13 +539,17 @@ function HostSpotCard({
       {pendingRequests.length > 0 ? (
         <div className="mt-3 space-y-2.5">
           {pendingRequests.map((request) => {
-            const requester = getProfileById(state, request.requester_profile_id);
+            const requester = getProfileById(
+              state,
+              request.requester_profile_id,
+            );
             const requesterMeta = requester
               ? `${formatSkillLevel(requester.skill_level)} / ${formatAgeBand(requester.age)}`
               : null;
             const requestActionPending =
               pendingAction?.targetId === request.id &&
-              (pendingAction.kind === "accept" || pendingAction.kind === "reject");
+              (pendingAction.kind === "accept" ||
+                pendingAction.kind === "reject");
 
             return (
               <PendingRequestRow
@@ -493,15 +571,22 @@ function HostSpotCard({
         </div>
       ) : requests.length === 0 ? (
         <div className="surface-subcard mt-3 rounded-[1rem] px-4 py-3 text-sm text-[#66736a]">
-          {"\uC544\uC9C1 \uB4E4\uC5B4\uC628 \uC694\uCCAD\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}
+          {
+            "\uC544\uC9C1 \uB4E4\uC5B4\uC628 \uC694\uCCAD\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."
+          }
         </div>
       ) : null}
 
       {connectedRequests.length > 0 ? (
         <div className="mt-3 space-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">{"\uC5F0\uB77D \uBC0F \uD655\uC815"}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
+            {"\uC5F0\uB77D \uBC0F \uD655\uC815"}
+          </p>
           {connectedRequests.map((request) => {
-            const requester = getProfileById(state, request.requester_profile_id);
+            const requester = getProfileById(
+              state,
+              request.requester_profile_id,
+            );
             const requesterMeta = requester
               ? `${formatSkillLevel(requester.skill_level)} / ${formatAgeBand(requester.age)}`
               : null;
@@ -552,28 +637,46 @@ function ActivityScreenBody({
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<ActivityTab>(initialTab);
   const [error, setError] = useState("");
-  const [pendingAction, setPendingAction] = useState<PendingActivityAction>(null);
-  const [localFlash, setLocalFlash] = useState<ActivityFlash | undefined>(undefined);
-  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(undefined);
-  const [localHighlight, setLocalHighlight] = useState<string | undefined>(highlight);
+  const [pendingAction, setPendingAction] =
+    useState<PendingActivityAction>(null);
+  const [localFlash, setLocalFlash] = useState<ActivityFlash | undefined>(
+    undefined,
+  );
+  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(
+    undefined,
+  );
+  const [localHighlight, setLocalHighlight] = useState<string | undefined>(
+    highlight,
+  );
   const flashParam = searchParams.get("flash");
   const flashAt = searchParams.get("flashAt");
   const resolvedFlash =
     localFlash ??
-    ((
-      flashParam &&
-      ["created", "requested", "accepted", "confirmed", "rejected", "withdrawn", "cleared", "deleted"].includes(
-        flashParam,
-      )
-        ? flashParam
-        : flash
-    ) as ActivityFlash | undefined);
+    ((flashParam &&
+    [
+      "created",
+      "requested",
+      "accepted",
+      "confirmed",
+      "rejected",
+      "withdrawn",
+      "cleared",
+      "deleted",
+    ].includes(flashParam)
+      ? flashParam
+      : flash) as ActivityFlash | undefined);
   const resolvedHighlight = localHighlight ?? highlight;
 
   const myRequests = useMemo(() => getMyParticipationRequests(state), [state]);
   const hostedMatches = useMemo(() => getHostedMatches(state), [state]);
-  const openRequests = useMemo(() => myRequests.filter(isOpenRequest), [myRequests]);
-  const closedRequests = useMemo(() => myRequests.filter((request) => !isOpenRequest(request)), [myRequests]);
+  const openRequests = useMemo(
+    () => myRequests.filter(isOpenRequest),
+    [myRequests],
+  );
+  const closedRequests = useMemo(
+    () => myRequests.filter((request) => !isOpenRequest(request)),
+    [myRequests],
+  );
   const dismissibleClosedRequests = useMemo(
     () => closedRequests.filter(isDismissibleRequest),
     [closedRequests],
@@ -597,7 +700,11 @@ function ActivityScreenBody({
     const query = params.toString();
 
     if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", query ? `/activity?${query}` : "/activity");
+      window.history.replaceState(
+        null,
+        "",
+        query ? `/activity?${query}` : "/activity",
+      );
     }
 
     setLocalFlash(next.flash as ActivityFlash | undefined);
@@ -626,7 +733,12 @@ function ActivityScreenBody({
         flash: "withdrawn",
       });
     } catch (withdrawError) {
-      setError(getUserFacingErrorMessage(withdrawError, "\uC694\uCCAD\uC744 \uCDE8\uC18C\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
+      setError(
+        getUserFacingErrorMessage(
+          withdrawError,
+          "\uC694\uCCAD\uC744 \uCDE8\uC18C\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
+        ),
+      );
     } finally {
       setPendingAction(null);
     }
@@ -645,7 +757,12 @@ function ActivityScreenBody({
         flash: "accepted",
       });
     } catch (acceptError) {
-      setError(getUserFacingErrorMessage(acceptError, "\uCC38\uC5EC \uC694\uCCAD\uC744 \uC218\uB77D\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
+      setError(
+        getUserFacingErrorMessage(
+          acceptError,
+          "\uCC38\uC5EC \uC694\uCCAD\uC744 \uC218\uB77D\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
+        ),
+      );
     } finally {
       setPendingAction(null);
     }
@@ -664,7 +781,12 @@ function ActivityScreenBody({
         flash: "confirmed",
       });
     } catch (confirmError) {
-      setError(getUserFacingErrorMessage(confirmError, "\uCD5C\uC885 \uD655\uC815\uC744 \uCC98\uB9AC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
+      setError(
+        getUserFacingErrorMessage(
+          confirmError,
+          "\uCD5C\uC885 \uD655\uC815\uC744 \uCC98\uB9AC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
+        ),
+      );
     } finally {
       setPendingAction(null);
     }
@@ -683,14 +805,23 @@ function ActivityScreenBody({
         flash: "rejected",
       });
     } catch (rejectError) {
-      setError(getUserFacingErrorMessage(rejectError, "\uCC38\uC5EC \uC694\uCCAD\uC744 \uAC70\uC808\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
+      setError(
+        getUserFacingErrorMessage(
+          rejectError,
+          "\uCC38\uC5EC \uC694\uCCAD\uC744 \uAC70\uC808\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
+        ),
+      );
     } finally {
       setPendingAction(null);
     }
   }
 
   async function handleDelete(matchId: string) {
-    if (!window.confirm("\uC774 \uBAA8\uC9D1\uC744 \uB9C8\uAC10\uD560\uAE4C\uC694? \uB300\uAE30 \uC911\uC778 \uC694\uCCAD\uB3C4 \uD568\uAED8 \uC885\uB8CC\uB429\uB2C8\uB2E4.")) {
+    if (
+      !window.confirm(
+        "\uC774 \uBAA8\uC9D1\uC744 \uB9C8\uAC10\uD560\uAE4C\uC694? \uB300\uAE30 \uC911\uC778 \uC694\uCCAD\uB3C4 \uD568\uAED8 \uC885\uB8CC\uB429\uB2C8\uB2E4.",
+      )
+    ) {
       return;
     }
 
@@ -705,7 +836,12 @@ function ActivityScreenBody({
         flash: "deleted",
       });
     } catch (deleteError) {
-      setError(getUserFacingErrorMessage(deleteError, "\uBAA8\uC9D1\uC744 \uB9C8\uAC10\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
+      setError(
+        getUserFacingErrorMessage(
+          deleteError,
+          "\uBAA8\uC9D1\uC744 \uB9C8\uAC10\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
+        ),
+      );
     } finally {
       setPendingAction(null);
     }
@@ -723,7 +859,12 @@ function ActivityScreenBody({
         flash: "cleared",
       });
     } catch (dismissError) {
-      setError(getUserFacingErrorMessage(dismissError, "\uCC38\uC5EC \uC694\uCCAD \uAE30\uB85D\uC744 \uC0AD\uC81C\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
+      setError(
+        getUserFacingErrorMessage(
+          dismissError,
+          "\uCC38\uC5EC \uC694\uCCAD \uAE30\uB85D\uC744 \uC0AD\uC81C\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
+        ),
+      );
     } finally {
       setPendingAction(null);
     }
@@ -733,24 +874,21 @@ function ActivityScreenBody({
     <div className="space-y-4">
       <ScreenHeader href="/home" ariaLabel="Go home" />
 
-      {resolvedFlash || error ? (
-        <div className="space-y-3">
-          <FlashBanner
-            key={localFlashAt ?? flashAt ?? resolvedFlash ?? "activity-flash"}
-            flash={resolvedFlash}
-            placement="bottom"
-          />
-          {error ? (
-            <p className="rounded-[1.2rem] bg-[#f7ddd2] px-4 py-3 text-sm font-semibold text-[#8e3e32]">
-              {error}
-            </p>
-          ) : null}
-        </div>
+      {error ? (
+        <p className="rounded-[1.2rem] bg-[#f7ddd2] px-4 py-3 text-sm font-semibold text-[#8e3e32]">
+          {error}
+        </p>
       ) : null}
 
       {showDemoIdentitySwitcher ? <DemoIdentitySwitcher /> : null}
 
-      <section className="surface-card rounded-[1.5rem] p-3 ring-1 ring-white/55">
+      <section className="surface-card space-y-2 rounded-[1.5rem] p-3 ring-1 ring-white/55">
+        <FlashBanner
+          key={localFlashAt ?? flashAt ?? resolvedFlash ?? "activity-flash"}
+          flash={resolvedFlash}
+          placement="cta"
+          durationMs={2800}
+        />
         <div className="grid grid-cols-2 gap-2">
           <ActivityTabButton
             active={activeTab === "requests"}
@@ -769,16 +907,23 @@ function ActivityScreenBody({
 
       {activeTab === "requests" ? (
         <section className="space-y-3">
-          {openRequests.length === 0 && dismissibleClosedRequests.length === 0 ? (
+          {openRequests.length === 0 &&
+          dismissibleClosedRequests.length === 0 ? (
             <section className="surface-card rounded-[1.5rem] p-5 ring-1 ring-white/55">
-              <p className="text-sm text-[#66736a]">{"\uCC38\uC5EC \uC694\uCCAD\uD55C \uB9E4\uCE58\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."}</p>
+              <p className="text-sm text-[#66736a]">
+                {
+                  "\uCC38\uC5EC \uC694\uCCAD\uD55C \uB9E4\uCE58\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."
+                }
+              </p>
               <Button asChild className="mt-4" size="sm">
                 <Link href="/home">{"\uB9E4\uCE58 \uCC3E\uAE30"}</Link>
               </Button>
             </section>
           ) : (
             openRequests.map((request) => {
-              const match = state.matches.find((item) => item.id === request.match_id);
+              const match = state.matches.find(
+                (item) => item.id === request.match_id,
+              );
 
               if (!match) {
                 return null;
@@ -790,10 +935,14 @@ function ActivityScreenBody({
                   state={state}
                   match={match}
                   request={request}
-                  highlighted={resolvedHighlight === request.id || resolvedHighlight === match.id}
+                  highlighted={
+                    resolvedHighlight === request.id ||
+                    resolvedHighlight === match.id
+                  }
                   onWithdraw={() => handleWithdraw(request.id)}
                   withdrawPending={
-                    pendingAction?.targetId === request.id && pendingAction.kind === "withdraw"
+                    pendingAction?.targetId === request.id &&
+                    pendingAction.kind === "withdraw"
                   }
                 />
               );
@@ -803,14 +952,18 @@ function ActivityScreenBody({
           {dismissibleClosedRequests.length > 0 ? (
             <section className="surface-card rounded-[1.5rem] p-4 ring-1 ring-white/55">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold tracking-[-0.02em] text-[#112317]">{"\uC885\uB8CC\uB41C \uC694\uCCAD"}</h2>
+                <h2 className="text-sm font-bold tracking-[-0.02em] text-[#112317]">
+                  {"\uC885\uB8CC\uB41C \uC694\uCCAD"}
+                </h2>
                 <span className="surface-chip rounded-full px-2.5 py-1 text-[11px] font-bold">
                   {dismissibleClosedRequests.length}
                 </span>
               </div>
               <div className="mt-3 space-y-2">
                 {dismissibleClosedRequests.map((request) => {
-                  const match = state.matches.find((item) => item.id === request.match_id);
+                  const match = state.matches.find(
+                    (item) => item.id === request.match_id,
+                  );
 
                   if (!match) {
                     return null;
@@ -821,9 +974,13 @@ function ActivityScreenBody({
                       key={request.id}
                       match={match}
                       request={request}
-                      highlighted={resolvedHighlight === request.id || resolvedHighlight === match.id}
+                      highlighted={
+                        resolvedHighlight === request.id ||
+                        resolvedHighlight === match.id
+                      }
                       dismissPending={
-                        pendingAction?.targetId === request.id && pendingAction.kind === "dismiss"
+                        pendingAction?.targetId === request.id &&
+                        pendingAction.kind === "dismiss"
                       }
                       onDismiss={() => handleDismiss(request.id)}
                     />
@@ -837,9 +994,15 @@ function ActivityScreenBody({
         <section className="space-y-3">
           {hostedMatches.length === 0 ? (
             <section className="surface-card rounded-[1.5rem] p-5 ring-1 ring-white/55">
-              <p className="text-sm text-[#66736a]">{"\uC9C4\uD589 \uC911\uC778 \uBAA8\uC9D1\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."}</p>
+              <p className="text-sm text-[#66736a]">
+                {
+                  "\uC9C4\uD589 \uC911\uC778 \uBAA8\uC9D1\uC774 \uC5C6\uC2B5\uB2C8\uB2E4."
+                }
+              </p>
               <Button asChild className="mt-4" size="sm">
-                <Link href="/create">{"\uC6A9\uBCD1 \uBAA8\uC9D1\uD558\uAE30"}</Link>
+                <Link href="/create">
+                  {"\uC6A9\uBCD1 \uBAA8\uC9D1\uD558\uAE30"}
+                </Link>
               </Button>
             </section>
           ) : (
@@ -875,9 +1038,13 @@ function SupabaseActivityScreen({
   highlight?: string;
   refreshKey?: string;
 }) {
-  const [stateSnapshot, setStateSnapshot] = useState<DemoAppState | null>(() => getCachedActivitySnapshot());
+  const [stateSnapshot, setStateSnapshot] = useState<DemoAppState | null>(() =>
+    getCachedActivitySnapshot(),
+  );
   const [loadError, setLoadError] = useState("");
-  const [bootstrapping, setBootstrapping] = useState(() => !getCachedActivitySnapshot());
+  const [bootstrapping, setBootstrapping] = useState(
+    () => !getCachedActivitySnapshot(),
+  );
 
   async function loadSnapshot({
     keepExisting = true,
@@ -896,7 +1063,12 @@ function SupabaseActivityScreen({
       const nextState = await fetchActivitySnapshot({ force });
       setStateSnapshot(nextState);
     } catch (error) {
-      setLoadError(getUserFacingErrorMessage(error, "\uD65C\uB3D9 \uC0C1\uD0DC\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."));
+      setLoadError(
+        getUserFacingErrorMessage(
+          error,
+          "\uD65C\uB3D9 \uC0C1\uD0DC\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.",
+        ),
+      );
     } finally {
       setBootstrapping(false);
     }
@@ -913,11 +1085,23 @@ function SupabaseActivityScreen({
   }, [refreshKey]);
 
   if (!stateSnapshot && bootstrapping) {
-    return <ActivityLoadingState flash={flash} initialTab={initialTab} loadError={loadError} />;
+    return (
+      <ActivityLoadingState
+        flash={flash}
+        initialTab={initialTab}
+        loadError={loadError}
+      />
+    );
   }
 
   if (!stateSnapshot) {
-    return <ActivityLoadingState flash={flash} initialTab={initialTab} loadError={loadError} />;
+    return (
+      <ActivityLoadingState
+        flash={flash}
+        initialTab={initialTab}
+        loadError={loadError}
+      />
+    );
   }
 
   return (
@@ -1004,7 +1188,8 @@ export function ActivityScreen({
   stateSnapshot?: DemoAppState;
   refreshKey?: string;
 }) {
-  const resolvedDataSource = dataSource ?? (stateSnapshot ? "supabase" : "demo");
+  const resolvedDataSource =
+    dataSource ?? (stateSnapshot ? "supabase" : "demo");
 
   if (stateSnapshot) {
     primeActivitySnapshot(stateSnapshot);
@@ -1049,5 +1234,11 @@ export function ActivityScreen({
     );
   }
 
-  return <DemoActivityScreen flash={flash} highlight={highlight} initialTab={initialTab} />;
+  return (
+    <DemoActivityScreen
+      flash={flash}
+      highlight={highlight}
+      initialTab={initialTab}
+    />
+  );
 }

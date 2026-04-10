@@ -10,10 +10,15 @@ import { submitParticipationAction } from "@/app/actions/requests";
 import { BackButton } from "@/components/app/back-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  buildContactActions,
   buildContactHref,
-  getContactActionLabel,
   getContactBadgeLabel,
   getContactDescription,
   resolveContactType,
@@ -37,6 +42,7 @@ import {
   formatStartAt,
   formatTimeRange,
   formatUrgencyLabel,
+  cn,
   getMatchEndDate,
 } from "@/lib/utils";
 import type { DemoAppState, Profile } from "@/lib/types";
@@ -63,7 +69,12 @@ function mergePersonalizedState(
     ...state.profiles.filter((profile) => profile.id !== currentProfile.id),
   ];
   const participationRequests = myRequest
-    ? [myRequest, ...state.participationRequests.filter((request) => request.id !== myRequest.id)]
+    ? [
+        myRequest,
+        ...state.participationRequests.filter(
+          (request) => request.id !== myRequest.id,
+        ),
+      ]
     : state.participationRequests;
 
   return {
@@ -72,6 +83,10 @@ function mergePersonalizedState(
     profiles,
     participationRequests,
   };
+}
+
+function formatSuccessMatchDate(startAt: string) {
+  return formatStartAt(startAt).split(" ").slice(0, 2).join(" ");
 }
 
 function MatchDetailBody({
@@ -92,7 +107,8 @@ function MatchDetailBody({
   hydratePersonalState?: boolean;
 }) {
   const [state, setState] = useState(initialState);
-  const [personalizationReady, setPersonalizationReady] = useState(!hydratePersonalState);
+  const [personalizationReady, setPersonalizationReady] =
+    useState(!hydratePersonalState);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [submitAfterProfile, setSubmitAfterProfile] = useState(false);
   const [successSheetOpen, setSuccessSheetOpen] = useState(false);
@@ -100,7 +116,10 @@ function MatchDetailBody({
   const [joinSubmitPending, setJoinSubmitPending] = useState(false);
   const [error, setError] = useState("");
 
-  const match = useMemo(() => getMatchMetaForState(state, matchId, referenceNow), [matchId, referenceNow, state]);
+  const match = useMemo(
+    () => getMatchMetaForState(state, matchId, referenceNow),
+    [matchId, referenceNow, state],
+  );
   const backContext = parseFeedContext(searchParams);
   const backHref = `/home?${buildContextQuery(backContext)}`;
   const resolvedProfile = getCurrentProfile(state) ?? null;
@@ -108,11 +127,14 @@ function MatchDetailBody({
     ? getActiveParticipationForMatch(state, match.id, resolvedProfile?.id ?? "")
     : undefined;
   const rawContactValue = activeRequest?.accepted_contact_link || null;
-  const rawContactType = activeRequest?.entry_channel || match?.contact_type || "request_only";
+  const rawContactType =
+    activeRequest?.entry_channel || match?.contact_type || "request_only";
   const contactType = resolveContactType(rawContactType, rawContactValue);
+  const contactActions = buildContactActions(contactType, rawContactValue);
   const contactHref = buildContactHref(contactType, rawContactValue);
-  const contactActionLabel = getContactActionLabel(contactType);
-  const hasDirectContactMethod = match ? match.contact_type !== "request_only" : false;
+  const hasDirectContactMethod = match
+    ? match.contact_type !== "request_only"
+    : false;
   const contactDescription = contactHref
     ? getContactDescription(contactType)
     : hasDirectContactMethod
@@ -127,10 +149,14 @@ function MatchDetailBody({
     let cancelled = false;
 
     void import("@/lib/supabase/browser")
-      .then(({ getBrowserMatchPersonalization }) => getBrowserMatchPersonalization(matchId))
+      .then(({ getBrowserMatchPersonalization }) =>
+        getBrowserMatchPersonalization(matchId),
+      )
       .then(({ currentProfile, myRequest }) => {
         if (!cancelled) {
-          setState((currentState) => mergePersonalizedState(currentState, currentProfile, myRequest));
+          setState((currentState) =>
+            mergePersonalizedState(currentState, currentProfile, myRequest),
+          );
         }
       })
       .finally(() => {
@@ -145,7 +171,13 @@ function MatchDetailBody({
   }, [hydratePersonalState, matchId]);
 
   async function submitJoin(profileOverride?: Profile | null) {
-    if (!match || joinSubmitPending || activeRequest || match.status !== "open" || match.remaining_slots <= 0) {
+    if (
+      !match ||
+      joinSubmitPending ||
+      activeRequest ||
+      match.status !== "open" ||
+      match.remaining_slots <= 0
+    ) {
       return;
     }
 
@@ -180,14 +212,25 @@ function MatchDetailBody({
       setSuccessRequestId(requestId);
       setSuccessSheetOpen(true);
     } catch (submitError) {
-      setError(getUserFacingErrorMessage(submitError, "참여 요청을 처리하지 못했습니다."));
+      setError(
+        getUserFacingErrorMessage(
+          submitError,
+          "참여 요청을 처리하지 못했습니다.",
+        ),
+      );
     } finally {
       setJoinSubmitPending(false);
     }
   }
 
   async function handleSubmitJoin() {
-    if (!match || joinSubmitPending || activeRequest || match.status !== "open" || match.remaining_slots <= 0) {
+    if (
+      !match ||
+      joinSubmitPending ||
+      activeRequest ||
+      match.status !== "open" ||
+      match.remaining_slots <= 0
+    ) {
       return;
     }
 
@@ -203,7 +246,9 @@ function MatchDetailBody({
   if (!match) {
     return (
       <section className="surface-card rounded-[1.35rem] p-5">
-        <h1 className="text-lg font-bold text-[#112317]">매치를 찾을 수 없습니다.</h1>
+        <h1 className="text-lg font-bold text-[#112317]">
+          매치를 찾을 수 없습니다.
+        </h1>
         <Button asChild className="mt-3" size="sm">
           <Link href="/home">홈으로 돌아가기</Link>
         </Button>
@@ -217,16 +262,27 @@ function MatchDetailBody({
     : match.remaining_slots === 1
       ? "1자리 남음"
       : `${match.remaining_slots}자리 남음`;
-  const urgencyLabel = formatUrgencyLabel(match.start_at, match.minutesUntilStart);
+  const urgencyLabel = formatUrgencyLabel(
+    match.start_at,
+    match.minutesUntilStart,
+  );
   const formatLabel = getMatchFormatLabel(match);
-  const endAt = getMatchEndDate(match.start_at, match.duration_minutes).toISOString();
+  const endAt = getMatchEndDate(
+    match.start_at,
+    match.duration_minutes,
+  ).toISOString();
+  const successDateLabel = formatSuccessMatchDate(match.start_at);
+  const actionCount = contactActions.length + 1;
+  const compactActionButtons = actionCount === 3;
 
   return (
     <div className="space-y-4 pb-28">
       <section className="shell-card rounded-[1.7rem] p-4">
         <div className="flex items-center justify-between">
           <BackButton href={backHref} ariaLabel="홈으로 돌아가기" />
-          <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#f4f7f1]">FOOTLINK</span>
+          <span className="font-display text-[1.04rem] font-bold tracking-[0.16em] text-[#f4f7f1]">
+            FOOTLINK
+          </span>
           <span aria-hidden="true" className="block h-11 w-11 shrink-0" />
         </div>
 
@@ -249,27 +305,47 @@ function MatchDetailBody({
           ) : null}
         </div>
 
-        <h1 className="mt-3 text-[1.75rem] font-bold tracking-[-0.05em] text-[#f4f7f1]">{match.title}</h1>
-        <p className="mt-2 text-[1rem] font-semibold text-[#b5c2b7]">{spotLabel}</p>
+        <h1 className="mt-3 text-[1.75rem] font-bold tracking-[-0.05em] text-[#f4f7f1]">
+          {match.title}
+        </h1>
+        <p className="mt-2 text-[1rem] font-semibold text-[#b5c2b7]">
+          {spotLabel}
+        </p>
       </section>
 
       <section className="surface-card rounded-[1.55rem] p-4 ring-1 ring-white/55">
         <div className="grid grid-cols-2 gap-3">
           <div className="surface-subcard rounded-[1.15rem] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Start</p>
-            <p className="mt-2 text-[14px] font-bold text-[#112317]">{formatStartAt(match.start_at)}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
+              Start
+            </p>
+            <p className="mt-2 text-[14px] font-bold text-[#112317]">
+              {formatStartAt(match.start_at)}
+            </p>
           </div>
           <div className="surface-subcard rounded-[1.15rem] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">End</p>
-            <p className="mt-2 text-[14px] font-bold text-[#112317]">{formatStartAt(endAt)}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
+              End
+            </p>
+            <p className="mt-2 text-[14px] font-bold text-[#112317]">
+              {formatStartAt(endAt)}
+            </p>
           </div>
           <div className="surface-subcard rounded-[1.15rem] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Duration</p>
-            <p className="mt-2 text-[14px] font-bold text-[#112317]">{formatDurationMinutes(match.duration_minutes)}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
+              Duration
+            </p>
+            <p className="mt-2 text-[14px] font-bold text-[#112317]">
+              {formatDurationMinutes(match.duration_minutes)}
+            </p>
           </div>
           <div className="surface-subcard rounded-[1.15rem] px-4 py-3">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Fee</p>
-            <p className="mt-2 text-[14px] font-bold text-[#112317]">{formatFee(match.fee)}</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
+              Fee
+            </p>
+            <p className="mt-2 text-[14px] font-bold text-[#112317]">
+              {formatFee(match.fee)}
+            </p>
           </div>
         </div>
 
@@ -277,7 +353,9 @@ function MatchDetailBody({
           <div className="flex items-start gap-2.5">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#112317]" />
             <div>
-              <p className="text-[14px] font-bold text-[#112317]">{match.address}</p>
+              <p className="text-[14px] font-bold text-[#112317]">
+                {match.address}
+              </p>
               <p className="mt-1 text-[12px] text-[#66736a]">
                 {match.region_label} · {formatDistanceValue(match.distanceKm)}
               </p>
@@ -286,7 +364,9 @@ function MatchDetailBody({
         </div>
 
         <div className="surface-subcard mt-3 rounded-[1.2rem] px-4 py-4">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">모집 포지션</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
+            모집 포지션
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {match.position_targets.length > 0 ? (
               match.position_targets.map((position) => (
@@ -308,8 +388,12 @@ function MatchDetailBody({
 
       {match.note ? (
         <section className="surface-card rounded-[1.45rem] p-4 ring-1 ring-white/55">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">Note</p>
-          <p className="mt-3 text-[14px] leading-6 text-[#445149]">{match.note}</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d786f]">
+            Note
+          </p>
+          <p className="mt-3 text-[14px] leading-6 text-[#445149]">
+            {match.note}
+          </p>
         </section>
       ) : null}
 
@@ -319,7 +403,9 @@ function MatchDetailBody({
             <UserRound className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-[14px] font-bold text-[#112317]">{match.organizer?.nickname ?? "FootLink Host"}</p>
+            <p className="text-[14px] font-bold text-[#112317]">
+              {match.organizer?.nickname ?? "FootLink Host"}
+            </p>
             <p className="mt-1 text-[13px] leading-5 text-[#66736a]">
               {contactDescription}
             </p>
@@ -333,37 +419,75 @@ function MatchDetailBody({
         </p>
       ) : null}
 
-      <div className="action-dock safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto flex w-full max-w-[430px] gap-2 rounded-t-[1.75rem] px-4 pb-5 pt-3">
-        {contactHref ? (
+      <div
+        className={cn(
+          "action-dock safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto grid w-full max-w-[430px] gap-2 rounded-t-[1.75rem] px-4 pb-5 pt-3",
+          actionCount === 3
+            ? "grid-cols-3"
+            : actionCount === 2
+              ? "grid-cols-2"
+              : "grid-cols-1",
+        )}
+      >
+        {contactActions.map((action) => (
           <Button
+            key={action.kind}
             asChild
             variant="secondary"
-            size="lg"
-            className="min-w-[9.75rem] gap-2 rounded-[1.15rem] px-4"
+            size={compactActionButtons ? "default" : "lg"}
+            className={cn(
+              "rounded-[1.15rem]",
+              compactActionButtons
+                ? "gap-1.5 px-2.5 text-[13px]"
+                : "gap-2 px-4",
+            )}
           >
             <a
-              href={contactHref}
-              target={contactType === "openchat" ? "_blank" : undefined}
-              rel={contactType === "openchat" ? "noreferrer" : undefined}
+              href={action.href}
+              rel={action.href.startsWith("http") ? "noreferrer" : undefined}
+              target={action.href.startsWith("http") ? "_blank" : undefined}
             >
-              {contactType === "phone" ? <Phone className="h-4 w-4" /> : <MessageCircleMore className="h-4 w-4" />}
-              {contactActionLabel}
+              {action.kind === "call" ? (
+                <Phone className="h-4 w-4" />
+              ) : (
+                <MessageCircleMore className="h-4 w-4" />
+              )}
+              {action.label}
             </a>
           </Button>
-        ) : null}
+        ))}
 
         {activeRequest ? (
-          <Button asChild className="flex-1 rounded-[1.15rem]" size="lg">
-            <Link href={`/activity?highlight=${activeRequest.id}`}>내 참여 보기</Link>
+          <Button
+            asChild
+            className={cn(
+              "rounded-[1.15rem]",
+              compactActionButtons ? "px-2.5 text-[13px]" : "flex-1",
+            )}
+            size={compactActionButtons ? "default" : "lg"}
+          >
+            <Link href={`/activity?highlight=${activeRequest.id}`}>
+              내 참여 보기
+            </Link>
           </Button>
         ) : isClosed ? (
-          <Button asChild className="flex-1 rounded-[1.15rem]" size="lg">
+          <Button
+            asChild
+            className={cn(
+              "rounded-[1.15rem]",
+              compactActionButtons ? "px-2.5 text-[13px]" : "flex-1",
+            )}
+            size={compactActionButtons ? "default" : "lg"}
+          >
             <Link href={backHref}>다른 공석 보기</Link>
           </Button>
         ) : (
           <Button
-            className="flex-1 rounded-[1.15rem]"
-            size="lg"
+            className={cn(
+              "rounded-[1.15rem]",
+              compactActionButtons ? "px-2.5 text-[13px]" : "flex-1",
+            )}
+            size={compactActionButtons ? "default" : "lg"}
             type="button"
             disabled={joinSubmitPending || !personalizationReady}
             onClick={handleSubmitJoin}
@@ -381,20 +505,36 @@ function MatchDetailBody({
                 참여 요청을 전송했어요
               </SheetTitle>
               <SheetDescription className="mt-2 text-sm leading-6 text-[#66736a]">
-                내 참여에서 상태를 볼 수 있고, 연락 정보가 있으면 바로 이어서 연락할 수 있습니다.
+                요청 상태는 내 참여에서 확인할 수 있고, 모집자가 수락하면 연락
+                정보를 볼 수 있어요.
               </SheetDescription>
             </div>
 
             <div className="surface-subcard rounded-[1.25rem] px-4 py-4">
               <p className="text-sm font-bold text-[#112317]">{match.title}</p>
-              <p className="mt-1 text-sm text-[#66736a]">
-                {formatStartAt(match.start_at)} · {formatTimeRange(match.start_at, match.duration_minutes)}
-              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[#66736a]">
+                <span>{successDateLabel}</span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  {formatTimeRange(match.start_at, match.duration_minutes)}
+                </span>
+                <span aria-hidden="true">·</span>
+                <span>참가비 {formatFee(match.fee)}</span>
+              </div>
             </div>
 
             <div className="flex gap-2">
-              <Button asChild className="flex-1" size="lg" variant="secondary">
-                <Link href={`/activity?highlight=${successRequestId ?? match.id}`}>내 참여 보기</Link>
+              <Button
+                asChild
+                className="flex-1 !bg-[#edf2ea] !text-[#173021] ring-1 ring-[#173021]/10 shadow-[0_12px_24px_rgba(17,35,23,0.06)] hover:!bg-[#e5ecdf]"
+                size="lg"
+                variant="secondary"
+              >
+                <Link
+                  href={`/activity?highlight=${successRequestId ?? match.id}`}
+                >
+                  내 참여 보기
+                </Link>
               </Button>
               {contactHref ? (
                 <Button asChild className="flex-1" size="lg">
@@ -403,11 +543,16 @@ function MatchDetailBody({
                     target={contactType === "openchat" ? "_blank" : undefined}
                     rel={contactType === "openchat" ? "noreferrer" : undefined}
                   >
-                    {contactActionLabel}
+                    {contactActions[0]?.label}
                   </a>
                 </Button>
               ) : (
-                <Button className="flex-1" size="lg" type="button" onClick={() => setSuccessSheetOpen(false)}>
+                <Button
+                  className="flex-1"
+                  size="lg"
+                  type="button"
+                  onClick={() => setSuccessSheetOpen(false)}
+                >
                   확인
                 </Button>
               )}
@@ -424,7 +569,9 @@ function MatchDetailBody({
         description="닉네임, 연령대, 실력만 입력하면 바로 요청을 이어서 보낼 수 있습니다."
         confirmLabel="저장하고 참여 요청하기"
         onCompleted={(profile) => {
-          setState((currentState) => mergePersonalizedState(currentState, profile, null));
+          setState((currentState) =>
+            mergePersonalizedState(currentState, profile, null),
+          );
 
           if (submitAfterProfile) {
             setSubmitAfterProfile(false);

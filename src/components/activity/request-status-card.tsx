@@ -5,12 +5,17 @@ import { Button } from "@/components/ui/button";
 import { getContactTypeLabel } from "@/lib/contact";
 import { getRegionLabel } from "@/lib/constants";
 import {
-  getParticipationContactLink,
+  getParticipationContactActions,
   getParticipationStatusLabel,
   getParticipationStatusTone,
   getParticipationSummary,
 } from "@/lib/demo-state/selectors";
-import type { DemoAppState, Match, ParticipationRequest, Profile } from "@/lib/types";
+import type {
+  DemoAppState,
+  Match,
+  ParticipationRequest,
+  Profile,
+} from "@/lib/types";
 
 function formatCreatedAt(date: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -39,13 +44,12 @@ export function RequestStatusCard({
   onWithdraw?: () => void;
   withdrawPending?: boolean;
 }) {
-  const contactLink = getParticipationContactLink(state, request);
+  const contactActions = getParticipationContactActions(state, request);
   const canWithdraw = request.status === "pending";
   const contactFlowLabel =
     request.entry_channel === "request_only"
       ? "앱에서 조율"
       : `${getContactTypeLabel(request.entry_channel)} 연락`;
-  const opensExternalContact = Boolean(contactLink?.href.startsWith("http"));
 
   return (
     <article
@@ -55,9 +59,12 @@ export function RequestStatusCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold tracking-[-0.03em] text-[#112317]">{match.title}</h3>
+          <h3 className="text-lg font-bold tracking-[-0.03em] text-[#112317]">
+            {match.title}
+          </h3>
           <p className="mt-1 text-sm text-muted">
-            {getParticipationSummary(request)} · {formatCreatedAt(request.created_at)}
+            {getParticipationSummary(request)} ·{" "}
+            {formatCreatedAt(request.created_at)}
           </p>
         </div>
         <Badge variant={getParticipationStatusTone(request.status)}>
@@ -78,23 +85,25 @@ export function RequestStatusCard({
         {request.host_note ? <p>호스트 메모: {request.host_note}</p> : null}
       </div>
 
-      {contactLink || canWithdraw ? (
+      {contactActions.length > 0 || canWithdraw ? (
         <div className="mt-4 flex gap-1.5">
-          {contactLink ? (
+          {contactActions.map((action) => (
             <Button
+              key={action.kind}
               asChild
-              className="h-9 flex-1 rounded-[0.95rem] px-3 text-[13px] shadow-[0_12px_24px_rgba(6,21,12,0.14)]"
+              className="h-9 flex-1 rounded-[0.95rem] px-3 text-[13px]"
               size="sm"
+              variant="secondary"
             >
               <a
-                href={contactLink.href}
-                rel={opensExternalContact ? "noreferrer" : undefined}
-                target={opensExternalContact ? "_blank" : undefined}
+                href={action.href}
+                rel={action.href.startsWith("http") ? "noreferrer" : undefined}
+                target={action.href.startsWith("http") ? "_blank" : undefined}
               >
-                {contactLink.label}
+                {action.label}
               </a>
             </Button>
-          ) : null}
+          ))}
           {canWithdraw ? (
             <Button
               className="h-9 flex-1 rounded-[0.95rem] px-3 text-[13px]"

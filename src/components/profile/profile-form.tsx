@@ -34,7 +34,8 @@ type SaveProfileInput = {
   default_contact_type: DirectContactType;
 };
 
-const PROFILE_PANEL_CLASS = "surface-card rounded-[1.8rem] p-5 ring-1 ring-white/55";
+const PROFILE_PANEL_CLASS =
+  "surface-card rounded-[1.8rem] p-5 ring-1 ring-white/55";
 const PROFILE_LABEL_CLASS =
   "text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]";
 const PROFILE_SEGMENT_BASE =
@@ -59,24 +60,36 @@ function ProfileEditor({
   const [resolvedProfile, setResolvedProfile] = useState(profile);
   const [nickname, setNickname] = useState(profile?.nickname ?? "");
   const [ageBand, setAgeBand] = useState<number>(profile?.age ?? 20);
-  const [skillLevel, setSkillLevel] = useState<Profile["skill_level"]>(profile?.skill_level ?? "mid");
+  const [skillLevel, setSkillLevel] = useState<Profile["skill_level"]>(
+    profile?.skill_level ?? "mid",
+  );
   const [preferredSport, setPreferredSport] = useState<SportType | null>(
     profile?.preferred_sport ?? "futsal",
   );
-  const [openChatLink, setOpenChatLink] = useState(profile?.open_chat_link ?? "");
-  const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number ?? "");
-  const [defaultContactType, setDefaultContactType] = useState<DirectContactType>(
-    profile?.default_contact_type ??
-      (profile?.open_chat_link ? "openchat" : profile?.phone_number ? "phone" : "openchat"),
+  const [openChatLink, setOpenChatLink] = useState(
+    profile?.open_chat_link ?? "",
   );
+  const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number ?? "");
+  const [defaultContactType, setDefaultContactType] =
+    useState<DirectContactType>(
+      profile?.default_contact_type ??
+        (profile?.open_chat_link
+          ? "openchat"
+          : profile?.phone_number
+            ? "phone"
+            : "openchat"),
+    );
   const [isSaving, setIsSaving] = useState(false);
   const [localFlash, setLocalFlash] = useState<"saved" | undefined>(undefined);
-  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(undefined);
+  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(
+    undefined,
+  );
   const [error, setError] = useState("");
   const saveLockRef = useRef(false);
   const flashParam = searchParams.get("flash");
   const flashAt = searchParams.get("flashAt");
-  const resolvedFlash = flashParam === "saved" ? "saved" : localFlash ?? flash;
+  const resolvedFlash =
+    flashParam === "saved" ? "saved" : (localFlash ?? flash);
 
   useEffect(() => {
     setResolvedProfile(profile);
@@ -88,7 +101,11 @@ function ProfileEditor({
     setPhoneNumber(profile?.phone_number ?? "");
     setDefaultContactType(
       profile?.default_contact_type ??
-        (profile?.open_chat_link ? "openchat" : profile?.phone_number ? "phone" : "openchat"),
+        (profile?.open_chat_link
+          ? "openchat"
+          : profile?.phone_number
+            ? "phone"
+            : "openchat"),
     );
   }, [profile]);
 
@@ -127,10 +144,16 @@ function ProfileEditor({
       setLocalFlashAt(String(nextFlashAt));
 
       if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", `/profile?flash=saved&flashAt=${nextFlashAt}`);
+        window.history.replaceState(
+          null,
+          "",
+          `/profile?flash=saved&flashAt=${nextFlashAt}`,
+        );
       }
     } catch (saveError) {
-      setError(getUserFacingErrorMessage(saveError, "프로필을 저장하지 못했습니다."));
+      setError(
+        getUserFacingErrorMessage(saveError, "프로필을 저장하지 못했습니다."),
+      );
     } finally {
       saveLockRef.current = false;
       setIsSaving(false);
@@ -141,12 +164,6 @@ function ProfileEditor({
     <div className="space-y-5">
       <ScreenHeader href={returnTo ?? "/home"} ariaLabel="홈으로 돌아가기" />
 
-      <FlashBanner
-        key={localFlashAt ?? flashAt ?? resolvedFlash ?? "profile-flash"}
-        flash={resolvedFlash}
-        placement="cta"
-        durationMs={2800}
-      />
       {error ? (
         <p className="rounded-[1.2rem] bg-[#f2ece8] px-4 py-3 text-sm font-semibold text-[#6b544e]">
           {error}
@@ -158,16 +175,15 @@ function ProfileEditor({
       <section className={PROFILE_PANEL_CLASS}>
         <div className="grid gap-5">
           <label className="space-y-2">
-            <span className={PROFILE_LABEL_CLASS}>
-              닉네임
-            </span>
-            <Input value={nickname} onChange={(event) => setNickname(event.target.value)} />
+            <span className={PROFILE_LABEL_CLASS}>닉네임</span>
+            <Input
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+            />
           </label>
 
           <div className="space-y-2">
-            <span className={PROFILE_LABEL_CLASS}>
-              선호 종목
-            </span>
+            <span className={PROFILE_LABEL_CLASS}>선호 종목</span>
             <div className="grid grid-cols-2 gap-2">
               {SPORT_OPTIONS.map((sport) => (
                 <button
@@ -188,9 +204,7 @@ function ProfileEditor({
 
           <div className="grid gap-3">
             <div className="space-y-2">
-              <span className={PROFILE_LABEL_CLASS}>
-                연령대
-              </span>
+              <span className={PROFILE_LABEL_CLASS}>연령대</span>
               <div className="grid grid-cols-3 gap-2">
                 {AGE_BANDS.map((band) => (
                   <button
@@ -210,9 +224,7 @@ function ProfileEditor({
             </div>
 
             <div className="space-y-2">
-              <span className={PROFILE_LABEL_CLASS}>
-                SKILL LEVEL
-              </span>
+              <span className={PROFILE_LABEL_CLASS}>SKILL LEVEL</span>
               <div className="grid grid-cols-4 gap-2">
                 {SKILL_LEVELS.map((skill) => (
                   <button
@@ -233,9 +245,7 @@ function ProfileEditor({
           </div>
 
           <div className="space-y-2">
-            <span className={PROFILE_LABEL_CLASS}>
-              기본 연락 방식
-            </span>
+            <span className={PROFILE_LABEL_CLASS}>기본 연락 방식</span>
             <div className="grid grid-cols-2 gap-2">
               {DIRECT_CONTACT_OPTIONS.map((option) => (
                 <button
@@ -255,9 +265,7 @@ function ProfileEditor({
           </div>
 
           <label className="space-y-2">
-            <span className={PROFILE_LABEL_CLASS}>
-              오픈채팅 링크
-            </span>
+            <span className={PROFILE_LABEL_CLASS}>오픈채팅 링크</span>
             <Input
               value={openChatLink}
               onChange={(event) => setOpenChatLink(event.target.value)}
@@ -266,26 +274,44 @@ function ProfileEditor({
           </label>
 
           <label className="space-y-2">
-            <span className={PROFILE_LABEL_CLASS}>
-              휴대폰 번호
-            </span>
+            <span className={PROFILE_LABEL_CLASS}>휴대폰 번호</span>
             <Input
               value={phoneNumber}
-              onChange={(event) => setPhoneNumber(event.target.value.replace(/[^\d]/g, ""))}
+              onChange={(event) =>
+                setPhoneNumber(event.target.value.replace(/[^\d]/g, ""))
+              }
               inputMode="tel"
               placeholder="01012345678"
             />
           </label>
 
-          <div className="flex gap-2">
-            <Button className="flex-1 rounded-[1.15rem]" type="button" onClick={handleSave} disabled={isSaving}>
-              {isSaving ? "저장 중..." : "저장하기"}
-            </Button>
-            {onReset ? (
-              <Button className="flex-1 rounded-[1.15rem]" type="button" variant="secondary" onClick={onReset}>
-                데모 초기화
+          <div className="space-y-3">
+            <FlashBanner
+              key={localFlashAt ?? flashAt ?? resolvedFlash ?? "profile-flash"}
+              flash={resolvedFlash}
+              placement="cta"
+              durationMs={2800}
+            />
+            <div className="flex gap-2">
+              <Button
+                className="flex-1 rounded-[1.15rem]"
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? "저장 중..." : "저장하기"}
               </Button>
-            ) : null}
+              {onReset ? (
+                <Button
+                  className="flex-1 rounded-[1.15rem]"
+                  type="button"
+                  variant="secondary"
+                  onClick={onReset}
+                >
+                  데모 초기화
+                </Button>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>
@@ -293,7 +319,13 @@ function ProfileEditor({
   );
 }
 
-function DemoProfileForm({ returnTo, flash }: { returnTo?: string; flash?: "saved" }) {
+function DemoProfileForm({
+  returnTo,
+  flash,
+}: {
+  returnTo?: string;
+  flash?: "saved";
+}) {
   const { currentProfile, actions } = useDemoApp();
 
   return (
@@ -333,7 +365,8 @@ export function ProfileForm({
           return saveProfile({
             nickname: input.nickname.trim(),
             age: input.age,
-            preferred_mode: (initialProfile ?? shellProfile)?.preferred_mode ?? "solo",
+            preferred_mode:
+              (initialProfile ?? shellProfile)?.preferred_mode ?? "solo",
             preferred_sport: input.preferred_sport,
             preferred_regions: input.preferred_regions,
             skill_level: input.skill_level,

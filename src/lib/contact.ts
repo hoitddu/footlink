@@ -1,11 +1,19 @@
 import type { ContactType, DirectContactType, Profile } from "@/lib/types";
 
+export type ContactActionKind = "call" | "sms" | "openchat";
+
+export type ContactAction = {
+  href: string;
+  label: string;
+  kind: ContactActionKind;
+};
+
 export const DIRECT_CONTACT_OPTIONS: Array<{
   value: DirectContactType;
   label: string;
 }> = [
-  { value: "openchat", label: "오픈채팅" },
-  { value: "phone", label: "휴대폰" },
+  { value: "openchat", label: "\uC624\uD508\uCC44\uD305" },
+  { value: "phone", label: "\uD734\uB300\uD3F0" },
 ];
 
 export function normalizePhoneNumber(value: string) {
@@ -38,7 +46,10 @@ export function normalizeContactValue(type: ContactType, value: string) {
   return value.trim();
 }
 
-export function resolveContactType(type: ContactType, value?: string | null): ContactType {
+export function resolveContactType(
+  type: ContactType,
+  value?: string | null,
+): ContactType {
   if (type !== "request_only") {
     return type;
   }
@@ -61,58 +72,84 @@ export function resolveContactType(type: ContactType, value?: string | null): Co
 }
 
 export function buildContactHref(type: ContactType, value?: string | null) {
+  return buildContactActions(type, value)[0]?.href ?? null;
+}
+
+export function buildContactActions(
+  type: ContactType,
+  value?: string | null,
+): ContactAction[] {
   const normalized = normalizeContactValue(type, value ?? "");
 
   if (!normalized) {
-    return null;
+    return [];
   }
 
   if (type === "phone") {
-    return `tel:${normalized}`;
+    return [
+      {
+        href: `tel:${normalized}`,
+        label: "\uC804\uD654\uD558\uAE30",
+        kind: "call",
+      },
+      {
+        href: `sms:${normalized}`,
+        label: "\uBB38\uC790 \uBCF4\uB0B4\uAE30",
+        kind: "sms",
+      },
+    ];
   }
 
   if (type === "openchat") {
-    return normalized;
+    return [
+      {
+        href: normalized,
+        label: "\uC624\uD508\uCC44\uD305 \uC5F4\uAE30",
+        kind: "openchat",
+      },
+    ];
   }
 
-  return null;
+  return [];
 }
 
 export function getContactTypeLabel(type: ContactType) {
   switch (type) {
     case "phone":
-      return "전화";
+      return "\uC804\uD654/\uBB38\uC790";
     case "openchat":
-      return "오픈채팅";
+      return "\uC624\uD508\uCC44\uD305";
     default:
-      return "앱에서 조율";
+      return "\uC571\uC5D0\uC11C \uC870\uC728";
   }
 }
 
 export function getContactBadgeLabel(type: ContactType) {
   switch (type) {
     case "phone":
-      return "전화 가능";
+      return "\uC804\uD654\u00B7\uBB38\uC790 \uAC00\uB2A5";
     case "openchat":
-      return "오픈채팅 가능";
+      return "\uC624\uD508\uCC44\uD305 \uAC00\uB2A5";
     default:
-      return "앱에서 조율";
+      return "\uC571\uC5D0\uC11C \uC870\uC728";
   }
 }
 
 export function getContactActionLabel(type: ContactType) {
   switch (type) {
     case "phone":
-      return "전화하기";
+      return "\uC804\uD654\uD558\uAE30";
     case "openchat":
-      return "오픈채팅 열기";
+      return "\uC624\uD508\uCC44\uD305 \uC5F4\uAE30";
     default:
-      return "연락하기";
+      return "\uC5F0\uB77D\uD558\uAE30";
   }
 }
 
 export function getContactFieldLabel(type: DirectContactType) {
-  return type === "phone" ? "휴대폰 번호" : "오픈채팅 링크";
+  return type === "phone"
+    ? "\uD734\uB300\uD3F0 \uBC88\uD638"
+    : "\uC624\uD508\uCC44\uD305 \uB9C1\uD06C";
 }
 
 export function getContactFieldPlaceholder(type: DirectContactType) {
@@ -122,15 +159,17 @@ export function getContactFieldPlaceholder(type: DirectContactType) {
 export function getContactDescription(type: ContactType) {
   switch (type) {
     case "phone":
-      return "참여가 수락되면 바로 전화할 수 있습니다.";
+      return "\uCC38\uC5EC \uC694\uCCAD\uC774 \uC218\uB77D\uB418\uBA74 \uC804\uD654\uB098 \uBB38\uC790\uB85C \uBC14\uB85C \uC5F0\uB77D\uD560 \uC218 \uC788\uC5B4\uC694.";
     case "openchat":
-      return "참여가 수락되면 바로 오픈채팅으로 이어집니다.";
+      return "\uCC38\uC5EC \uC694\uCCAD\uC774 \uC218\uB77D\uB418\uBA74 \uC624\uD508\uCC44\uD305\uC73C\uB85C \uBC14\uB85C \uC5F0\uACB0\uD560 \uC218 \uC788\uC5B4\uC694.";
     default:
-      return "앱에서 요청을 보내면 호스트가 확인 후 상태를 업데이트합니다.";
+      return "\uC571\uC5D0\uC11C \uC694\uCCAD\uC744 \uBCF4\uB0B4\uBA74 \uD638\uC2A4\uD2B8\uAC00 \uD655\uC778 \uD6C4 \uC0C1\uD0DC\uB97C \uC5C5\uB370\uC774\uD2B8\uD569\uB2C8\uB2E4.";
   }
 }
 
-export function getProfileDefaultContactType(profile?: Profile | null): DirectContactType {
+export function getProfileDefaultContactType(
+  profile?: Profile | null,
+): DirectContactType {
   if (profile?.default_contact_type === "phone" && profile.phone_number) {
     return "phone";
   }
@@ -150,7 +189,10 @@ export function getProfileDefaultContactType(profile?: Profile | null): DirectCo
   return "openchat";
 }
 
-export function getProfileContactValue(profile: Profile | null | undefined, type: DirectContactType) {
+export function getProfileContactValue(
+  profile: Profile | null | undefined,
+  type: DirectContactType,
+) {
   if (type === "phone") {
     return profile?.phone_number ?? "";
   }

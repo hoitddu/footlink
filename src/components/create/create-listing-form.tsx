@@ -2,7 +2,14 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, ChevronRight, Clock3, MapPin, MessageCircleMore, Phone } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  MapPin,
+  MessageCircleMore,
+  Phone,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { ensureAnonymousSessionAction } from "@/app/actions/auth";
@@ -12,7 +19,12 @@ import { FlashBanner } from "@/components/app/flash-banner";
 import { ScreenHeader } from "@/components/app/screen-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import type { AppDataSource } from "@/lib/app-config";
 import {
@@ -23,7 +35,11 @@ import {
   getProfileDefaultContactType,
   normalizePhoneNumber,
 } from "@/lib/contact";
-import { getMatchPositionLabel, getMatchPositionOptions, SPORT_OPTIONS } from "@/lib/constants";
+import {
+  getMatchPositionLabel,
+  getMatchPositionOptions,
+  SPORT_OPTIONS,
+} from "@/lib/constants";
 import { getUserFacingErrorMessage, requiresProfileSetup } from "@/lib/errors";
 import { useCurrentProfile } from "@/lib/current-profile-context";
 import { useDemoApp } from "@/lib/demo-state/provider";
@@ -59,7 +75,9 @@ const ProfileCompletionSheet = dynamic(
 // critical path.
 const KakaoPlacePicker = dynamic(
   () =>
-    import("@/components/create/kakao-place-picker").then((module) => module.KakaoPlacePicker),
+    import("@/components/create/kakao-place-picker").then(
+      (module) => module.KakaoPlacePicker,
+    ),
   { loading: () => null, ssr: false },
 );
 
@@ -70,7 +88,8 @@ const DURATION_MINUTE_OPTIONS = [0, 30] as const;
 const FUTSAL_FORMAT_OPTIONS: FutsalFormatOption[] = ["4vs4", "5vs5", "6vs6"];
 const WHEEL_ITEM_HEIGHT = 44;
 const DEFAULT_START_BUFFER_MINUTES = 30;
-const FORM_PANEL_CLASS = "surface-card rounded-[1.65rem] p-4 ring-1 ring-white/55";
+const FORM_PANEL_CLASS =
+  "surface-card rounded-[1.65rem] p-4 ring-1 ring-white/55";
 const FORM_LABEL_CLASS =
   "text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]";
 const SEGMENT_BUTTON_BASE =
@@ -126,7 +145,14 @@ function isPlaceInSuwon(place: PlaceSearchResult) {
     return true;
   }
 
-  return haversineDistance(SUWON_CENTER.lat, SUWON_CENTER.lng, place.lat, place.lng) <= 18;
+  return (
+    haversineDistance(
+      SUWON_CENTER.lat,
+      SUWON_CENTER.lng,
+      place.lat,
+      place.lng,
+    ) <= 18
+  );
 }
 
 function splitDuration(durationMinutes: number) {
@@ -137,7 +163,11 @@ function splitDuration(durationMinutes: number) {
 }
 
 function snapDurationMinutes(minutes: number) {
-  if (DURATION_MINUTE_OPTIONS.includes(minutes as (typeof DURATION_MINUTE_OPTIONS)[number])) {
+  if (
+    DURATION_MINUTE_OPTIONS.includes(
+      minutes as (typeof DURATION_MINUTE_OPTIONS)[number],
+    )
+  ) {
     return minutes;
   }
 
@@ -269,7 +299,13 @@ function DurationWheelColumn({
       return;
     }
 
-    const index = Math.max(0, Math.min(options.length - 1, Math.round(container.scrollTop / WHEEL_ITEM_HEIGHT)));
+    const index = Math.max(
+      0,
+      Math.min(
+        options.length - 1,
+        Math.round(container.scrollTop / WHEEL_ITEM_HEIGHT),
+      ),
+    );
     const nextValue = options[index];
 
     container.scrollTo({
@@ -284,7 +320,9 @@ function DurationWheelColumn({
 
   return (
     <div className="relative flex-1">
-      <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]">{label}</p>
+      <p className="mb-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]">
+        {label}
+      </p>
       <div className="surface-subcard pointer-events-none absolute inset-x-2 top-[4.15rem] h-11 rounded-[0.95rem]" />
       <div
         ref={containerRef}
@@ -331,7 +369,9 @@ function CreateListingFormBody({
   const [defaultSchedule] = useState(getDefaultSchedule);
   // Seed from the profile the layout/server already fetched. Local state lets
   // ProfileCompletionSheet patch the viewer without forcing a full refresh.
-  const [resolvedProfile, setResolvedProfile] = useState<Profile | null>(currentProfile ?? null);
+  const [resolvedProfile, setResolvedProfile] = useState<Profile | null>(
+    currentProfile ?? null,
+  );
   const resolvedProfileId = resolvedProfile?.id ?? null;
   const [sport, setSport] = useState<SportType>("futsal");
   const [neededCount, setNeededCount] = useState(1);
@@ -345,7 +385,9 @@ function CreateListingFormBody({
   const [futsalFormat, setFutsalFormat] = useState<FutsalFormatOption>("5vs5");
   const [positionTargets, setPositionTargets] = useState<MatchPosition[]>([]);
   const [placeQuery, setPlaceQuery] = useState("");
-  const [selectedPlace, setSelectedPlace] = useState<PlaceSearchResult | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<PlaceSearchResult | null>(
+    null,
+  );
   const [isPlacePickerOpen, setIsPlacePickerOpen] = useState(false);
   const [fee, setFee] = useState(10000);
   const [contactType, setContactType] = useState<DirectContactType>("openchat");
@@ -353,8 +395,12 @@ function CreateListingFormBody({
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [localFlash, setLocalFlash] = useState<"created" | undefined>(undefined);
-  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(undefined);
+  const [localFlash, setLocalFlash] = useState<"created" | undefined>(
+    undefined,
+  );
+  const [localFlashAt, setLocalFlashAt] = useState<string | undefined>(
+    undefined,
+  );
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [submitAfterProfile, setSubmitAfterProfile] = useState(false);
   const submitLockRef = useRef(false);
@@ -403,7 +449,9 @@ function CreateListingFormBody({
       return;
     }
 
-    setPositionTargets((current) => current.filter((position) => position === "goalkeeper"));
+    setPositionTargets((current) =>
+      current.filter((position) => position === "goalkeeper"),
+    );
   }, [sport]);
 
   useEffect(() => {
@@ -420,7 +468,9 @@ function CreateListingFormBody({
     };
   }, []);
 
-  function applyQuickDuration(duration: (typeof QUICK_DURATION_OPTIONS)[number]) {
+  function applyQuickDuration(
+    duration: (typeof QUICK_DURATION_OPTIONS)[number],
+  ) {
     setDurationMinutes(duration);
     setIsCustomDuration(false);
   }
@@ -433,7 +483,11 @@ function CreateListingFormBody({
     }
 
     setDurationMinutes(nextDuration);
-    setIsCustomDuration(!QUICK_DURATION_OPTIONS.includes(nextDuration as (typeof QUICK_DURATION_OPTIONS)[number]));
+    setIsCustomDuration(
+      !QUICK_DURATION_OPTIONS.includes(
+        nextDuration as (typeof QUICK_DURATION_OPTIONS)[number],
+      ),
+    );
     setDurationPickerOpen(false);
   }
 
@@ -482,7 +536,9 @@ function CreateListingFormBody({
     }
 
     const normalizedContactValue =
-      contactType === "phone" ? normalizePhoneNumber(contactValue) : contactValue.trim();
+      contactType === "phone"
+        ? normalizePhoneNumber(contactValue)
+        : contactValue.trim();
 
     if (!normalizedContactValue) {
       setError("연락 정보를 입력해 주세요.");
@@ -528,7 +584,9 @@ function CreateListingFormBody({
       setLocalFlashAt(String(nextFlashAt));
 
       redirectTimerRef.current = window.setTimeout(() => {
-        router.push(`/activity?tab=listings&highlight=${createdMatch.id}&flash=created&flashAt=${nextFlashAt}`);
+        router.push(
+          `/activity?tab=listings&highlight=${createdMatch.id}`,
+        );
       }, 1200);
     } catch (createError) {
       if (requiresProfileSetup(createError)) {
@@ -536,7 +594,10 @@ function CreateListingFormBody({
         setProfileSheetOpen(true);
       } else {
         setError(
-          getUserFacingErrorMessage(createError, "공석을 등록하지 못했습니다. 잠시 후 다시 시도해 주세요."),
+          getUserFacingErrorMessage(
+            createError,
+            "공석을 등록하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+          ),
         );
       }
       submitLockRef.current = false;
@@ -548,13 +609,6 @@ function CreateListingFormBody({
   return (
     <div className="space-y-4 pb-[8.9rem]">
       <ScreenHeader href="/home" ariaLabel="홈으로 돌아가기" />
-      <FlashBanner
-        key={localFlashAt ?? "create-flash"}
-        flash={localFlash}
-        placement="cta"
-        durationMs={2800}
-      />
-
       <section className={FORM_PANEL_CLASS}>
         <div className="grid grid-cols-2 gap-2">
           {SPORT_OPTIONS.map((option) => (
@@ -564,7 +618,9 @@ function CreateListingFormBody({
               onClick={() => setSport(option.value)}
               className={cn(
                 SEGMENT_BUTTON_BASE,
-                sport === option.value ? "kinetic-gradient text-white" : SEGMENT_BUTTON_INACTIVE,
+                sport === option.value
+                  ? "kinetic-gradient text-white"
+                  : SEGMENT_BUTTON_INACTIVE,
               )}
             >
               {option.label}
@@ -583,7 +639,9 @@ function CreateListingFormBody({
                   className={cn(
                     "min-w-[4.7rem]",
                     CHIP_BUTTON_BASE,
-                    futsalFormat === option ? "kinetic-gradient text-white" : CHIP_BUTTON_INACTIVE,
+                    futsalFormat === option
+                      ? "kinetic-gradient text-white"
+                      : CHIP_BUTTON_INACTIVE,
                   )}
                 >
                   {formatMatchFormatLabel(option)}
@@ -610,11 +668,15 @@ function CreateListingFormBody({
         </div>
 
         <div className="mt-2.5">
-          <p className="mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]">모집 포지션</p>
+          <p className="mb-1.5 pl-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#6d786f]">
+            모집 포지션
+          </p>
           <div className="surface-subcard rounded-[1.2rem] px-2.5 py-2.5">
             {sport === "futsal" ? (
               <div className="flex items-center justify-between gap-3 rounded-[0.9rem] px-1 py-0.5">
-                <p className="text-[12px] font-medium text-[#66736a]">골키퍼를 모집할 경우에 선택해 주세요.</p>
+                <p className="text-[12px] font-medium text-[#66736a]">
+                  골키퍼를 모집할 경우에 선택해 주세요.
+                </p>
                 <button
                   type="button"
                   onClick={() => togglePositionTarget("goalkeeper")}
@@ -642,7 +704,9 @@ function CreateListingFormBody({
                       className={cn(
                         "min-w-0 whitespace-nowrap px-2 text-[11px]",
                         CHIP_BUTTON_BASE,
-                        active ? "kinetic-gradient text-white" : CHIP_BUTTON_INACTIVE,
+                        active
+                          ? "kinetic-gradient text-white"
+                          : CHIP_BUTTON_INACTIVE,
                       )}
                     >
                       {getMatchPositionLabel(option.value)}
@@ -656,40 +720,43 @@ function CreateListingFormBody({
       </section>
 
       <section className={FORM_PANEL_CLASS}>
-          <div className="grid gap-3">
-            <div className="grid grid-cols-2 gap-2">
-              <label className="surface-subcard group relative flex h-12 min-w-0 cursor-pointer items-center rounded-[1rem] pl-10 pr-10 text-[13px] font-semibold tracking-[-0.02em] text-[#112317] transition focus-within:bg-white/96 focus-within:ring-4 focus-within:ring-[#c7f36b]/18">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
-                <span className="truncate">{formatDisplayDate(date)}</span>
-                <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(event) => setDate(event.target.value)}
-                  min={minimumDate}
-                  aria-label="경기 날짜 선택"
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                />
-              </label>
-              <label className="surface-subcard group relative flex h-12 min-w-0 cursor-pointer items-center rounded-[1rem] px-4 pr-10 text-[13px] font-semibold tracking-[-0.02em] text-[#112317] transition focus-within:bg-white/96 focus-within:ring-4 focus-within:ring-[#c7f36b]/18">
-                <span className="truncate">{formatDisplayTime(time)}</span>
-                <Clock3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
-                <input
-                  type="time"
-                  value={time}
-                  onChange={(event) => setTime(event.target.value)}
-                  min={minimumTime}
-                  aria-label="경기 시작 시간 선택"
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                />
-              </label>
-            </div>
+        <div className="grid gap-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="surface-subcard group relative flex h-12 min-w-0 cursor-pointer items-center rounded-[1rem] pl-10 pr-10 text-[13px] font-semibold tracking-[-0.02em] text-[#112317] transition focus-within:bg-white/96 focus-within:ring-4 focus-within:ring-[#c7f36b]/18">
+              <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+              <span className="truncate">{formatDisplayDate(date)}</span>
+              <CalendarDays className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+              <input
+                type="date"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+                min={minimumDate}
+                aria-label="경기 날짜 선택"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </label>
+            <label className="surface-subcard group relative flex h-12 min-w-0 cursor-pointer items-center rounded-[1rem] px-4 pr-10 text-[13px] font-semibold tracking-[-0.02em] text-[#112317] transition focus-within:bg-white/96 focus-within:ring-4 focus-within:ring-[#c7f36b]/18">
+              <span className="truncate">{formatDisplayTime(time)}</span>
+              <Clock3 className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
+              <input
+                type="time"
+                value={time}
+                onChange={(event) => setTime(event.target.value)}
+                min={minimumTime}
+                aria-label="경기 시작 시간 선택"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </label>
+          </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <span className={FORM_LABEL_CLASS}>경기시간</span>
               <p className="text-[11px] font-semibold text-[#66736a]">
-                {formatTimeRange(buildKoreaDateTime(date, time), durationMinutes)}
+                {formatTimeRange(
+                  buildKoreaDateTime(date, time),
+                  durationMinutes,
+                )}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -713,10 +780,14 @@ function CreateListingFormBody({
                 onClick={() => setDurationPickerOpen(true)}
                 className={cn(
                   CHIP_BUTTON_BASE,
-                  isCustomDuration ? "kinetic-gradient text-white" : "surface-subcard text-[#223128]",
+                  isCustomDuration
+                    ? "kinetic-gradient text-white"
+                    : "surface-subcard text-[#223128]",
                 )}
               >
-                {isCustomDuration ? formatDurationMinutes(durationMinutes) : "직접입력"}
+                {isCustomDuration
+                  ? formatDurationMinutes(durationMinutes)
+                  : "직접입력"}
               </button>
             </div>
           </div>
@@ -739,7 +810,9 @@ function CreateListingFormBody({
                   {selectedPlace?.name ?? "지도에서 경기장 찾기"}
                 </p>
               </div>
-              <MapPin className={`h-4 w-4 shrink-0 ${selectedPlace ? "text-[#112317]" : "text-[#66736a]"}`} />
+              <MapPin
+                className={`h-4 w-4 shrink-0 ${selectedPlace ? "text-[#112317]" : "text-[#66736a]"}`}
+              />
             </button>
           </div>
 
@@ -754,7 +827,9 @@ function CreateListingFormBody({
                   className={cn(
                     SEGMENT_BUTTON_BASE,
                     "min-h-11 text-[13px]",
-                    contactType === option.value ? "kinetic-gradient text-white" : SEGMENT_BUTTON_INACTIVE,
+                    contactType === option.value
+                      ? "kinetic-gradient text-white"
+                      : SEGMENT_BUTTON_INACTIVE,
                   )}
                 >
                   {option.label}
@@ -769,7 +844,11 @@ function CreateListingFormBody({
                 <MessageCircleMore className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#66736a]" />
               )}
               <Input
-                value={contactType === "phone" ? normalizePhoneNumber(contactValue) : contactValue}
+                value={
+                  contactType === "phone"
+                    ? normalizePhoneNumber(contactValue)
+                    : contactValue
+                }
                 onChange={(event) =>
                   setContactValue(
                     contactType === "phone"
@@ -784,7 +863,8 @@ function CreateListingFormBody({
             </div>
 
             <p className="text-[11px] leading-5 text-[#66736a]">
-              {getContactFieldLabel(contactType)}는 프로필에 저장한 기본값을 불러와 바로 쓸 수 있습니다.
+              {getContactFieldLabel(contactType)}는 프로필에 저장한 기본값을
+              불러와 바로 쓸 수 있습니다.
             </p>
           </div>
 
@@ -807,10 +887,24 @@ function CreateListingFormBody({
       ) : null}
 
       <div className="action-dock safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] rounded-t-[1.75rem] px-4 pb-5 pt-3">
-        <Button className="w-full gap-2.5 rounded-[1.15rem] shadow-[0_20px_38px_rgba(6,21,12,0.16)]" size="lg" type="button" disabled={isSubmitting} onClick={submitListing}>
-          <span>{isSubmitting ? "등록 중..." : "용병 모집하기"}</span>
-          <ChevronRight className="h-5 w-5" />
-        </Button>
+        <div className="space-y-3">
+          <FlashBanner
+            key={localFlashAt ?? "create-flash"}
+            flash={localFlash}
+            placement="cta"
+            durationMs={2800}
+          />
+          <Button
+            className="w-full gap-2.5 rounded-[1.15rem] shadow-[0_20px_38px_rgba(6,21,12,0.16)]"
+            size="lg"
+            type="button"
+            disabled={isSubmitting}
+            onClick={submitListing}
+          >
+            <span>{isSubmitting ? "등록 중..." : "용병 모집하기"}</span>
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {isPlacePickerOpen ? (
@@ -833,7 +927,8 @@ function CreateListingFormBody({
                 경기 시간을 직접 고르세요
               </SheetTitle>
               <SheetDescription className="mt-2 text-sm leading-6 text-[#66736a]">
-                시간과 분을 스크롤해서 선택하면 종료 예정 시각까지 바로 계산됩니다.
+                시간과 분을 스크롤해서 선택하면 종료 예정 시각까지 바로
+                계산됩니다.
               </SheetDescription>
             </div>
 
@@ -858,10 +953,16 @@ function CreateListingFormBody({
 
             <div className="surface-subcard rounded-[1.25rem] px-4 py-4">
               <p className="text-[13px] font-bold text-[#112317]">
-                총 {formatDurationMinutes(durationPickerHours * 60 + durationPickerMinutes)}
+                총{" "}
+                {formatDurationMinutes(
+                  durationPickerHours * 60 + durationPickerMinutes,
+                )}
               </p>
               <p className="mt-1 text-[13px] text-[#66736a]">
-                {formatTimeRange(buildKoreaDateTime(date, time), durationPickerHours * 60 + durationPickerMinutes)}
+                {formatTimeRange(
+                  buildKoreaDateTime(date, time),
+                  durationPickerHours * 60 + durationPickerMinutes,
+                )}
               </p>
             </div>
 
@@ -879,7 +980,9 @@ function CreateListingFormBody({
                 type="button"
                 size="lg"
                 className="flex-1"
-                disabled={durationPickerHours === 0 && durationPickerMinutes === 0}
+                disabled={
+                  durationPickerHours === 0 && durationPickerMinutes === 0
+                }
                 onClick={applyCustomDuration}
               >
                 적용
@@ -930,7 +1033,8 @@ export function CreateListingForm({
   dataSource?: AppDataSource;
 }) {
   const shellProfile = useCurrentProfile();
-  const initialProfile = currentProfile === undefined ? shellProfile : currentProfile;
+  const initialProfile =
+    currentProfile === undefined ? shellProfile : currentProfile;
 
   if (dataSource === "supabase") {
     return (

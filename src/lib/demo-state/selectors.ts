@@ -1,7 +1,6 @@
 import { getMatchById } from "@/lib/feed";
 import {
-  buildContactHref,
-  getContactActionLabel,
+  buildContactActions,
   getProfileContactValue,
   resolveContactType,
 } from "@/lib/contact";
@@ -16,7 +15,9 @@ import type {
 } from "@/lib/types";
 
 export function getCurrentProfile(state: DemoAppState) {
-  return state.profiles.find((profile) => profile.id === state.currentProfileId);
+  return state.profiles.find(
+    (profile) => profile.id === state.currentProfileId,
+  );
 }
 
 export function getProfileById(state: DemoAppState, profileId: string) {
@@ -48,7 +49,10 @@ export function getMyParticipationRequests(state: DemoAppState) {
     .sort((left, right) => right.created_at.localeCompare(left.created_at));
 }
 
-export function getInboundRequestsForMatch(state: DemoAppState, matchId: string) {
+export function getInboundRequestsForMatch(
+  state: DemoAppState,
+  matchId: string,
+) {
   return state.participationRequests
     .filter((request) => request.match_id === matchId)
     .sort((left, right) => right.created_at.localeCompare(left.created_at));
@@ -68,12 +72,16 @@ export function getHostedMatches(state: DemoAppState) {
 
 export function getNotificationsForCurrentProfile(state: DemoAppState) {
   return state.notifications
-    .filter((notification) => notification.profile_id === state.currentProfileId)
+    .filter(
+      (notification) => notification.profile_id === state.currentProfileId,
+    )
     .sort((left, right) => right.created_at.localeCompare(left.created_at));
 }
 
 export function getUnreadNotificationCount(state: DemoAppState) {
-  return getNotificationsForCurrentProfile(state).filter((notification) => !notification.read_at).length;
+  return getNotificationsForCurrentProfile(state).filter(
+    (notification) => !notification.read_at,
+  ).length;
 }
 
 export function getUnreadNotificationIds(state: DemoAppState) {
@@ -83,7 +91,10 @@ export function getUnreadNotificationIds(state: DemoAppState) {
 }
 
 export function getNotificationTone(notification: AppNotification) {
-  if (notification.kind === "request_accepted" || notification.kind === "request_confirmed") {
+  if (
+    notification.kind === "request_accepted" ||
+    notification.kind === "request_confirmed"
+  ) {
     return "bg-[#e4f6e8] text-[#1f7a38]" as const;
   }
 
@@ -100,7 +111,9 @@ export function getParticipationForMatch(
   requesterId = state.currentProfileId,
 ) {
   return state.participationRequests.find(
-    (request) => request.match_id === matchId && request.requester_profile_id === requesterId,
+    (request) =>
+      request.match_id === matchId &&
+      request.requester_profile_id === requesterId,
   );
 }
 
@@ -157,41 +170,40 @@ export function getParticipationSummary(request: ParticipationRequest) {
   return `${request.requested_count}명 요청`;
 }
 
-export function getParticipationContactLink(state: DemoAppState, request: ParticipationRequest) {
+export function getParticipationContactActions(
+  state: DemoAppState,
+  request: ParticipationRequest,
+) {
   const match = getMatch(state, request.match_id);
 
   if (!match || !["accepted", "confirmed"].includes(request.status)) {
-    return null;
+    return [];
   }
 
   const baseContactType = request.entry_channel || match.contact_type;
 
   if (request.accepted_contact_link) {
-    const contactType = resolveContactType(baseContactType, request.accepted_contact_link);
-    const href = buildContactHref(contactType, request.accepted_contact_link);
+    const contactType = resolveContactType(
+      baseContactType,
+      request.accepted_contact_link,
+    );
+    const actions = buildContactActions(
+      contactType,
+      request.accepted_contact_link,
+    );
 
-    if (!href) {
-      return null;
+    if (actions.length > 0) {
+      return actions;
     }
-
-    return {
-      href,
-      label: getContactActionLabel(contactType),
-    };
   }
 
   if (match.contact_link) {
     const contactType = resolveContactType(baseContactType, match.contact_link);
-    const href = buildContactHref(contactType, match.contact_link);
+    const actions = buildContactActions(contactType, match.contact_link);
 
-    if (!href) {
-      return null;
+    if (actions.length > 0) {
+      return actions;
     }
-
-    return {
-      href,
-      label: getContactActionLabel(contactType),
-    };
   }
 
   const host = getProfileById(state, request.host_profile_id);
@@ -200,28 +212,32 @@ export function getParticipationContactLink(state: DemoAppState, request: Partic
     baseContactType === "phone" ? "phone" : "openchat",
   );
   const contactType = resolveContactType(baseContactType, fallbackContactValue);
+  return buildContactActions(contactType, fallbackContactValue);
+}
 
-  const href = buildContactHref(contactType, fallbackContactValue);
-
-  if (!href) {
-    return null;
-  }
-
-  return {
-    href,
-    label: getContactActionLabel(contactType),
-  };
+export function getParticipationContactLink(
+  state: DemoAppState,
+  request: ParticipationRequest,
+) {
+  return getParticipationContactActions(state, request)[0] ?? null;
 }
 
 export function getDefaultRequestedCount(match: Match, context?: FeedContext) {
   const requested = context?.groupSize ?? 1;
   return Math.min(
     Math.max(requested, 1),
-    Math.min(Math.max(match.max_group_size, 1), Math.max(match.remaining_slots, 1)),
+    Math.min(
+      Math.max(match.max_group_size, 1),
+      Math.max(match.remaining_slots, 1),
+    ),
   );
 }
 
-export function getMatchMetaForState(state: DemoAppState, matchId: string, referenceNow: number) {
+export function getMatchMetaForState(
+  state: DemoAppState,
+  matchId: string,
+  referenceNow: number,
+) {
   return getMatchById(state, matchId, referenceNow);
 }
 
