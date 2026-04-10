@@ -228,7 +228,10 @@ export function cancelMatch(state: DemoAppState, matchId: string) {
   }
 
   const hasAcceptedRequest = next.participationRequests.some(
-    (request) => request.match_id === match.id && ["accepted", "confirmed"].includes(request.status),
+    (request) => request.match_id === match.id && request.status === "accepted",
+  );
+  const hasConfirmedRequest = next.participationRequests.some(
+    (request) => request.match_id === match.id && request.status === "confirmed",
   );
 
   if (hasAcceptedRequest) {
@@ -236,7 +239,7 @@ export function cancelMatch(state: DemoAppState, matchId: string) {
   }
 
   const now = new Date().toISOString();
-  match.status = "cancelled";
+  match.status = hasConfirmedRequest ? "matched" : "cancelled";
   match.updated_at = now;
 
   next.participationRequests = next.participationRequests.map((request) => {

@@ -19,6 +19,8 @@ import {
 } from "@/lib/supabase/selects";
 import type { FeedContext, FeedDataSource } from "@/lib/types";
 
+export const FEED_ROWS_CACHE_TAG = "feed-rows-v2";
+
 function endOfDayKst(date: Date) {
   return new Date(
     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}T23:59:59+09:00`,
@@ -67,8 +69,8 @@ const getCachedFeedRows = unstable_cache(
 
     return data ?? [];
   },
-  ["feed-rows-v2"],
-  { revalidate: 20 },
+  [FEED_ROWS_CACHE_TAG],
+  { revalidate: 20, tags: [FEED_ROWS_CACHE_TAG] },
 );
 
 async function getPublicMatchRow(matchId: string) {

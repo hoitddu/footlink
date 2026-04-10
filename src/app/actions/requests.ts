@@ -1,10 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { invalidateActivitySnapshotServerCache } from "@/lib/activity-snapshot-server-cache";
 import { createAppError, isAppError, toUserFacingError } from "@/lib/errors";
 import { ensureMatchLifecycleMaintenance } from "@/lib/repositories/lifecycle";
+import { FEED_ROWS_CACHE_TAG } from "@/lib/repositories/matches";
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
 import { markNotificationsRead } from "@/lib/repositories/requests";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
@@ -167,6 +168,8 @@ export async function confirmParticipationAction(requestId: string, hostNote?: s
     const request = await getRequestRow(requestId);
     invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
+    revalidateTag(FEED_ROWS_CACHE_TAG);
+    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
 
@@ -195,6 +198,8 @@ export async function cancelParticipationConfirmationAction(requestId: string, h
     const request = await getRequestRow(requestId);
     invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
+    revalidateTag(FEED_ROWS_CACHE_TAG);
+    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
 

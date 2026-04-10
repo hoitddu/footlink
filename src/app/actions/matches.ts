@@ -1,9 +1,10 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 import { invalidateActivitySnapshotServerCache } from "@/lib/activity-snapshot-server-cache";
 import { createAppError, isAppError, toUserFacingError } from "@/lib/errors";
+import { FEED_ROWS_CACHE_TAG } from "@/lib/repositories/matches";
 import { normalizeContactValue } from "@/lib/contact";
 import { requireCurrentProfile } from "@/lib/repositories/profiles";
 import { mapMatchRow } from "@/lib/supabase/mappers";
@@ -89,9 +90,8 @@ export async function createMatchAction(input: CreateMatchInput) {
 
     invalidateActivitySnapshotServerCache(currentProfile.id);
 
-    // /home reads the feed through unstable_cache (20s revalidate) and /create
-    // has no match-dependent server data, so only bust the pages that
-    // immediately display the new listing.
+    revalidateTag(FEED_ROWS_CACHE_TAG);
+    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${match.id}`);
 
@@ -123,6 +123,8 @@ export async function cancelMatchAction(matchId: string) {
 
     invalidateActivitySnapshotServerCache(currentProfile.id);
 
+    revalidateTag(FEED_ROWS_CACHE_TAG);
+    revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${matchId}`);
 

@@ -477,10 +477,11 @@ function HostSpotCard({
   const closedRequests = requests.filter((request) =>
     ["rejected", "withdrawn", "expired"].includes(request.status),
   );
-  const hasLockedRequest = connectedRequests.length > 0;
+  const hasAcceptedRequest = requests.some((request) => request.status === "accepted");
   const deletePending =
     pendingAction?.targetId === match.id && pendingAction.kind === "delete";
-  const canDelete = !hasLockedRequest && match.status === "open";
+  const canDelete = !hasAcceptedRequest && match.status === "open";
+  const isRecruitmentClosed = match.status !== "open";
 
   return (
     <article
@@ -492,10 +493,16 @@ function HostSpotCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={match.remaining_slots <= 1 ? "urgent" : "soon"}>
-              {match.remaining_slots <= 1
-                ? "1\uC790\uB9AC"
-                : `${match.remaining_slots}\uC790\uB9AC`}
+            <Badge
+              variant={
+                isRecruitmentClosed ? "calm" : match.remaining_slots <= 1 ? "urgent" : "soon"
+              }
+            >
+              {isRecruitmentClosed
+                ? "\uBAA8\uC9D1 \uB9C8\uAC10"
+                : match.remaining_slots <= 1
+                  ? "1\uC790\uB9AC"
+                  : `${match.remaining_slots}\uC790\uB9AC`}
             </Badge>
             {pendingRequests.length > 0 ? (
               <span className="surface-chip rounded-full px-2.5 py-1 text-[11px] font-bold">
