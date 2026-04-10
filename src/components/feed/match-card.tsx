@@ -108,7 +108,13 @@ export function MatchCard({
               </span>
             ) : null}
             {formatLabel ? <span>· {formatLabel}</span> : null}
-            <span>· {formatFee(match.fee)}</span>
+            {match.fee === 0 ? (
+              <span className="shrink-0 rounded-full bg-[#dfeee0] px-2 py-0.5 text-[10px] font-bold text-[#295d3a]">
+                무료
+              </span>
+            ) : (
+              <span>· {formatFee(match.fee)}</span>
+            )}
           </div>
         </div>
       </article>

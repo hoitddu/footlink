@@ -90,7 +90,7 @@ export async function createMatchAction(input: CreateMatchInput) {
 
     invalidateActivitySnapshotServerCache(currentProfile.id);
 
-    revalidateTag(FEED_ROWS_CACHE_TAG);
+    revalidateTag(FEED_ROWS_CACHE_TAG, "max");
     revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${match.id}`);
@@ -123,7 +123,7 @@ export async function cancelMatchAction(matchId: string) {
 
     invalidateActivitySnapshotServerCache(currentProfile.id);
 
-    revalidateTag(FEED_ROWS_CACHE_TAG);
+    revalidateTag(FEED_ROWS_CACHE_TAG, "max");
     revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${matchId}`);

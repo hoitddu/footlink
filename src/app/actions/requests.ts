@@ -105,7 +105,7 @@ export async function submitParticipationAction(input: SubmitParticipationInput)
       throw error;
     }
 
-    throw toUserFacingError(error, "筌〓㈇? ?遺욧퍕??筌ｌ꼶???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
+    throw toUserFacingError(error, "참여 요청을 보내지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
 
@@ -141,7 +141,7 @@ export async function acceptParticipationAction(requestId: string, hostNote?: st
       throw error;
     }
 
-    throw toUserFacingError(error, "?遺욧퍕????롮뵭??? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
+    throw toUserFacingError(error, "참여 요청을 수락하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
 
@@ -168,7 +168,7 @@ export async function confirmParticipationAction(requestId: string, hostNote?: s
     const request = await getRequestRow(requestId);
     invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
-    revalidateTag(FEED_ROWS_CACHE_TAG);
+    revalidateTag(FEED_ROWS_CACHE_TAG, "max");
     revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
@@ -179,7 +179,7 @@ export async function confirmParticipationAction(requestId: string, hostNote?: s
       throw error;
     }
 
-    throw toUserFacingError(error, "筌ㅼ뮇伊??類ㅼ젟??筌ｌ꼶???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
+    throw toUserFacingError(error, "최종 확정을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
 
@@ -198,7 +198,7 @@ export async function cancelParticipationConfirmationAction(requestId: string, h
     const request = await getRequestRow(requestId);
     invalidateActivitySnapshotServerCache([request.requester_profile_id, request.host_profile_id]);
 
-    revalidateTag(FEED_ROWS_CACHE_TAG);
+    revalidateTag(FEED_ROWS_CACHE_TAG, "max");
     revalidatePath("/home");
     revalidatePath("/activity");
     revalidatePath(`/match/${request.match_id}`);
@@ -209,7 +209,7 @@ export async function cancelParticipationConfirmationAction(requestId: string, h
       throw error;
     }
 
-    throw toUserFacingError(error, "?類ㅼ젟 ?띯뫁?쇘몴?筌ｌ꼶???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
+    throw toUserFacingError(error, "확정 취소를 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
 
@@ -237,7 +237,7 @@ export async function rejectParticipationAction(requestId: string, hostNote?: st
       throw error;
     }
 
-    throw toUserFacingError(error, "?遺욧퍕??椰꾧퀣???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
+    throw toUserFacingError(error, "참여 요청을 거절하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
 
@@ -264,7 +264,7 @@ export async function withdrawParticipationAction(requestId: string) {
       throw error;
     }
 
-    throw toUserFacingError(error, "?遺욧퍕???띯뫁???? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
+    throw toUserFacingError(error, "참여 요청을 취소하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
 
@@ -284,11 +284,11 @@ export async function dismissParticipationRequestAction(requestId: string) {
     }
 
     if (request.requester_profile_id !== currentProfile.id) {
-      throw new Error("?遺욧퍕?癒?춸 筌〓챷肉??遺욧퍕 疫꿸퀡以???????????됰뮸??덈뼄.");
+      throw new Error("본인의 참여 요청만 삭제할 수 있습니다.");
     }
 
     if (!["rejected", "withdrawn", "expired"].includes(request.status)) {
-      throw new Error("??? 筌욊쑵六?餓λ쵐???遺욧퍕?? ?????????곷뮸??덈뼄.");
+      throw new Error("이미 종료된 요청만 삭제할 수 있습니다.");
     }
 
     const { error: dismissError } = await supabase.from("request_activity_dismissals").upsert(
@@ -313,7 +313,7 @@ export async function dismissParticipationRequestAction(requestId: string) {
       throw error;
     }
 
-    throw toUserFacingError(error, "筌〓챷肉??遺욧퍕 疫꿸퀡以???????? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
+    throw toUserFacingError(error, "참여 요청 기록을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
 
@@ -327,6 +327,6 @@ export async function markNotificationsReadAction(notificationIds: string[]) {
       throw error;
     }
 
-    throw toUserFacingError(error, "???뵝 ??뚯벉 ?怨밴묶?????館釉?쭪? 筌륁궢六??щ빍?? ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??");
+    throw toUserFacingError(error, "알림 읽음 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.");
   }
 }
