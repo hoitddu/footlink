@@ -191,7 +191,11 @@ function applyNotificationReads(
   }));
 }
 
-export async function getActivitySnapshot() {
+export async function getActivitySnapshot({
+  force = false,
+}: {
+  force?: boolean;
+} = {}) {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -210,7 +214,7 @@ export async function getActivitySnapshot() {
   // Housekeeping runs in the background; never block page render.
   scheduleMatchLifecycleMaintenance();
 
-  return getCachedActivitySnapshotServer(currentProfile.id, async () => {
+  const loadSnapshot = async () => {
     const [hostedMatches, primaryRequests, dismissedRequestIds] = await Promise.all([
       listHostedMatches(supabase, currentProfile.id),
       listMyRequests(supabase, currentProfile.id),
@@ -267,7 +271,13 @@ export async function getActivitySnapshot() {
       matches,
       requests,
     });
-  });
+  };
+
+  if (force) {
+    return loadSnapshot();
+  }
+
+  return getCachedActivitySnapshotServer(currentProfile.id, loadSnapshot);
 }
 
 export async function getNotificationsSnapshot() {

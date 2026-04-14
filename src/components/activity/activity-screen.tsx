@@ -358,8 +358,8 @@ function PendingRequestRow({
         >
           {pendingAction?.targetId === request.id &&
           pendingAction.kind === "accept"
-            ? "\uC218\uB77D \uC911..."
-            : "\uC218\uB77D"}
+            ? "\uACF5\uC720 \uC911..."
+            : "\uC5F0\uB77D \uACF5\uC720"}
         </Button>
         <Button
           className="flex-1"
@@ -397,7 +397,7 @@ function ConnectedRequestRow({
   const statusLabel =
     request.status === "confirmed"
       ? "\uD655\uC815\uB428"
-      : "\uC5F0\uB77D \uC911";
+      : "\uC5F0\uB77D \uACF5\uC720\uB428";
   const confirmPending =
     pendingAction?.targetId === request.id && pendingAction.kind === "confirm";
   const rejectPending =
@@ -429,7 +429,7 @@ function ConnectedRequestRow({
             onClick={onConfirm}
             disabled={actionDisabled}
           >
-            {confirmPending ? "\uD655\uC815 \uC911..." : "\uD655\uC815"}
+            {confirmPending ? "\uC790\uB9AC \uD655\uC815 \uC911..." : "\uC790\uB9AC \uD655\uC815"}
           </Button>
           <Button
             className="flex-1"
@@ -471,16 +471,20 @@ function HostSpotCard({
   const pendingRequests = requests.filter(
     (request) => request.status === "pending",
   );
+  const acceptedRequests = requests.filter((request) => request.status === "accepted");
+  const confirmedRequests = requests.filter((request) => request.status === "confirmed");
   const connectedRequests = requests.filter((request) =>
     ["accepted", "confirmed"].includes(request.status),
   );
   const closedRequests = requests.filter((request) =>
     ["rejected", "withdrawn", "expired"].includes(request.status),
   );
-  const hasAcceptedRequest = requests.some((request) => request.status === "accepted");
+  const hasLockedRequest = requests.some((request) =>
+    ["accepted", "confirmed"].includes(request.status),
+  );
   const deletePending =
     pendingAction?.targetId === match.id && pendingAction.kind === "delete";
-  const canDelete = !hasAcceptedRequest && match.status === "open";
+  const canDelete = !hasLockedRequest && match.status === "open";
   const isRecruitmentClosed = match.status !== "open";
 
   return (
@@ -536,12 +540,23 @@ function HostSpotCard({
           {"\uC694\uCCAD"} {pendingRequests.length}
         </span>
         <span className="surface-chip rounded-full px-3 py-1.5 text-[12px] font-semibold">
-          {"\uC5F0\uB77D"} {connectedRequests.length}
+          {"\uC5F0\uB77D \uACF5\uC720"} {acceptedRequests.length}
+        </span>
+        <span className="surface-chip rounded-full px-3 py-1.5 text-[12px] font-semibold">
+          {"\uD655\uC815"} {confirmedRequests.length}
         </span>
         <span className="surface-chip rounded-full px-3 py-1.5 text-[12px] font-semibold">
           {"\uC885\uB8CC"} {closedRequests.length}
         </span>
       </div>
+
+      {acceptedRequests.length > 0 ? (
+        <div className="surface-subcard mt-3 rounded-[1rem] px-4 py-3 text-[12px] leading-5 text-[#55625a]">
+          {
+            "\uC5F0\uB77D \uACF5\uC720\uB294 \uBA3C\uC800 \uB300\uD654\uB9CC \uC5F4\uC5B4 \uC8FC\uB294 \uB2E8\uACC4\uC785\uB2C8\uB2E4. \uB0A8\uC740 \uC790\uB9AC\uB294 '\uC790\uB9AC \uD655\uC815'\uC744 \uB20C\uB7EC\uC57C \uCC28\uAC10\uB429\uB2C8\uB2E4."
+          }
+        </div>
+      ) : null}
 
       {pendingRequests.length > 0 ? (
         <div className="mt-3 space-y-2.5">
@@ -553,10 +568,6 @@ function HostSpotCard({
             const requesterMeta = requester
               ? `${formatSkillLevel(requester.skill_level)} / ${formatAgeBand(requester.age)}`
               : null;
-            const requestActionPending =
-              pendingAction?.targetId === request.id &&
-              (pendingAction.kind === "accept" ||
-                pendingAction.kind === "reject");
 
             return (
               <PendingRequestRow
@@ -566,8 +577,7 @@ function HostSpotCard({
                 requesterMeta={requesterMeta}
                 pendingAction={pendingAction}
                 disabled={
-                  requestActionPending ||
-                  pendingAction?.kind === "delete" ||
+                  Boolean(pendingAction) ||
                   match.remaining_slots < request.requested_count
                 }
                 onAccept={() => onAccept(request.id)}
@@ -753,7 +763,7 @@ function ActivityScreenBody({
 
   async function handleAccept(requestId: string, matchId: string) {
     setError("");
-    setPendingAction({ targetId: requestId, kind: "confirm" });
+    setPendingAction({ targetId: requestId, kind: "accept" });
 
     try {
       await onAccept(requestId);
@@ -777,7 +787,7 @@ function ActivityScreenBody({
 
   async function handleConfirm(requestId: string, matchId: string) {
     setError("");
-    setPendingAction({ targetId: requestId, kind: "accept" });
+    setPendingAction({ targetId: requestId, kind: "confirm" });
 
     try {
       await onConfirm(requestId);
@@ -1119,27 +1129,27 @@ function SupabaseActivityScreen({
       state={stateSnapshot}
       onWithdraw={async (requestId) => {
         await withdrawParticipationAction(requestId);
-        await loadSnapshot();
+        await loadSnapshot({ force: true });
       }}
       onAccept={async (requestId) => {
         await acceptParticipationAction(requestId);
-        await loadSnapshot();
+        await loadSnapshot({ force: true });
       }}
       onConfirm={async (requestId) => {
         await confirmParticipationAction(requestId);
-        await loadSnapshot();
+        await loadSnapshot({ force: true });
       }}
       onReject={async (requestId) => {
         await rejectParticipationAction(requestId);
-        await loadSnapshot();
+        await loadSnapshot({ force: true });
       }}
       onDismiss={async (requestId) => {
         await dismissParticipationRequestAction(requestId);
-        await loadSnapshot();
+        await loadSnapshot({ force: true });
       }}
       onDelete={async (matchId) => {
         await cancelMatchAction(matchId);
-        await loadSnapshot();
+        await loadSnapshot({ force: true });
       }}
       showDemoIdentitySwitcher={false}
     />

@@ -93,11 +93,11 @@ export async function fetchActivitySnapshot({
     }
   }
 
-  if (inFlightSnapshotPromise) {
+  if (!force && inFlightSnapshotPromise) {
     return inFlightSnapshotPromise;
   }
 
-  inFlightSnapshotPromise = fetch("/api/activity-snapshot", {
+  const request = fetch(`/api/activity-snapshot${force ? "?force=1" : ""}`, {
     cache: "no-store",
   })
     .then(async (response) => {
@@ -107,10 +107,15 @@ export async function fetchActivitySnapshot({
 
       const snapshot = (await response.json()) as DemoAppState;
       return writeEnvelope(snapshot);
-    })
-    .finally(() => {
-      inFlightSnapshotPromise = null;
     });
+
+  if (force) {
+    return request;
+  }
+
+  inFlightSnapshotPromise = request.finally(() => {
+    inFlightSnapshotPromise = null;
+  });
 
   return inFlightSnapshotPromise;
 }
