@@ -8,6 +8,35 @@ import { PROFILE_APP_SELECT, type AppProfileRow } from "@/lib/supabase/selects";
 
 type ServerSupabaseClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 
+async function getOrCreateServerAuthUser(supabase: ServerSupabaseClient) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    return user;
+  }
+
+  const normalizedUserError = userError?.message.toLowerCase() ?? "";
+
+  if (userError && !normalizedUserError.includes("auth session missing")) {
+    throw userError;
+  }
+
+  const { data, error } = await supabase.auth.signInAnonymously();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data.user) {
+    throw new Error("AUTH_REQUIRED");
+  }
+
+  return data.user;
+}
+
 export async function getCurrentProfileByAuthUserId(
   supabase: ServerSupabaseClient,
   authUserId: string,
@@ -47,13 +76,8 @@ export async function requireCurrentProfile() {
 }
 
 export async function upsertCurrentProfile(input: UpdateProfileInput) {
-  const user = await getServerAuthUser();
-
-  if (!user) {
-    throw new Error("AUTH_REQUIRED");
-  }
-
   const supabase = await createServerSupabaseClient();
+  const user = await getOrCreateServerAuthUser(supabase);
   const now = new Date().toISOString();
   const payload = {
     auth_user_id: user.id,
